@@ -1,4 +1,5 @@
-﻿// app/api/users/[id]/groups/route.ts
+﻿import type { NextRequest } from "next/server";
+// app/api/users/[id]/groups/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -32,6 +33,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
   const names = rows.map((r: { group: { id: string; name: string } }) => r.group.name);
   return NextResponse.json(names);
 }
+
 
 
 
