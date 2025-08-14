@@ -5,6 +5,7 @@ import { subscribeUser, unsubscribeUser } from "../../../_bus";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
+  const { id } = await ctx.params;
   const userId = id;
 
   const stream = new ReadableStream({
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
     },
   });
 }
+
 
 
 
