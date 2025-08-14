@@ -1,8 +1,10 @@
+// app/api/tasks/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, Prisma } from "@prisma/client";
 
+// ✅ НЕ экспортируем prisma из модуля роутов
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+const prisma = globalForPrisma.prisma ?? new PrismaClient();
 if (!globalForPrisma.prisma) globalForPrisma.prisma = prisma;
 
 function err(status: number, message: string) {
@@ -24,6 +26,7 @@ type TaskDto = {
   tags: { id: string; name: string }[];
 };
 
+// GET /api/tasks
 export async function GET(req: NextRequest) {
   try {
     const sp = req.nextUrl.searchParams;
@@ -34,16 +37,17 @@ export async function GET(req: NextRequest) {
     const where: Prisma.TaskWhereInput = {
       AND: [
         onlyVisible ? { hidden: false } : {},
-        q ? { OR: [
-          { title: { contains: q, mode: "insensitive" } },
-          { description: { contains: q, mode: "insensitive" } },
-        ] } : {},
+        q ? {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+          ],
+        } : {},
       ],
     };
 
     const tasks: TaskWithIncludes[] = await prisma.task.findMany({
-      where, orderBy: [{ dueDate: "asc" }, { id: "asc" }],
-      take: limit, include: taskInclude,
+      where, orderBy: [{ dueDate: "asc" }, { id: "asc" }], take: limit, include: taskInclude,
     });
 
     const result: TaskDto[] = tasks.map((t) => ({
@@ -61,6 +65,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// POST /api/tasks
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -83,7 +88,7 @@ export async function POST(req: NextRequest) {
       ? ((body as any).tags as unknown[]).filter(v => typeof v === "string").map(s => (s as string).trim()).filter(Boolean)
       : [];
 
-    // 1) обеспечим наличие тегов (без транзакции)
+    // 1) гарантируем наличие тегов (без интерактивной транзакции)
     let tagsToLink: { id: string }[] = [];
     if (tagNames.length > 0) {
       const existing = await prisma.tag.findMany({ where: { name: { in: tagNames } }, select: { id: true, name: true } });
@@ -123,6 +128,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PATCH /api/tasks
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -141,10 +147,8 @@ export async function PATCH(req: NextRequest) {
       data.dueDate = d;
     }
 
-    // Обновим саму задачу
     await prisma.task.update({ where: { id }, data });
 
-    // Полная замена исполнителей/тегов, если поля переданы
     const assigneeIds: string[] | undefined = Array.isArray((body as any).assigneeIds)
       ? ((body as any).assigneeIds as unknown[]).filter(v => typeof v === "string") as string[]
       : undefined;
@@ -166,9 +170,7 @@ export async function PATCH(req: NextRequest) {
     if (tagNames) {
       await prisma.taskTag.deleteMany({ where: { taskId: id } });
       if (tagNames.length > 0) {
-        const existing = await prisma.tag.findMany({
-          where: { name: { in: tagNames } }, select: { id: true, name: true },
-        });
+        const existing = await prisma.tag.findMany({ where: { name: { in: tagNames } }, select: { id: true, name: true } });
         const existingMap = new Map<string, string>(existing.map(t => [t.name.toLowerCase(), t.id]));
         const toCreate = tagNames.filter(n => !existingMap.has(n.toLowerCase()));
         if (toCreate.length > 0) {
@@ -193,6 +195,7 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+// DELETE /api/tasks
 export async function DELETE(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -200,7 +203,6 @@ export async function DELETE(req: NextRequest) {
     const id = String((body as any).id ?? "").trim();
     if (!id) return err(400, "id is required");
 
-    // Можно и без транзакции, но batch-транзакция тут допустима
     await prisma.$transaction([
       prisma.taskAssignee.deleteMany({ where: { taskId: id } }),
       prisma.taskTag.deleteMany({ where: { taskId: id } }),
