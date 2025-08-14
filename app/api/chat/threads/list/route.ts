@@ -1,125 +1,98 @@
 // app/api/chat/threads/list/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { cookies } from "next/headers";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+const prisma = new PrismaClient();
 
-const g = globalThis as any;
-const prisma: PrismaClient = g.prisma ?? new PrismaClient();
-if (!g.prisma) g.prisma = prisma;
+function jsonError(status: number, message: string) {
+  return NextResponse.json({ ok: false, error: message }, { status });
+}
 
-type ThreadItem = {
-  id: string;
-  peerId: string;
-  peerName: string | null;
-  lastMessageText: string | null;
-  lastMessageAt: string | null;
-  unreadCount: number;
-};
-
-async function getMeId(req: NextRequest) {
-  const hdr = req.headers.get("x-user-id");
-  if (hdr && hdr.trim()) return hdr.trim();
-  const c = await cookies();
-  return c.get("uid")?.value ?? null;
+function looksLikeUuid(s: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 }
 
 export async function GET(req: NextRequest) {
-  const meId = await getMeId(req);
-  if (!meId) return NextResponse.json([], { status: 200 });
-
   try {
-    // все треды, где я участвую
+    const rawId = req.headers.get("x-user-id") ?? "";
+    const rawUsername = req.headers.get("x-user-username") ?? "";
+
+    if (!rawId && !rawUsername) return jsonError(401, "x-user-id or x-user-username is required");
+
+    // 1) пытаемся найти по UUID
+    let me = null;
+    if (rawId && looksLikeUuid(rawId)) {
+      me = await prisma.user.findUnique({ where: { id: rawId }, select: { id: true, lastSeen: true } });
+    }
+    // 2) если не нашли — пробуем по username (из любого заголовка)
+    if (!me) {
+      const uname = rawUsername || rawId;
+      if (uname) {
+        me = await prisma.user.findUnique({ where: { username: uname }, select: { id: true, lastSeen: true } });
+      }
+    }
+    if (!me) return jsonError(404, "user not found");
+
+    const meId = me.id;
+    const limitParam = req.nextUrl.searchParams.get("limit");
+    const limit = Math.min(Math.max(Number(limitParam || 50), 1), 200);
+
     const threads = await prisma.thread.findMany({
       where: { OR: [{ aId: meId }, { bId: meId }] },
-      select: {
-        id: true,
-        aId: true,
-        bId: true,
-        a: { select: { id: true, name: true } },
-        b: { select: { id: true, name: true } },
-        lastMessageAt: true,
-        lastMessageText: true,
-      },
-      orderBy: [{ lastMessageAt: "desc" }, { id: "desc" }],
-      take: 200,
-    });
-
-    if (threads.length === 0) return NextResponse.json([], { status: 200 });
-
-    const ids = threads.map(t => t.id);
-
-    // мои отметки прочтения по всем тредам разом
-    const reads = await prisma.chatRead.findMany({
-      where: { userId: meId, threadId: { in: ids } },
-      select: { threadId: true, lastReadAt: true },
-    });
-    const readMap = new Map(reads.map(r => [r.threadId, r.lastReadAt]));
-
-    const items: ThreadItem[] = [];
-
-    for (const t of threads) {
-      const iAmA = t.aId === meId;
-      const peerUser = iAmA ? t.b : t.a;
-      const peerId = (peerUser?.id ?? null) || `unknown:${t.id}`;
-      const peerName = peerUser?.name ?? null;
-
-      // last message: берём служебные поля, иначе — из Messages
-      let lastMessageAt = t.lastMessageAt ?? null;
-      let lastMessageText = t.lastMessageText ?? null;
-      if (!lastMessageAt) {
-        const last = await prisma.message.findFirst({
-          where: { threadId: t.id },
+      orderBy: [{ lastMessageAt: "desc" }, { id: "asc" }],
+      take: limit,
+      include: {
+        a: { select: { id: true, name: true, role: true, avatarUrl: true } },
+        b: { select: { id: true, name: true, role: true, avatarUrl: true } },
+        messages: {
           orderBy: { createdAt: "desc" },
-          select: { createdAt: true, text: true },
-        });
-        lastMessageAt = last?.createdAt ?? null;
-        lastMessageText = last?.text ?? null;
-      }
-
-      // ВАЖНО: считаем только входящие (authorId != meId)
-      const myReadAt = readMap.get(t.id) ?? null;
-      const unreadCount = await prisma.message.count({
-        where: {
-          threadId: t.id,
-          NOT: { authorId: meId },
-          ...(myReadAt ? { createdAt: { gt: myReadAt } } : {}),
+          take: 1,
+          select: { id: true, createdAt: true, text: true, authorId: true },
         },
-      });
+      },
+    });
 
-      items.push({
-        id: t.id,
-        peerId,
-        peerName,
-        lastMessageAt: lastMessageAt ? lastMessageAt.toISOString() : null,
-        lastMessageText: lastMessageText ?? null,
-        unreadCount,
-      });
+    const threadIds = threads.map(t => t.id);
+    if (threadIds.length === 0) {
+      return NextResponse.json({ ok: true, threads: [] });
     }
 
-    // cортируем по последнему сообщению (безопасно, если где-то null)
-    items.sort((a, b) => {
-      const ta = a.lastMessageAt ? Date.parse(a.lastMessageAt) : 0;
-      const tb = b.lastMessageAt ? Date.parse(b.lastMessageAt) : 0;
-      return tb - ta;
+    const lastSeen = me.lastSeen ?? new Date(0);
+    const unreadGrouped = await prisma.message.groupBy({
+      by: ["threadId"],
+      where: {
+        threadId: { in: threadIds },
+        createdAt: { gt: lastSeen },
+        NOT: { authorId: meId },
+      },
+      _count: { _all: true },
     });
 
-    // отдаём именно массив (как ожидает фронт)
-    return NextResponse.json(items, { status: 200 });
-  } catch (e) {
-    console.error("threads/list GET error:", e);
-    return NextResponse.json([], { status: 200 });
-  }
-}
+    const unreadMap = new Map<string, number>();
+    for (const row of unreadGrouped) unreadMap.set(row.threadId, row._count._all);
 
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
+    const result = threads.map(t => {
+      const last = t.messages[0] ?? null;
+      const peer =
+        t.aId === meId
+          ? t.b && { id: t.b.id, name: t.b.name, role: t.b.role, avatarUrl: t.b.avatarUrl }
+          : t.a && { id: t.a.id, name: t.a.name, role: t.a.role, avatarUrl: t.a.avatarUrl };
+
+      return {
+        id: t.id,
+        title: t.title,
+        aId: t.aId, bId: t.bId,
+        lastMessageAt: t.lastMessageAt,
+        lastMessageText: t.lastMessageText,
+        peer,
+        lastMessage: last,
+        unreadCount: unreadMap.get(t.id) ?? 0,
+        hasUnread: (unreadMap.get(t.id) ?? 0) > 0,
+      };
+    });
+
+    return NextResponse.json({ ok: true, threads: result });
+  } catch (e: any) {
+    return jsonError(500, e?.message ?? "internal error");
+  }
 }
