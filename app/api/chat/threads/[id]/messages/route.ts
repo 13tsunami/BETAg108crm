@@ -1,4 +1,4 @@
-// app/api/threads/[id]/messages/route.ts
+﻿// app/api/threads/[id]/messages/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { requireUserId, badRequest, unauthorized } from "../../../_utils";
@@ -7,16 +7,16 @@ export const dynamic = "force-dynamic";
 
 const prisma = new PrismaClient();
 
-// Список сообщений треда
-export async function GET(req: NextRequest, ctx: { params: { id: string } }) {
-  // Требуем авторизацию (хотя бы по JWT). Если хочешь, можно тут ещё проверить участие в треде.
+// РЎРїРёСЃРѕРє СЃРѕРѕР±С‰РµРЅРёР№ С‚СЂРµРґР°
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string } }) {
+  // РўСЂРµР±СѓРµРј Р°РІС‚РѕСЂРёР·Р°С†РёСЋ (С…РѕС‚СЏ Р±С‹ РїРѕ JWT). Р•СЃР»Рё С…РѕС‡РµС€СЊ, РјРѕР¶РЅРѕ С‚СѓС‚ РµС‰С‘ РїСЂРѕРІРµСЂРёС‚СЊ СѓС‡Р°СЃС‚РёРµ РІ С‚СЂРµРґРµ.
   const uid = await requireUserId(req).catch(() => null);
   if (!uid) return unauthorized();
 
   const { id } = ctx.params;
 
-  // (опционально) проверить, что пользователь участвует в треде
-  // Если у тебя модель Thread хранит userAId/userBId — раскомментируй:
+  // (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ) РїСЂРѕРІРµСЂРёС‚СЊ, С‡С‚Рѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СѓС‡Р°СЃС‚РІСѓРµС‚ РІ С‚СЂРµРґРµ
+  // Р•СЃР»Рё Сѓ С‚РµР±СЏ РјРѕРґРµР»СЊ Thread С…СЂР°РЅРёС‚ userAId/userBId вЂ” СЂР°СЃРєРѕРјРјРµРЅС‚РёСЂСѓР№:
   // const thread = await prisma.thread.findUnique({ where: { id } });
   // if (!thread || (thread.userAId !== uid && thread.userBId !== uid)) return forbidden();
 
@@ -39,20 +39,20 @@ export async function GET(req: NextRequest, ctx: { params: { id: string } }) {
   return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
 }
 
-// Отправка сообщения в тред
-export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
+// РћС‚РїСЂР°РІРєР° СЃРѕРѕР±С‰РµРЅРёСЏ РІ С‚СЂРµРґ
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string } }) {
   const uid = await requireUserId(req).catch(() => null);
   if (!uid) return unauthorized();
 
   const { id } = ctx.params;
 
-  type Body = { text?: string; /* authorId?: string - БОЛЬШЕ НЕ ИСПОЛЬЗУЕМ */ };
+  type Body = { text?: string; /* authorId?: string - Р‘РћР›Р¬РЁР• РќР• РРЎРџРћР›Р¬Р—РЈР•Рњ */ };
   let body: Body = {};
   try { body = await req.json(); } catch {}
   const text = (body.text || "").trim();
   if (!text) return badRequest("`text` is required");
 
-  // (опционально) проверить участие в треде — как в GET (см. комментарий выше)
+  // (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ) РїСЂРѕРІРµСЂРёС‚СЊ СѓС‡Р°СЃС‚РёРµ РІ С‚СЂРµРґРµ вЂ” РєР°Рє РІ GET (СЃРј. РєРѕРјРјРµРЅС‚Р°СЂРёР№ РІС‹С€Рµ)
 
   const created = await prisma.message.create({
     data: { text, authorId: uid, threadId: id },
@@ -61,3 +61,4 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
 
   return NextResponse.json({ id: created.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
 }
+

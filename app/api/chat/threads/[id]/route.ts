@@ -1,4 +1,4 @@
-// app/api/chat/threads/[id]/route.ts
+﻿// app/api/chat/threads/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
@@ -18,14 +18,14 @@ function ok(data: any = { ok: true }, status = 200) {
 }
 
 async function getMeId(req: NextRequest) {
-  // сначала заголовок (страница его уже шлёт), иначе cookie uid
+  // СЃРЅР°С‡Р°Р»Р° Р·Р°РіРѕР»РѕРІРѕРє (СЃС‚СЂР°РЅРёС†Р° РµРіРѕ СѓР¶Рµ С€Р»С‘С‚), РёРЅР°С‡Рµ cookie uid
   const hdr = req.headers.get("x-user-id");
   if (hdr && hdr.trim()) return hdr.trim();
   const c = await cookies();
   return c.get("uid")?.value ?? null;
 }
 
-export async function GET(_: NextRequest, { params }: { params: { id?: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id?: string } }) {
   const id = params?.id;
   if (!id) return bad("id is required", 400);
 
@@ -51,12 +51,12 @@ export async function GET(_: NextRequest, { params }: { params: { id?: string } 
 }
 
 /**
- * Удаление/скрытие диалога
+ * РЈРґР°Р»РµРЅРёРµ/СЃРєСЂС‹С‚РёРµ РґРёР°Р»РѕРіР°
  * DELETE /api/chat/threads/:id?scope=me|both
- *  - scope=me   : скрыть диалог для меня (aId/bId -> null, удалить мои ChatRead)
- *  - scope=both : удалить для всех (ChatRead + Message + Thread)
+ *  - scope=me   : СЃРєСЂС‹С‚СЊ РґРёР°Р»РѕРі РґР»СЏ РјРµРЅСЏ (aId/bId -> null, СѓРґР°Р»РёС‚СЊ РјРѕРё ChatRead)
+ *  - scope=both : СѓРґР°Р»РёС‚СЊ РґР»СЏ РІСЃРµС… (ChatRead + Message + Thread)
  */
-export async function DELETE(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
   const id = params?.id;
   if (!id) return bad("id is required", 400);
 
@@ -64,7 +64,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id?: stri
   if (!meId) return bad("Not authenticated", 401);
 
   const url = new URL(req.url);
-  const scope = (url.searchParams.get("scope") ?? "me").toLowerCase();
+  const scope = (url.search(await params).get("scope") ?? "me").toLowerCase();
 
   try {
     const thread = await prisma.thread.findUnique({
@@ -78,7 +78,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id?: stri
     if (!iAmA && !iAmB) return bad("Forbidden: not a participant", 403);
 
     if (scope === "both") {
-      // Полное удаление — чистим всё вручную (в схеме Message thread FK без CASCADE)
+      // РџРѕР»РЅРѕРµ СѓРґР°Р»РµРЅРёРµ вЂ” С‡РёСЃС‚РёРј РІСЃС‘ РІСЂСѓС‡РЅСѓСЋ (РІ СЃС…РµРјРµ Message thread FK Р±РµР· CASCADE)
       await prisma.$transaction(async (tx) => {
         await tx.chatRead.deleteMany({ where: { threadId: id } });
         await tx.message.deleteMany({ where: { threadId: id } });
@@ -87,17 +87,17 @@ export async function DELETE(req: NextRequest, { params }: { params: { id?: stri
       return ok({ ok: true, deleted: "both" });
     }
 
-    // scope=me — скрыть для меня
+    // scope=me вЂ” СЃРєСЂС‹С‚СЊ РґР»СЏ РјРµРЅСЏ
     await prisma.$transaction(async (tx) => {
       if (iAmA) {
         await tx.thread.update({ where: { id }, data: { aId: null } });
       } else if (iAmB) {
         await tx.thread.update({ where: { id }, data: { bId: null } });
       }
-      // мои отметки прочтения можно убрать
+      // РјРѕРё РѕС‚РјРµС‚РєРё РїСЂРѕС‡С‚РµРЅРёСЏ РјРѕР¶РЅРѕ СѓР±СЂР°С‚СЊ
       await tx.chatRead.deleteMany({ where: { threadId: id, userId: meId } });
 
-      // если оба участника уже null и сообщений нет — подчистим тред
+      // РµСЃР»Рё РѕР±Р° СѓС‡Р°СЃС‚РЅРёРєР° СѓР¶Рµ null Рё СЃРѕРѕР±С‰РµРЅРёР№ РЅРµС‚ вЂ” РїРѕРґС‡РёСЃС‚РёРј С‚СЂРµРґ
       const t = await tx.thread.findUnique({
         where: { id },
         select: { aId: true, bId: true, messages: { select: { id: true }, take: 1 } },
@@ -113,3 +113,4 @@ export async function DELETE(req: NextRequest, { params }: { params: { id?: stri
     return bad("Internal error", 500);
   }
 }
+

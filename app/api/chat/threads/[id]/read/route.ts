@@ -1,4 +1,4 @@
-// app/api/chat/threads/[id]/read/route.ts
+﻿// app/api/chat/threads/[id]/read/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
@@ -21,8 +21,8 @@ async function getMeId(req: NextRequest) {
   return c.get("uid")?.value ?? null;
 }
 
-// GET — страница ожидает { myReadAt, peerReadAt }
-export async function GET(req: NextRequest, { params }: { params: { id?: string } }) {
+// GET вЂ” СЃС‚СЂР°РЅРёС†Р° РѕР¶РёРґР°РµС‚ { myReadAt, peerReadAt }
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
   const threadId = params?.id;
   if (!threadId) return bad("threadId is required", 400);
 
@@ -55,8 +55,8 @@ export async function GET(req: NextRequest, { params }: { params: { id?: string 
   }
 }
 
-// POST — пометить тред прочитанным для меня
-export async function POST(req: NextRequest, { params }: { params: { id?: string } }) {
+// POST вЂ” РїРѕРјРµС‚РёС‚СЊ С‚СЂРµРґ РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рј РґР»СЏ РјРµРЅСЏ
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
   const threadId = params?.id;
   if (!threadId) return bad("threadId is required", 400);
 
@@ -75,3 +75,4 @@ export async function POST(req: NextRequest, { params }: { params: { id?: string
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
+

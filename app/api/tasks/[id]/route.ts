@@ -1,4 +1,4 @@
-// app/api/tasks/[id]/route.ts
+﻿// app/api/tasks/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, Prisma } from "@prisma/client";
 
@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
     if (typeof body?.priority === "string") data.priority = body.priority;
     if (typeof body?.createdById === "string" || body?.createdById === null) data.createdById = body.createdById;
 
-    // поддержка assigneeUserIds | assignees[] | assignedTo[]
+    // РїРѕРґРґРµСЂР¶РєР° assigneeUserIds | assignees[] | assignedTo[]
     const idsFromDirect: string[] | null = Array.isArray(body?.assigneeUserIds)
       ? (body.assigneeUserIds as string[]).filter(Boolean)
       : null;
@@ -146,3 +146,4 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
   }
   return NextResponse.json({ ok: true });
 }
+

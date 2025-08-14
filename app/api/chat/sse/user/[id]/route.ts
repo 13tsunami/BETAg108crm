@@ -1,11 +1,11 @@
-// app/api/chat/sse/user/[id]/route.ts
+﻿// app/api/chat/sse/user/[id]/route.ts
 import type { NextRequest } from "next/server";
 import { subscribeUser, unsubscribeUser } from "../../../_bus";
 
 export const runtime = "nodejs";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const userId = params.id;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string } }) {
+  const userId = (await params).id;
 
   const stream = new ReadableStream({
     start(controller) {
@@ -34,3 +34,4 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     },
   });
 }
+

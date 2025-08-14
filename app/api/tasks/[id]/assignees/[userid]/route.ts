@@ -1,11 +1,11 @@
-// app/api/tasks/[id]/assignees/[userId]/route.ts
+﻿// app/api/tasks/[id]/assignees/[userId]/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = (global as any).prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== "production") (global as any).prisma = prisma;
 
-// чтобы роут всегда работал динамически
+// С‡С‚РѕР±С‹ СЂРѕСѓС‚ РІСЃРµРіРґР° СЂР°Р±РѕС‚Р°Р» РґРёРЅР°РјРёС‡РµСЃРєРё
 export const dynamic = "force-dynamic";
 
 type Params = { id: string; userId: string };
@@ -16,15 +16,15 @@ function ensureString(v: unknown): string | null {
 
 export async function PATCH(req: Request, ctx: { params?: Params } = {}) {
   try {
-    // 1) основной путь — берём из ctx.params
+    // 1) РѕСЃРЅРѕРІРЅРѕР№ РїСѓС‚СЊ вЂ” Р±РµСЂС‘Рј РёР· ctx.params
     let id = ensureString(ctx?.params?.id);
     let userId = ensureString(ctx?.params?.userId);
 
-    // 2) запасной путь — парсим из URL, если почему-то params пустые/кривые
+    // 2) Р·Р°РїР°СЃРЅРѕР№ РїСѓС‚СЊ вЂ” РїР°СЂСЃРёРј РёР· URL, РµСЃР»Рё РїРѕС‡РµРјСѓ-С‚Рѕ params РїСѓСЃС‚С‹Рµ/РєСЂРёРІС‹Рµ
     if (!id || !userId) {
       try {
         const url = new URL(req.url);
-        // ожидаемый шаблон: /api/tasks/:id/assignees/:userId
+        // РѕР¶РёРґР°РµРјС‹Р№ С€Р°Р±Р»РѕРЅ: /api/tasks/:id/assignees/:userId
         const parts = url.pathname.split("/").filter(Boolean);
         // ["api","tasks",":id","assignees",":userId"]
         const idxTasks = parts.indexOf("tasks");
@@ -43,12 +43,12 @@ export async function PATCH(req: Request, ctx: { params?: Params } = {}) {
       );
     }
 
-    // тело запроса: status = "done" | "open"
+    // С‚РµР»Рѕ Р·Р°РїСЂРѕСЃР°: status = "done" | "open"
     const body = await req.json().catch(() => ({}));
     const status: "done" | "open" = body?.status === "done" ? "done" : "open";
     const doneAt = status === "done" ? new Date() : null;
 
-    // создаём запись исполнителя, если её ещё нет, либо обновляем статус
+    // СЃРѕР·РґР°С‘Рј Р·Р°РїРёСЃСЊ РёСЃРїРѕР»РЅРёС‚РµР»СЏ, РµСЃР»Рё РµС‘ РµС‰С‘ РЅРµС‚, Р»РёР±Рѕ РѕР±РЅРѕРІР»СЏРµРј СЃС‚Р°С‚СѓСЃ
     const updated = await prisma.taskAssignee.upsert({
       where: { taskId_userId: { taskId: id, userId } },
       update: { status, doneAt },
@@ -70,3 +70,4 @@ export async function PATCH(req: Request, ctx: { params?: Params } = {}) {
     );
   }
 }
+

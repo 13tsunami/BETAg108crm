@@ -1,4 +1,4 @@
-// app/api/users/_delete/[id]/route.ts
+﻿// app/api/users/_delete/[id]/route.ts
 import { NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   if (!id) {
-    return new Response(JSON.stringify({ error: "id обязателен" }), {
+    return new Response(JSON.stringify({ error: "id РѕР±СЏР·Р°С‚РµР»РµРЅ" }), {
       status: 400,
       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
@@ -19,18 +19,18 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
     return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
   } catch (e: any) {
     if (e?.code === "P2025") {
-      return new Response(JSON.stringify({ error: "Пользователь не найден" }), {
+      return new Response(JSON.stringify({ error: "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ" }), {
         status: 404,
         headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
       });
     }
     if (e?.code === "P2003") {
-      return new Response(JSON.stringify({ error: "Удаление невозможно: есть связанные записи" }), {
+      return new Response(JSON.stringify({ error: "РЈРґР°Р»РµРЅРёРµ РЅРµРІРѕР·РјРѕР¶РЅРѕ: РµСЃС‚СЊ СЃРІСЏР·Р°РЅРЅС‹Рµ Р·Р°РїРёСЃРё" }), {
         status: 409,
         headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
       });
     }
-    return new Response(JSON.stringify({ error: e?.message || "Ошибка удаления" }), {
+    return new Response(JSON.stringify({ error: e?.message || "РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ" }), {
       status: 500,
       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
@@ -40,3 +40,4 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
 export async function OPTIONS() {
   return new Response(null, { status: 204 });
 }
+

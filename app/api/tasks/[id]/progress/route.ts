@@ -1,4 +1,4 @@
-// app/api/tasks/[id]/progress/route.ts
+﻿// app/api/tasks/[id]/progress/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -47,3 +47,4 @@ export async function GET(_req: Request, ctx: Ctx) {
     return NextResponse.json({ ok: false, error: e?.message ?? "failed" }, { status: 500 });
   }
 }
+

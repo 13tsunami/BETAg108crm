@@ -1,4 +1,4 @@
-// app/api/users/[id]/route.ts
+﻿// app/api/users/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -16,8 +16,8 @@ function ok(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
 }
 
-// GET /api/users/:id — получить пользователя
-export async function GET(_: NextRequest, { params }: { params: { id?: string } }) {
+// GET /api/users/:id вЂ” РїРѕР»СѓС‡РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id?: string } }) {
   const id = params?.id?.trim();
   if (!id) return bad("id is required", 400);
 
@@ -47,8 +47,8 @@ export async function GET(_: NextRequest, { params }: { params: { id?: string } 
   });
 }
 
-// PATCH /api/users/:id — частичное обновление
-export async function PATCH(req: NextRequest, { params }: { params: { id?: string } }) {
+// PATCH /api/users/:id вЂ” С‡Р°СЃС‚РёС‡РЅРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
   const id = params?.id?.trim();
   if (!id) return bad("id is required", 400);
 
@@ -156,3 +156,4 @@ export async function OPTIONS() {
     },
   });
 }
+

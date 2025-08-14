@@ -1,4 +1,4 @@
-// app/api/users/[id]/groups/route.ts
+﻿// app/api/users/[id]/groups/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -8,12 +8,12 @@ if (process.env.NODE_ENV !== "production") (global as any).prisma = prisma;
 export const dynamic = "force-dynamic";
 
 // GET /api/users/:id/groups?details=1
-export async function GET(req: Request, ctx: { params: { id: string } }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string } }) {
   const userId = ctx?.params?.id;
   if (!userId) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
   const url = new URL(req.url);
-  const details = url.searchParams.get("details");
+  const details = url.search(await params).get("details");
 
   const rows = await prisma.groupMember.findMany({
     where: { userId },
@@ -32,3 +32,4 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
   const names = rows.map((r: { group: { id: string; name: string } }) => r.group.name);
   return NextResponse.json(names);
 }
+

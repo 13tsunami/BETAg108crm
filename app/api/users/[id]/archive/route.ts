@@ -1,4 +1,4 @@
-// app/api/users/[id]/archive/route.ts
+﻿// app/api/users/[id]/archive/route.ts
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> }
 ) {
   const { id } = await ctx.params;
-  if (!id) return NextResponse.json({ error: "id обязателен" }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "id РѕР±СЏР·Р°С‚РµР»РµРЅ" }, { status: 400 });
 
   try {
     const Prisma = await import("@prisma/client");
@@ -17,13 +17,13 @@ export async function POST(
     const prisma: InstanceType<typeof Prisma.PrismaClient> =
       g.__prisma ?? (g.__prisma = new Prisma.PrismaClient());
 
-    // A: пробуем связью role.connect(slug="archived")
+    // A: РїСЂРѕР±СѓРµРј СЃРІСЏР·СЊСЋ role.connect(slug="archived")
     try {
       try {
         await (prisma as any).role?.upsert?.({
           where: { slug: "archived" },
           update: {},
-          create: { slug: "archived", name: "В архиве" },
+          create: { slug: "archived", name: "Р’ Р°СЂС…РёРІРµ" },
         });
       } catch {}
       const u = await (prisma as any).user.update({
@@ -33,7 +33,7 @@ export async function POST(
       });
       return NextResponse.json({ ok: true, id: u.id }, { status: 200 });
     } catch (e1: any) {
-      // B: строковое поле roleSlug
+      // B: СЃС‚СЂРѕРєРѕРІРѕРµ РїРѕР»Рµ roleSlug
       try {
         const u = await (prisma as any).user.update({
           where: { id },
@@ -42,7 +42,7 @@ export async function POST(
         });
         return NextResponse.json({ ok: true, id: u.id }, { status: 200 });
       } catch (e2: any) {
-        // C: строковое поле role
+        // C: СЃС‚СЂРѕРєРѕРІРѕРµ РїРѕР»Рµ role
         try {
           const u = await (prisma as any).user.update({
             where: { id },
@@ -52,15 +52,16 @@ export async function POST(
           return NextResponse.json({ ok: true, id: u.id }, { status: 200 });
         } catch (e3: any) {
           const msg = [e1?.message, e2?.message, e3?.message].filter(Boolean).join(" | ");
-          return NextResponse.json({ error: msg || "Не удалось архивировать" }, { status: 500 });
+          return NextResponse.json({ error: msg || "РќРµ СѓРґР°Р»РѕСЃСЊ Р°СЂС…РёРІРёСЂРѕРІР°С‚СЊ" }, { status: 500 });
         }
       }
     }
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Сбой архивации" }, { status: 500 });
+    return NextResponse.json({ error: err?.message || "РЎР±РѕР№ Р°СЂС…РёРІР°С†РёРё" }, { status: 500 });
   }
 }
 
 export async function OPTIONS() {
   return new Response(null, { status: 204 });
 }
+
