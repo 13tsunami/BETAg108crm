@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const prisma = new PrismaClient();
 
 // РЎРїРёСЃРѕРє СЃРѕРѕР±С‰РµРЅРёР№ С‚СЂРµРґР°
-export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string } }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   // РўСЂРµР±СѓРµРј Р°РІС‚РѕСЂРёР·Р°С†РёСЋ (С…РѕС‚СЏ Р±С‹ РїРѕ JWT). Р•СЃР»Рё С…РѕС‡РµС€СЊ, РјРѕР¶РЅРѕ С‚СѓС‚ РµС‰С‘ РїСЂРѕРІРµСЂРёС‚СЊ СѓС‡Р°СЃС‚РёРµ РІ С‚СЂРµРґРµ.
   const uid = await requireUserId(req).catch(() => null);
   if (!uid) return unauthorized();
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   return NextResponse.json({ id: created.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
 }
+
 
 
 

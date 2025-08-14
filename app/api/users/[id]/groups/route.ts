@@ -8,8 +8,8 @@ if (process.env.NODE_ENV !== "production") (global as any).prisma = prisma;
 export const dynamic = "force-dynamic";
 
 // GET /api/users/:id/groups?details=1
-export async function GET(req: Request, ctx: { params: Promise<{ id: string } }) {
-  const userId = (await ctx.params).id;
+export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
+  const userId = id;
   if (!userId) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
   const url = new URL(req.url);
@@ -32,6 +32,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string } })
   const names = rows.map((r: { group: { id: string; name: string } }) => r.group.name);
   return NextResponse.json(names);
 }
+
 
 
 
