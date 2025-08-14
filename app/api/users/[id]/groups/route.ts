@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
   if (!userId) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
   const url = new URL(req.url);
-  const details = url.search(await params).get("details");
+  const details = url.searchParams.get("details");
 
   const rows = await prisma.groupMember.findMany({
     where: { userId },
@@ -32,6 +32,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
   const names = rows.map((r: { group: { id: string; name: string } }) => r.group.name);
   return NextResponse.json(names);
 }
+
 
 
 

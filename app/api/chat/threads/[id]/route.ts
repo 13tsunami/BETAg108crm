@@ -64,7 +64,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<Record<str
   if (!meId) return bad("Not authenticated", 401);
 
   const url = new URL(req.url);
-  const scope = (url.search(await params).get("scope") ?? "me").toLowerCase();
+  const scope = (url.searchParams.get("scope") ?? "me").toLowerCase();
 
   try {
     const thread = await prisma.thread.findUnique({
@@ -113,6 +113,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<Record<str
     return bad("Internal error", 500);
   }
 }
+
 
 
 
