@@ -1,40 +1,29 @@
-// app/api/tasks/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, Prisma } from "@prisma/client";
 
-const prisma = (global as any).prisma ?? new PrismaClient();
-if (process.env.NODE_ENV !== "production") (global as any).prisma = prisma;
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+if (!globalForPrisma.prisma) globalForPrisma.prisma = prisma;
 
 function err(status: number, message: string) {
   return NextResponse.json({ ok: false, error: message }, { status });
 }
 
-// Единый include для задач
 const taskInclude = Prisma.validator<Prisma.TaskInclude>()({
   assignees: {
-    include: {
-      user: { select: { id: true, name: true, role: true, avatarUrl: true } },
-    },
+    include: { user: { select: { id: true, name: true, role: true, avatarUrl: true } } },
   },
   tags: { include: { tag: true } },
 });
-
-// Тип задачи с нужными связями
 type TaskWithIncludes = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
 
-// DTO под фронт
 type TaskDto = {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: Date;
-  hidden: boolean;
-  priority: string;
+  id: string; title: string; description: string; dueDate: Date;
+  hidden: boolean; priority: string;
   assignees: { id: string; name: string; role: string | null; avatarUrl: string | null }[];
   tags: { id: string; name: string }[];
 };
 
-// Список задач
 export async function GET(req: NextRequest) {
   try {
     const sp = req.nextUrl.searchParams;
@@ -45,38 +34,25 @@ export async function GET(req: NextRequest) {
     const where: Prisma.TaskWhereInput = {
       AND: [
         onlyVisible ? { hidden: false } : {},
-        q
-          ? {
-              OR: [
-                { title: { contains: q, mode: "insensitive" } },
-                { description: { contains: q, mode: "insensitive" } },
-              ],
-            }
-          : {},
+        q ? { OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ] } : {},
       ],
     };
 
     const tasks: TaskWithIncludes[] = await prisma.task.findMany({
-      where,
-      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
-      take: limit,
-      include: taskInclude,
+      where, orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+      take: limit, include: taskInclude,
     });
 
-    const result: TaskDto[] = tasks.map((t: TaskWithIncludes): TaskDto => ({
-      id: t.id,
-      title: t.title,
-      description: t.description,
-      dueDate: t.dueDate,
-      hidden: t.hidden,
-      priority: t.priority,
-      assignees: t.assignees.map((a) => ({
-        id: a.userId,
-        name: a.user?.name ?? "",
-        role: a.user?.role ?? null,
-        avatarUrl: a.user?.avatarUrl ?? null,
+    const result: TaskDto[] = tasks.map((t) => ({
+      id: t.id, title: t.title, description: t.description,
+      dueDate: t.dueDate, hidden: t.hidden, priority: t.priority,
+      assignees: t.assignees.map(a => ({
+        id: a.userId, name: a.user?.name ?? "", role: a.user?.role ?? null, avatarUrl: a.user?.avatarUrl ?? null,
       })),
-      tags: t.tags.map((tt) => ({ id: tt.tag.id, name: tt.tag.name })),
+      tags: t.tags.map(tt => ({ id: tt.tag.id, name: tt.tag.name })),
     }));
 
     return NextResponse.json({ ok: true, tasks: result });
@@ -85,95 +61,68 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Создание задачи
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") return err(400, "invalid json");
-    const title = String(body.title ?? "").trim();
+    const title = String((body as any).title ?? "").trim();
     if (!title) return err(400, "title is required");
 
-    const dueDateRaw = body.dueDate;
-    const dueDate =
-      typeof dueDateRaw === "string" || dueDateRaw instanceof Date
-        ? new Date(dueDateRaw)
-        : null;
+    const dueDateRaw = (body as any).dueDate;
+    const dueDate = (typeof dueDateRaw === "string" || dueDateRaw instanceof Date) ? new Date(dueDateRaw) : null;
     if (!dueDate || Number.isNaN(dueDate.getTime())) return err(400, "dueDate is required");
 
-    const description = typeof body.description === "string" ? body.description : "";
-    const priority =
-      typeof body.priority === "string" && body.priority.trim()
-        ? body.priority
-        : "normal";
-    const hidden = Boolean(body.hidden);
-    const assigneeIds: string[] = Array.isArray(body.assigneeIds)
-      ? body.assigneeIds.filter((v: unknown) => typeof v === "string") as string[]
+    const description = typeof (body as any).description === "string" ? (body as any).description : "";
+    const priority = (typeof (body as any).priority === "string" && (body as any).priority.trim()) ? (body as any).priority : "normal";
+    const hidden = Boolean((body as any).hidden);
+
+    const assigneeIds: string[] = Array.isArray((body as any).assigneeIds)
+      ? ((body as any).assigneeIds as unknown[]).filter(v => typeof v === "string") as string[]
       : [];
-    const tagNames: string[] = Array.isArray(body.tags)
-      ? (body.tags as unknown[])
-          .filter((v) => typeof v === "string")
-          .map((s) => (s as string).trim())
-          .filter(Boolean)
+    const tagNames: string[] = Array.isArray((body as any).tags)
+      ? ((body as any).tags as unknown[]).filter(v => typeof v === "string").map(s => (s as string).trim()).filter(Boolean)
       : [];
 
-    const createdId = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      let tagLinks: { id: string }[] = [];
-      if (tagNames.length > 0) {
-        const existing = await tx.tag.findMany({
-          where: { name: { in: tagNames } },
-          select: { id: true, name: true },
-        });
-        const existingMap = new Map<string, string>(
-          existing.map((t) => [t.name.toLowerCase(), t.id]),
-        );
-        const toCreate = tagNames.filter((n) => !existingMap.has(n.toLowerCase()));
-        if (toCreate.length > 0) {
-          await tx.tag.createMany({
-            data: toCreate.map((name) => ({ name })),
-            skipDuplicates: true,
-          });
-        }
-        const all = await tx.tag.findMany({
-          where: { name: { in: tagNames } },
-          select: { id: true },
-        });
-        tagLinks = all.map((t) => ({ id: t.id }));
+    // 1) обеспечим наличие тегов (без транзакции)
+    let tagsToLink: { id: string }[] = [];
+    if (tagNames.length > 0) {
+      const existing = await prisma.tag.findMany({ where: { name: { in: tagNames } }, select: { id: true, name: true } });
+      const existingMap = new Map<string, string>(existing.map(t => [t.name.toLowerCase(), t.id]));
+      const toCreate = tagNames.filter(n => !existingMap.has(n.toLowerCase()));
+      if (toCreate.length > 0) {
+        await prisma.tag.createMany({ data: toCreate.map(name => ({ name })), skipDuplicates: true });
       }
+      const all = await prisma.tag.findMany({ where: { name: { in: tagNames } }, select: { id: true } });
+      tagsToLink = all.map(t => ({ id: t.id }));
+    }
 
-      const task = await tx.task.create({
-        data: { title, description, dueDate, priority, hidden },
-        select: { id: true },
+    // 2) создаём задачу
+    const task = await prisma.task.create({
+      data: { title, description, dueDate, priority, hidden },
+      select: { id: true },
+    });
+
+    // 3) привязываем исполнителей/теги
+    if (assigneeIds.length > 0) {
+      await prisma.taskAssignee.createMany({
+        data: assigneeIds.map(userId => ({ taskId: task.id, userId })),
+        skipDuplicates: true,
       });
+    }
+    if (tagsToLink.length > 0) {
+      await prisma.taskTag.createMany({
+        data: tagsToLink.map(t => ({ taskId: task.id, tagId: t.id })),
+        skipDuplicates: true,
+      });
+    }
 
-      if (assigneeIds.length > 0) {
-        await tx.taskAssignee.createMany({
-          data: assigneeIds.map((userId) => ({ taskId: task.id, userId })),
-          skipDuplicates: true,
-        });
-      }
-
-      if (tagLinks.length > 0) {
-        await tx.taskTag.createMany({
-          data: tagLinks.map((t) => ({ taskId: task.id, tagId: t.id })),
-          skipDuplicates: true,
-        });
-      }
-
-      return task.id;
-    });
-
-    const full = await prisma.task.findUnique({
-      where: { id: createdId },
-      include: taskInclude,
-    });
-
+    const full = await prisma.task.findUnique({ where: { id: task.id }, include: taskInclude });
     return NextResponse.json({ ok: true, task: full });
   } catch (e: any) {
     return err(500, e?.message ?? "internal error");
   }
 }
 
-// Обновление задачи (частичное)
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -192,67 +141,50 @@ export async function PATCH(req: NextRequest) {
       data.dueDate = d;
     }
 
+    // Обновим саму задачу
+    await prisma.task.update({ where: { id }, data });
+
+    // Полная замена исполнителей/тегов, если поля переданы
     const assigneeIds: string[] | undefined = Array.isArray((body as any).assigneeIds)
-      ? ((body as any).assigneeIds as unknown[])
-          .filter((v) => typeof v === "string") as string[]
+      ? ((body as any).assigneeIds as unknown[]).filter(v => typeof v === "string") as string[]
       : undefined;
 
     const tagNames: string[] | undefined = Array.isArray((body as any).tags)
-      ? ((body as any).tags as unknown[])
-          .filter((v) => typeof v === "string")
-          .map((s) => (s as string).trim())
-          .filter(Boolean)
+      ? ((body as any).tags as unknown[]).filter(v => typeof v === "string").map(s => (s as string).trim()).filter(Boolean)
       : undefined;
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.task.update({ where: { id }, data });
+    if (assigneeIds) {
+      await prisma.taskAssignee.deleteMany({ where: { taskId: id } });
+      if (assigneeIds.length > 0) {
+        await prisma.taskAssignee.createMany({
+          data: assigneeIds.map(userId => ({ taskId: id, userId })),
+          skipDuplicates: true,
+        });
+      }
+    }
 
-      if (assigneeIds) {
-        await tx.taskAssignee.deleteMany({ where: { taskId: id } });
-        if (assigneeIds.length > 0) {
-          await tx.taskAssignee.createMany({
-            data: assigneeIds.map((userId) => ({ taskId: id, userId })),
+    if (tagNames) {
+      await prisma.taskTag.deleteMany({ where: { taskId: id } });
+      if (tagNames.length > 0) {
+        const existing = await prisma.tag.findMany({
+          where: { name: { in: tagNames } }, select: { id: true, name: true },
+        });
+        const existingMap = new Map<string, string>(existing.map(t => [t.name.toLowerCase(), t.id]));
+        const toCreate = tagNames.filter(n => !existingMap.has(n.toLowerCase()));
+        if (toCreate.length > 0) {
+          await prisma.tag.createMany({ data: toCreate.map(name => ({ name })), skipDuplicates: true });
+        }
+        const all = await prisma.tag.findMany({ where: { name: { in: tagNames } }, select: { id: true } });
+        if (all.length > 0) {
+          await prisma.taskTag.createMany({
+            data: all.map(t => ({ taskId: id, tagId: t.id })),
             skipDuplicates: true,
           });
         }
       }
+    }
 
-      if (tagNames) {
-        await tx.taskTag.deleteMany({ where: { taskId: id } });
-        if (tagNames.length > 0) {
-          const existing = await tx.tag.findMany({
-            where: { name: { in: tagNames } },
-            select: { id: true, name: true },
-          });
-          const existingMap = new Map<string, string>(
-            existing.map((t) => [t.name.toLowerCase(), t.id]),
-          );
-          const toCreate = tagNames.filter((n) => !existingMap.has(n.toLowerCase()));
-          if (toCreate.length > 0) {
-            await tx.tag.createMany({
-              data: toCreate.map((name) => ({ name })),
-              skipDuplicates: true,
-            });
-          }
-          const all = await tx.tag.findMany({
-            where: { name: { in: tagNames } },
-            select: { id: true },
-          });
-          if (all.length > 0) {
-            await tx.taskTag.createMany({
-              data: all.map((t) => ({ taskId: id, tagId: t.id })),
-              skipDuplicates: true,
-            });
-          }
-        }
-      }
-    });
-
-    const full = await prisma.task.findUnique({
-      where: { id },
-      include: taskInclude,
-    });
-
+    const full = await prisma.task.findUnique({ where: { id }, include: taskInclude });
     if (!full) return err(404, "task not found");
     return NextResponse.json({ ok: true, task: full });
   } catch (e: any) {
@@ -261,7 +193,6 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-// Удаление задачи
 export async function DELETE(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -269,11 +200,12 @@ export async function DELETE(req: NextRequest) {
     const id = String((body as any).id ?? "").trim();
     if (!id) return err(400, "id is required");
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.taskAssignee.deleteMany({ where: { taskId: id } });
-      await tx.taskTag.deleteMany({ where: { taskId: id } });
-      await tx.task.delete({ where: { id } });
-    });
+    // Можно и без транзакции, но batch-транзакция тут допустима
+    await prisma.$transaction([
+      prisma.taskAssignee.deleteMany({ where: { taskId: id } }),
+      prisma.taskTag.deleteMany({ where: { taskId: id } }),
+      prisma.task.delete({ where: { id } }),
+    ]);
 
     return NextResponse.json({ ok: true, deleted: true });
   } catch (e: any) {

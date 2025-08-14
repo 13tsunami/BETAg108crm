@@ -1,0 +1,169 @@
+[
+  {
+    "route": "/api/auth/:nextauth*",
+    "methods": []
+  },
+  {
+    "route": "/api/chat/search-users",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "route": "/api/chat/sse/user/:id",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "route": "/api/chat/threads/:id",
+    "methods": [
+      "DELETE",
+      "GET",
+      "PATCH"
+    ]
+  },
+  {
+    "route": "/api/chat/threads/:id/messages",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "route": "/api/chat/threads/:id/read",
+    "methods": [
+      "GET",
+      "PUT"
+    ]
+  },
+  {
+    "route": "/api/chat/threads/ensure",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "route": "/api/chat/threads/list",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "route": "/api/chat/typing",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "route": "/api/chat/users",
+    "methods": [
+      "GET",
+      "OPTIONS"
+    ]
+  },
+  {
+    "route": "/api/chat/users/_delete/:id",
+    "methods": [
+      "DELETE",
+      "OPTIONS"
+    ]
+  },
+  {
+    "route": "/api/chat/users/delete",
+    "methods": [
+      "OPTIONS",
+      "POST"
+    ]
+  },
+  {
+    "route": "/api/health",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "route": "/api/presence",
+    "methods": [
+      "GET",
+      "HEAD",
+      "OPTIONS",
+      "PATCH",
+      "POST",
+      "PUT"
+    ]
+  },
+  {
+    "route": "/api/profile",
+    "methods": [
+      "GET",
+      "PATCH"
+    ]
+  },
+  {
+    "route": "/api/profile/password",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "route": "/api/tasks",
+    "methods": [
+      "DELETE",
+      "GET",
+      "PATCH",
+      "POST"
+    ]
+  },
+  {
+    "route": "/api/tasks/:id",
+    "methods": [
+      "DELETE",
+      "GET",
+      "PUT"
+    ]
+  },
+  {
+    "route": "/api/tasks/:id/assignees/:userid",
+    "methods": [
+      "PATCH"
+    ]
+  },
+  {
+    "route": "/api/tasks/:id/progress",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "route": "/api/users",
+    "methods": [
+      "GET",
+      "POST",
+      "PUT"
+    ]
+  },
+  {
+    "route": "/api/users/:id",
+    "methods": [
+      "GET",
+      "OPTIONS",
+      "PATCH"
+    ]
+  },
+  {
+    "route": "/api/users/:id/archive",
+    "methods": [
+      "OPTIONS",
+      "POST"
+    ]
+  },
+  {
+    "route": "/api/users/:id/groups",
+    "methods": [
+      "GET"
+    ]
+  }
+]

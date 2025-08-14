@@ -62,22 +62,35 @@ export async function PATCH(
 
 // Полное удаление: сначала сообщения, затем тред
 export async function DELETE(
-  req: NextRequest,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  if (!id) return jsonError(400, "thread id is required");
+  if (!id) return NextResponse.json({ ok: false, error: "thread id is required" }, { status: 400 });
+
+  const { searchParams } = new URL(req.url);
+  const purge = searchParams.get("purge") === "1";
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.message.deleteMany({ where: { threadId: id } });
-      await tx.thread.delete({ where: { id } });
-    });
+    if (!purge) {
+      const result = await prisma.thread.update({
+        where: { id }, data: { /* archivedAt: new Date() */ },
+      });
+      return NextResponse.json({ ok: true, thread: result, archived: true });
+    }
+
+    // БЕЗ интерактивной транзакции
+    await prisma.$transaction([
+      prisma.message.deleteMany({ where: { threadId: id } }),
+      prisma.thread.delete({ where: { id } }),
+    ]);
 
     return NextResponse.json({ ok: true, deleted: true });
   } catch (e: any) {
-    // P2025 — не найдено что удалять
-    if (e?.code === "P2025") return jsonError(404, "thread not found");
-    return jsonError(500, e?.message ?? "internal error");
+    if (e?.code === "P2025") {
+      return NextResponse.json({ ok: false, error: "thread not found" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: false, error: e?.message ?? "internal error" }, { status: 500 });
   }
 }
+

@@ -7,6 +7,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "list:endpoints": "node scripts/list-endpoints.mjs",
     "lint": "eslint . --ext .ts,.tsx --max-warnings=0",
     "build": "next build",
     "build:fast": "next build --no-lint",
