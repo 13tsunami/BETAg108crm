@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
 }
 
 // РћС‚РїСЂР°РІРєР° СЃРѕРѕР±С‰РµРЅРёСЏ РІ С‚СЂРµРґ
-export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string } }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   const uid = await requireUserId(req).catch(() => null);
   if (!uid) return unauthorized();
 
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   return NextResponse.json({ id: created.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
 }
+
 
 
 

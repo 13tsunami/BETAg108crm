@@ -1,4 +1,5 @@
-﻿// app/api/tasks/[id]/progress/route.ts
+﻿import type { NextRequest } from "next/server";
+// app/api/tasks/[id]/progress/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -14,7 +15,7 @@ type AssigneeRow = {
   user: { id: string; name: string | null } | null;
 };
 
-export async function GET(_req: Request, ctx: Ctx) {
+export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   try {
     const { id } = await ctx.params;
 
@@ -47,5 +48,6 @@ export async function GET(_req: Request, ctx: Ctx) {
     return NextResponse.json({ ok: false, error: e?.message ?? "failed" }, { status: 500 });
   }
 }
+
 
 

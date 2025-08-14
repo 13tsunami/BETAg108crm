@@ -5,7 +5,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export const dynamic = "force-dynamic";
 
-export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   const { id } = await ctx.params;
   if (!id) {
     return new Response(JSON.stringify({ error: "id РѕР±СЏР·Р°С‚РµР»РµРЅ" }), {
@@ -40,5 +40,6 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
 export async function OPTIONS() {
   return new Response(null, { status: 204 });
 }
+
 
 

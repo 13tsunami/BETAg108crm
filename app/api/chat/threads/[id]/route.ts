@@ -56,7 +56,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
  *  - scope=me   : СЃРєСЂС‹С‚СЊ РґРёР°Р»РѕРі РґР»СЏ РјРµРЅСЏ (aId/bId -> null, СѓРґР°Р»РёС‚СЊ РјРѕРё ChatRead)
  *  - scope=both : СѓРґР°Р»РёС‚СЊ РґР»СЏ РІСЃРµС… (ChatRead + Message + Thread)
  */
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   const id = id;
   if (!id) return bad("id is required", 400);
 
@@ -113,6 +113,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return bad("Internal error", 500);
   }
 }
+
 
 
 

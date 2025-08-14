@@ -50,7 +50,7 @@ async function getTaskFull(id: string) {
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_req: NextRequest, ctx: Ctx) {
+export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   try {
     const { id } = await ctx.params;
     const task = await getTaskFull(id);
@@ -61,7 +61,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   }
 }
 
-export async function PUT(req: NextRequest, ctx: Ctx) {
+export async function PUT(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   try {
     const { id } = await ctx.params;
     const body = await req.json();
@@ -132,7 +132,7 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
   }
 }
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   try {
     const { id } = await ctx.params;
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -146,5 +146,6 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
   }
   return NextResponse.json({ ok: true });
 }
+
 
 

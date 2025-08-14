@@ -17,8 +17,8 @@ function ok(data: unknown, status = 200) {
 }
 
 // GET /api/users/:id вЂ” РїРѕР»СѓС‡РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id?: string } }) {
-  const id = (await params).id?.trim();
+export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
+  const id = id?.trim();
   if (!id) return bad("id is required", 400);
 
   const u = await prisma.user.findUnique({ where: { id } });
@@ -48,8 +48,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id?: s
 }
 
 // PATCH /api/users/:id вЂ” С‡Р°СЃС‚РёС‡РЅРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
-  const id = (await params).id?.trim();
+export async function PATCH(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
+  const id = id?.trim();
   if (!id) return bad("id is required", 400);
 
   let body: any = null;
@@ -156,5 +156,6 @@ export async function OPTIONS() {
     },
   });
 }
+
 
 

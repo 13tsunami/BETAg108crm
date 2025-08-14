@@ -1,4 +1,5 @@
-﻿// app/api/tasks/[id]/assignees/[userId]/route.ts
+﻿import type { NextRequest } from "next/server";
+// app/api/tasks/[id]/assignees/[userId]/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -14,11 +15,11 @@ function ensureString(v: unknown): string | null {
   return typeof v === "string" && v.length > 0 ? v : null;
 }
 
-export async function PATCH(req: Request, ctx: { params?: Params } = {}) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   try {
     // 1) РѕСЃРЅРѕРІРЅРѕР№ РїСѓС‚СЊ вЂ” Р±РµСЂС‘Рј РёР· ctx.params
-    let id = ensureString(ctx?.(await params).id);
-    let userId = ensureString(ctx?.(await params).userId);
+    let id = ensureString(ctx?.id);
+    let userId = ensureString(ctx?.userid);
 
     // 2) Р·Р°РїР°СЃРЅРѕР№ РїСѓС‚СЊ вЂ” РїР°СЂСЃРёРј РёР· URL, РµСЃР»Рё РїРѕС‡РµРјСѓ-С‚Рѕ params РїСѓСЃС‚С‹Рµ/РєСЂРёРІС‹Рµ
     if (!id || !userId) {
@@ -70,5 +71,6 @@ export async function PATCH(req: Request, ctx: { params?: Params } = {}) {
     );
   }
 }
+
 
 

@@ -4,10 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(
-  _req: NextRequest,
-  ctx: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   const { id } = await ctx.params;
   if (!id) return NextResponse.json({ error: "id РѕР±СЏР·Р°С‚РµР»РµРЅ" }, { status: 400 });
 
@@ -64,5 +61,6 @@ export async function POST(
 export async function OPTIONS() {
   return new Response(null, { status: 204 });
 }
+
 
 
