@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled (PgBouncer)
+  directUrl = env("DIRECT_URL") // прямое соединение для миграций
+}
+
+model User {
+  id               String    @id @default(uuid())
+  name             String
+  username         String?   @unique
+  email            String?   @unique
+  phone            String?   @unique
+  birthday         DateTime?
+  classroom        String?
+  role             String?
+  avatarUrl        String?
+  telegram         String?
+  about            String?
+  notifyEmail      Boolean   @default(true)
+  notifyTelegram   Boolean   @default(false)
+  subjects         String?
+  methodicalGroups String?
+  passwordHash     String?
+  lastSeen         DateTime?
+
+  messages         Message[]      @relation("UserMessages")
+  threadsA         Thread[]       @relation("ThreadA")
+  threadsB         Thread[]       @relation("ThreadB")
+  groupMemberships GroupMember[]
+  taskAssignments  TaskAssignee[]
+}
+
+model Group {
+  id      String        @id @default(uuid())
+  name    String
+  members GroupMember[]
+}
+
+model GroupMember {
+  id      String @id @default(uuid())
+  userId  String
+  groupId String
+  user    User   @relation(fields: [userId], references: [id])
+  group   Group  @relation(fields: [groupId], references: [id])
+}
+
+model Thread {
+  id              String    @id @default(uuid())
+  aId             String?
+  bId             String?
+  lastMessageAt   DateTime?
+  lastMessageText String?
+  title           String    @default("")
+  a               User?     @relation("ThreadA", fields: [aId], references: [id])
+  b               User?     @relation("ThreadB", fields: [bId], references: [id])
+  messages        Message[]
+
+  @@index([lastMessageAt, id])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  text      String
+  authorId  String
+  threadId  String
+  author    User     @relation("UserMessages", fields: [authorId], references: [id])
+  thread    Thread   @relation(fields: [threadId], references: [id])
+}
+
+model Task {
+  id          String         @id @default(uuid())
+  title       String
+  description String
+  dueDate     DateTime
+  hidden      Boolean        @default(false)
+  priority    String         @default("normal")
+  assignees   TaskAssignee[]
+  tags        TaskTag[]
+}
+
+model TaskAssignee {
+  id     String @id @default(uuid())
+  taskId String
+  userId String
+  task   Task   @relation(fields: [taskId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Tag {
+  id    String    @id @default(uuid())
+  name  String    @unique
+  tasks TaskTag[]
+}
+
+model TaskTag {
+  id     String @id @default(uuid())
+  taskId String
+  tagId  String
+  task   Task   @relation(fields: [taskId], references: [id])
+  tag    Tag    @relation(fields: [tagId], references: [id])
+}
