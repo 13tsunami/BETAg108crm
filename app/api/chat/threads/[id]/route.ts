@@ -26,7 +26,7 @@ async function getMeId(req: NextRequest) {
 }
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id?: string } }) {
-  const id = params?.id;
+  const id = (await params).id;
   if (!id) return bad("id is required", 400);
 
   try {
@@ -57,7 +57,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id?: s
  *  - scope=both : СѓРґР°Р»РёС‚СЊ РґР»СЏ РІСЃРµС… (ChatRead + Message + Thread)
  */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
-  const id = params?.id;
+  const id = (await params).id;
   if (!id) return bad("id is required", 400);
 
   const meId = await getMeId(req);
@@ -113,4 +113,5 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return bad("Internal error", 500);
   }
 }
+
 

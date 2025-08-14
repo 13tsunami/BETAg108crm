@@ -17,8 +17,8 @@ function ensureString(v: unknown): string | null {
 export async function PATCH(req: Request, ctx: { params?: Params } = {}) {
   try {
     // 1) РѕСЃРЅРѕРІРЅРѕР№ РїСѓС‚СЊ вЂ” Р±РµСЂС‘Рј РёР· ctx.params
-    let id = ensureString(ctx?.params?.id);
-    let userId = ensureString(ctx?.params?.userId);
+    let id = ensureString(ctx?.(await params).id);
+    let userId = ensureString(ctx?.(await params).userId);
 
     // 2) Р·Р°РїР°СЃРЅРѕР№ РїСѓС‚СЊ вЂ” РїР°СЂСЃРёРј РёР· URL, РµСЃР»Рё РїРѕС‡РµРјСѓ-С‚Рѕ params РїСѓСЃС‚С‹Рµ/РєСЂРёРІС‹Рµ
     if (!id || !userId) {
@@ -70,4 +70,5 @@ export async function PATCH(req: Request, ctx: { params?: Params } = {}) {
     );
   }
 }
+
 

@@ -23,7 +23,7 @@ async function getMeId(req: NextRequest) {
 
 // GET вЂ” СЃС‚СЂР°РЅРёС†Р° РѕР¶РёРґР°РµС‚ { myReadAt, peerReadAt }
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
-  const threadId = params?.id;
+  const threadId = (await params).id;
   if (!threadId) return bad("threadId is required", 400);
 
   const meId = await getMeId(req);
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id?:
 
 // POST вЂ” РїРѕРјРµС‚РёС‚СЊ С‚СЂРµРґ РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рј РґР»СЏ РјРµРЅСЏ
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id?: string } }) {
-  const threadId = params?.id;
+  const threadId = (await params).id;
   if (!threadId) return bad("threadId is required", 400);
 
   const meId = await getMeId(req);
@@ -75,4 +75,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id?
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
+
 
