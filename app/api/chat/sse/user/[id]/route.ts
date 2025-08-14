@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   const { id } = await ctx.params;
-  const userId = id;
+  const { id: userId } = await ctx.params;
 
   const stream = new ReadableStream({
     start(controller) {
@@ -35,6 +35,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
     },
   });
 }
+
 
 
 
