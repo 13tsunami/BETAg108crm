@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
   const uid = await requireUserId(req).catch(() => null);
   if (!uid) return unauthorized();
 
-  const { id } = ctx.params;
+  const { id } = await ctx.params;
 
   // (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ) РїСЂРѕРІРµСЂРёС‚СЊ, С‡С‚Рѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СѓС‡Р°СЃС‚РІСѓРµС‚ РІ С‚СЂРµРґРµ
   // Р•СЃР»Рё Сѓ С‚РµР±СЏ РјРѕРґРµР»СЊ Thread С…СЂР°РЅРёС‚ userAId/userBId вЂ” СЂР°СЃРєРѕРјРјРµРЅС‚РёСЂСѓР№:
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<Record<strin
   const uid = await requireUserId(req).catch(() => null);
   if (!uid) return unauthorized();
 
-  const { id } = ctx.params;
+  const { id } = await ctx.params;
 
   type Body = { text?: string; /* authorId?: string - Р‘РћР›Р¬РЁР• РќР• РРЎРџРћР›Р¬Р—РЈР•Рњ */ };
   let body: Body = {};
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<Record<strin
 
   return NextResponse.json({ id: created.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
 }
+
 
 
 
