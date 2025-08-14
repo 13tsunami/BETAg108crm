@@ -1,4 +1,5 @@
-﻿// app/api/chat/threads/[id]/read/route.ts
+﻿import { db } from '@/lib/db';
+// app/api/chat/threads/[id]/read/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
@@ -31,7 +32,7 @@ const threadId = id;
   if (!meId) return bad("Not authenticated (user id missing)", 401);
 
   try {
-    const t = await prisma.thread.findUnique({
+    const t = await db.thread.findUnique({
       where: { id: threadId },
       select: { aId: true, bId: true },
     });
@@ -77,6 +78,7 @@ const threadId = id;
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
+
 
 
 
