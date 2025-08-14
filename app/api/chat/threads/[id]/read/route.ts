@@ -25,6 +25,7 @@ async function getMeId(req: NextRequest) {
 export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   const { id } = await ctx.params;
   const { id } = await ctx.params;
+  const { id } = await ctx.params;
   const threadId = id;
   if (!threadId) return bad("threadId is required", 400);
 
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
 export async function POST(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   const { id } = await ctx.params;
   const { id } = await ctx.params;
+  const { id } = await ctx.params;
   const threadId = id;
   if (!threadId) return bad("threadId is required", 400);
 
@@ -79,6 +81,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<Record<strin
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
+
 
 
 
