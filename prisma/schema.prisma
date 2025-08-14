@@ -3,12 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled (PgBouncer)
+  directUrl = env("DIRECT_URL") // прямое соединение для миграций
 }
 
 model User {
-  id               String    @id @default(cuid())
+  id               String    @id @default(uuid())
   name             String
   username         String?   @unique
   email            String?   @unique
@@ -25,178 +26,81 @@ model User {
   methodicalGroups String?
   passwordHash     String?
   lastSeen         DateTime?
-  accounts         Account[]
-  sessions         Session[]
 
-  // связи
-  groups       GroupMember[]
-  messages     Message[]      @relation("MessageAuthor")
-  tasks        TaskAssignee[] // где пользователь выступает исполнителем
-  createdTasks Task[]         @relation("TaskCreatedBy") // где пользователь — назначивший задачу
-
-  // для чатов
-  threadsA Thread[]   @relation("ThreadA")
-  threadsB Thread[]   @relation("ThreadB")
-  reads    ChatRead[]
-
-  @@index([name])
-  @@index([role])
+  messages         Message[]      @relation("UserMessages")
+  threadsA         Thread[]       @relation("ThreadA")
+  threadsB         Thread[]       @relation("ThreadB")
+  groupMemberships GroupMember[]
+  taskAssignments  TaskAssignee[]
 }
 
 model Group {
-  id      String        @id @default(cuid())
+  id      String        @id @default(uuid())
   name    String
   members GroupMember[]
 }
 
 model GroupMember {
-  id      String @id @default(cuid())
+  id      String @id @default(uuid())
   userId  String
   groupId String
-
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([groupId])
-  @@index([userId])
+  user    User   @relation(fields: [userId], references: [id])
+  group   Group  @relation(fields: [groupId], references: [id])
 }
 
-model Subject {
-  id   String @id @default(cuid())
-  name String @unique
+model Thread {
+  id              String    @id @default(uuid())
+  aId             String?
+  bId             String?
+  lastMessageAt   DateTime?
+  lastMessageText String?
+  title           String    @default("")
+  a               User?     @relation("ThreadA", fields: [aId], references: [id])
+  b               User?     @relation("ThreadB", fields: [bId], references: [id])
+  messages        Message[]
 
-  @@index([name])
+  @@index([lastMessageAt, id])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  text      String
+  authorId  String
+  threadId  String
+  author    User     @relation("UserMessages", fields: [authorId], references: [id])
+  thread    Thread   @relation(fields: [threadId], references: [id])
 }
 
 model Task {
-  id          String   @id @default(cuid())
-  seq         Int? // сквозной номер
+  id          String         @id @default(uuid())
   title       String
   description String
   dueDate     DateTime
-  hidden      Boolean  @default(false)
-  priority    String   @default("normal")
-
-  createdById String? // кто назначил
-  createdBy   User?   @relation(name: "TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  assignees TaskAssignee[]
-  tags      TaskTag[]
-
-  @@index([dueDate])
-  @@index([createdById])
+  hidden      Boolean        @default(false)
+  priority    String         @default("normal")
+  assignees   TaskAssignee[]
+  tags        TaskTag[]
 }
 
 model TaskAssignee {
-  id     String    @id @default(cuid())
+  id     String @id @default(uuid())
   taskId String
   userId String
-  status String    @default("open") // open | done
-  doneAt DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  @@unique([taskId, userId])
-  @@index([taskId])
-  @@index([userId])
+  task   Task   @relation(fields: [taskId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model Tag {
-  id    String    @id @default(cuid())
+  id    String    @id @default(uuid())
   name  String    @unique
   tasks TaskTag[]
 }
 
 model TaskTag {
-  id     String @id @default(cuid())
+  id     String @id @default(uuid())
   taskId String
   tagId  String
-
-  tag  Tag  @relation(fields: [tagId], references: [id])
-  task Task @relation(fields: [taskId], references: [id])
-
-  @@index([taskId])
-  @@index([tagId])
-}
-
-model Thread {
-  id    String @id @default(cuid())
-  title String
-
-  // были обязательные -> стали опциональные, чтобы не падать при удалении юзера
-  aId String?
-  bId String?
-
-  a User? @relation("ThreadA", fields: [aId], references: [id], onDelete: SetNull)
-  b User? @relation("ThreadB", fields: [bId], references: [id], onDelete: SetNull)
-
-  // служебные поля
-  lastMessageAt   DateTime?
-  lastMessageText String?
-
-  // связи
-  messages Message[]
-  reads    ChatRead[]
-
-  @@unique([aId, bId], map: "thread_pair_unique")
-  @@index([lastMessageAt, id], map: "thread_last_idx")
-}
-
-model Message {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  text      String
-
-  // было: String -> стало опционально + SetNull
-  authorId String?
-  threadId String
-
-  thread Thread @relation(fields: [threadId], references: [id])
-  author User?  @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-
-  @@index([threadId, createdAt], map: "msg_thread_time_idx")
-  @@index([authorId], map: "msg_author_idx")
-}
-
-model ChatRead {
-  id         String   @id @default(cuid())
-  threadId   String
-  userId     String
-  lastReadAt DateTime @default(now())
-
-  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([threadId, userId])
-  @@index([userId], map: "read_user_idx")
-  @@index([threadId], map: "read_thread_idx")
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task   Task   @relation(fields: [taskId], references: [id])
+  tag    Tag    @relation(fields: [tagId], references: [id])
 }

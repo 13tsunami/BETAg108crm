@@ -1,124 +1,98 @@
 ﻿// app/api/chat/threads/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { cookies } from "next/headers";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+const prisma = new PrismaClient();
 
-const g = globalThis as any;
-const prisma: PrismaClient = g.prisma ?? new PrismaClient();
-if (!g.prisma) g.prisma = prisma;
-
-function bad(msg: string, status = 400) {
-  return NextResponse.json({ ok: false, error: msg }, { status });
-}
-function ok(data: any = { ok: true }, status = 200) {
-  return NextResponse.json(data, { status });
+// Вспомогательный хелпер для ответа об ошибке
+function jsonError(status: number, message: string) {
+  return NextResponse.json({ ok: false, error: message }, { status });
 }
 
-async function getMeId(req: NextRequest) {
-  // СЃРЅР°С‡Р°Р»Р° Р·Р°РіРѕР»РѕРІРѕРє (СЃС‚СЂР°РЅРёС†Р° РµРіРѕ СѓР¶Рµ С€Р»С‘С‚), РёРЅР°С‡Рµ cookie uid
-  const hdr = req.headers.get("x-user-id");
-  if (hdr && hdr.trim()) return hdr.trim();
-  const c = await cookies();
-  return c.get("uid")?.value ?? null;
-}
-
-export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
-  const { id } = await ctx.params;
-  if (!id) return bad("id is required", 400);
-
-  try {
-    const t = await prisma.thread.findUnique({
-      where: { id },
-      include: { a: true, b: true },
-    });
-    if (!t) return bad("Thread not found", 404);
-
-    const shaped = {
-      id: t.id,
-      a: t.a ? { id: t.a.id, name: t.a.name, avatarUrl: t.a.avatarUrl ?? null } : null,
-      b: t.b ? { id: t.b.id, name: t.b.name, avatarUrl: t.b.avatarUrl ?? null } : null,
-      lastMessageAt: t.lastMessageAt?.toISOString() ?? null,
-      lastMessageText: t.lastMessageText ?? null,
-    };
-    return ok({ ok: true, thread: shaped });
-  } catch (e) {
-    console.error("thread GET error:", e);
-    return bad("Internal error", 500);
-  }
-}
-
-/**
- * РЈРґР°Р»РµРЅРёРµ/СЃРєСЂС‹С‚РёРµ РґРёР°Р»РѕРіР°
- * DELETE /api/chat/threads/:id?scope=me|both
- *  - scope=me   : СЃРєСЂС‹С‚СЊ РґРёР°Р»РѕРі РґР»СЏ РјРµРЅСЏ (aId/bId -> null, СѓРґР°Р»РёС‚СЊ РјРѕРё ChatRead)
- *  - scope=both : СѓРґР°Р»РёС‚СЊ РґР»СЏ РІСЃРµС… (ChatRead + Message + Thread)
- */
-export async function DELETE(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
-  const { id } = await ctx.params;
-  if (!id) return bad("id is required", 400);
-
-  const meId = await getMeId(req);
-  if (!meId) return bad("Not authenticated", 401);
-
-  const url = new URL(req.url);
-  const scope = (url.searchParams.get("scope") ?? "me").toLowerCase();
-
+// Получить тред
+export async function GET(
+  _req: NextRequest,
+  context: { params: { id: string } }
+) {
+  const id = context.params?.id;
+  if (!id) return jsonError(400, "thread id is required");
   try {
     const thread = await prisma.thread.findUnique({
       where: { id },
-      select: { id: true, aId: true, bId: true },
+      include: {
+        participants: true,
+        lastMessage: true,
+      },
     });
-    if (!thread) return bad("Thread not found", 404);
-
-    const iAmA = thread.aId === meId;
-    const iAmB = thread.bId === meId;
-    if (!iAmA && !iAmB) return bad("Forbidden: not a participant", 403);
-
-    if (scope === "both") {
-      // РџРѕР»РЅРѕРµ СѓРґР°Р»РµРЅРёРµ вЂ” С‡РёСЃС‚РёРј РІСЃС‘ РІСЂСѓС‡РЅСѓСЋ (РІ СЃС…РµРјРµ Message thread FK Р±РµР· CASCADE)
-      await prisma.$transaction(async (tx) => {
-        await tx.chatRead.deleteMany({ where: { threadId: id } });
-        await tx.message.deleteMany({ where: { threadId: id } });
-        await tx.thread.delete({ where: { id } });
-      });
-      return ok({ ok: true, deleted: "both" });
-    }
-
-    // scope=me вЂ” СЃРєСЂС‹С‚СЊ РґР»СЏ РјРµРЅСЏ
-    await prisma.$transaction(async (tx) => {
-      if (iAmA) {
-        await tx.thread.update({ where: { id }, data: { aId: null } });
-      } else if (iAmB) {
-        await tx.thread.update({ where: { id }, data: { bId: null } });
-      }
-      // РјРѕРё РѕС‚РјРµС‚РєРё РїСЂРѕС‡С‚РµРЅРёСЏ РјРѕР¶РЅРѕ СѓР±СЂР°С‚СЊ
-      await tx.chatRead.deleteMany({ where: { threadId: id, userId: meId } });
-
-      // РµСЃР»Рё РѕР±Р° СѓС‡Р°СЃС‚РЅРёРєР° СѓР¶Рµ null Рё СЃРѕРѕР±С‰РµРЅРёР№ РЅРµС‚ вЂ” РїРѕРґС‡РёСЃС‚РёРј С‚СЂРµРґ
-      const t = await tx.thread.findUnique({
-        where: { id },
-        select: { aId: true, bId: true, messages: { select: { id: true }, take: 1 } },
-      });
-      if (t && !t.aId && !t.bId && t.messages.length === 0) {
-        await tx.thread.delete({ where: { id } });
-      }
-    });
-
-    return ok({ ok: true, deleted: "me" });
-  } catch (e) {
-    console.error("thread DELETE error:", e);
-    return bad("Internal error", 500);
+    if (!thread) return jsonError(404, "thread not found");
+    return NextResponse.json({ ok: true, thread });
+  } catch (e: any) {
+    return jsonError(500, e?.message ?? "internal error");
   }
 }
 
+// Архивация (мягкое удаление)
+export async function PATCH(
+  req: NextRequest,
+  context: { params: { id: string } }
+) {
+  const id = context.params?.id;
+  if (!id) return jsonError(400, "thread id is required");
+  try {
+    const body = await req.json().catch(() => ({}));
+    // Если прямо указали archived = false/true — уважаем это; иначе по умолчанию архивируем
+    const archived: boolean = typeof body?.archived === "boolean" ? body.archived : true;
 
+    const result = await prisma.thread.update({
+      where: { id },
+      data: { archivedAt: archived ? new Date() : null },
+    });
+    return NextResponse.json({ ok: true, thread: result });
+  } catch (e: any) {
+    if (e?.code === "P2025") return jsonError(404, "thread not found");
+    return jsonError(500, e?.message ?? "internal error");
+  }
+}
 
+// Полное удаление
+export async function DELETE(
+  req: NextRequest,
+  context: { params: { id: string } }
+) {
+  const id = context.params?.id;
+  if (!id) return jsonError(400, "thread id is required");
 
+  const { searchParams } = new URL(req.url);
+  const purge = searchParams.get("purge") === "1";
 
+  try {
+    if (!purge) {
+      // Без purge выполняем мягкое удаление (архив)
+      const result = await prisma.thread.update({
+        where: { id },
+        data: { archivedAt: new Date() },
+      });
+      return NextResponse.json({ ok: true, thread: result, archived: true });
+    }
 
+    // purge=1: полное удаление вручную (каскада в схеме нет)
+    await prisma.$transaction(async (tx) => {
+      // Удаляем все сообщения треда
+      await tx.message.deleteMany({ where: { threadId: id } });
 
+      // Если есть вспомогательные записи (прикрепления, пины и пр.),
+      // их тоже чистим здесь — добавьте секции ниже при наличии моделей.
+      // Пример:
+      // await tx.attachment.deleteMany({ where: { threadId: id } });
+      // await tx.threadParticipant.deleteMany({ where: { threadId: id } });
 
+      // Удаляем сам тред
+      await tx.thread.delete({ where: { id } });
+    });
 
+    return NextResponse.json({ ok: true, deleted: true });
+  } catch (e: any) {
+    if (e?.code === "P2025") return jsonError(404, "thread not found");
+    return jsonError(500, e?.message ?? "internal error");
+  }
+}

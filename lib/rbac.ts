@@ -1,12 +1,12 @@
-// lib/rbac.ts
-import prisma from "@/lib/prisma";
+﻿// lib/rbac.ts
+import { prisma } from "@/lib/prisma";
 
 export const ROLE = {
-  DIRECTOR: "Директор",
-  DEPUTY_PLUS: "Заместитель +",
-  DEPUTY: "Заместитель",
-  TEACHER_PLUS: "Педагог +",
-  TEACHER: "Педагог",
+  DIRECTOR: "Р”РёСЂРµРєС‚РѕСЂ",
+  DEPUTY_PLUS: "Р—Р°РјРµСЃС‚РёС‚РµР»СЊ +",
+  DEPUTY: "Р—Р°РјРµСЃС‚РёС‚РµР»СЊ",
+  TEACHER_PLUS: "РџРµРґР°РіРѕРі +",
+  TEACHER: "РџРµРґР°РіРѕРі",
 } as const;
 
 export type Action =
@@ -70,7 +70,7 @@ export async function can(userId: string, action: Action): Promise<boolean> {
   }
 }
 
-// -------------------- Видимость задачи --------------------
+// -------------------- Р’РёРґРёРјРѕСЃС‚СЊ Р·Р°РґР°С‡Рё --------------------
 
 type FlagRow = { hidden: number; minRolePowerToSeeHidden: number };
 type CntRow = { cnt: number };
@@ -78,7 +78,7 @@ type CntRow = { cnt: number };
 export async function canSeeTask(userId: string, taskId: string): Promise<boolean> {
   if (rootIds().has(userId)) return true;
 
-  // 1) Флаги задачи
+  // 1) Р¤Р»Р°РіРё Р·Р°РґР°С‡Рё
   const flags = await prisma.$queryRaw<FlagRow[]>`
     SELECT hidden, minRolePowerToSeeHidden
     FROM Task
@@ -91,14 +91,14 @@ export async function canSeeTask(userId: string, taskId: string): Promise<boolea
 
   if (!hidden) return true;
 
-  // 2) Назначен напрямую?
+  // 2) РќР°Р·РЅР°С‡РµРЅ РЅР°РїСЂСЏРјСѓСЋ?
   const direct = await prisma.$queryRaw<CntRow[]>`
     SELECT COUNT(*) as cnt FROM TaskAssigneeUser
     WHERE taskId = ${taskId} AND userId = ${userId}
   `;
   if ((direct[0]?.cnt ?? 0) > 0) return true;
 
-  // 3) Назначен через группу?
+  // 3) РќР°Р·РЅР°С‡РµРЅ С‡РµСЂРµР· РіСЂСѓРїРїСѓ?
   const viaGroup = await prisma.$queryRaw<CntRow[]>`
     SELECT COUNT(*) as cnt
     FROM TaskAssigneeGroup tg
@@ -107,7 +107,8 @@ export async function canSeeTask(userId: string, taskId: string): Promise<boolea
   `;
   if ((viaGroup[0]?.cnt ?? 0) > 0) return true;
 
-  // 4) Достаточен ли уровень роли
+  // 4) Р”РѕСЃС‚Р°С‚РѕС‡РµРЅ Р»Рё СѓСЂРѕРІРµРЅСЊ СЂРѕР»Рё
   const power = await maxPower(userId);
   return power >= threshold;
 }
+

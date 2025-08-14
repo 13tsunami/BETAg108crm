@@ -1,95 +1,72 @@
-﻿import { db } from '@/lib/db';
-// app/api/chat/threads/[id]/read/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { cookies } from "next/headers";
+﻿// app/api/chat/threads/[id]/read/route.ts
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+type Ctx = { params: Promise<Record<string, string>> };
 
-const g = globalThis as any;
-const prisma: PrismaClient = g.prisma ?? new PrismaClient();
-if (!g.prisma) g.prisma = prisma;
-
-function bad(msg: string, status = 400) {
-  return NextResponse.json({ ok: false, error: msg }, { status });
+function requireUserId(req: NextRequest): string {
+  const uid = req.headers.get("x-user-id");
+  if (!uid) throw new Error("Unauthorized");
+  return uid;
 }
 
-async function getMeId(req: NextRequest) {
-  const hdr = req.headers.get("x-user-id");
-  if (hdr && typeof hdr === "string" && hdr.trim()) return hdr.trim();
-  const c = await cookies();
-  return c.get("uid")?.value ?? null;
-}
-
-// GET вЂ” СЃС‚СЂР°РЅРёС†Р° РѕР¶РёРґР°РµС‚ { myReadAt, peerReadAt }
-export async function GET(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
-  const { id } = await ctx.params;
-const threadId = id;
-  if (!threadId) return bad("threadId is required", 400);
-
-  const meId = await getMeId(req);
-  if (!meId) return bad("Not authenticated (user id missing)", 401);
-
+/**
+ * GET /api/chat/threads/[id]/read
+ * Возвращает информацию о прочтении. Пока в схеме нет таблицы «прочитано»,
+ * возвращаем заглушки без крашей.
+ */
+export async function GET(req: NextRequest, ctx: Ctx) {
   try {
-    const t = await db.thread.findUnique({
+    const { id: threadId } = await ctx.params;
+    const meId = requireUserId(req);
+
+    const t = await prisma.thread.findUnique({
       where: { id: threadId },
-      select: { aId: true, bId: true },
+      select: { id: true, aId: true, bId: true, lastMessageAt: true },
     });
-    if (!t) return NextResponse.json({ myReadAt: null, peerReadAt: null });
+    if (!t) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (t.aId !== meId && t.bId !== meId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-    const peerId = t.aId === meId ? t.bId : t.bId === meId ? t.aId : null;
-
-    const [my, peer] = await Promise.all([
-      db.chatRead?.findUnique({ where: { threadId_userId: { threadId, userId: meId } }, select: { lastReadAt: true } }) ?? Promise.resolve(null),
-      peerId
-        ? db.chatRead?.findUnique({ where: { threadId_userId: { threadId, userId: peerId } }, select: { lastReadAt: true } }) ?? Promise.resolve(null)
-        : Promise.resolve(null),
-    ]);
-
-    return NextResponse.json({
-      myReadAt: my?.lastReadAt?.toISOString() ?? null,
-      peerReadAt: peer?.lastReadAt?.toISOString() ?? null,
-    });
-  } catch (e) {
-    console.error("thread read GET error:", e);
-    return NextResponse.json({ myReadAt: null, peerReadAt: null });
+    // Так как таблицы прочтений нет — отдаём заглушку
+    return NextResponse.json(
+      {
+        my: null,
+        peer: null,
+        lastMessageAt: t.lastMessageAt ?? null,
+      },
+      { status: 200 },
+    );
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
   }
 }
 
-// POST вЂ” РїРѕРјРµС‚РёС‚СЊ С‚СЂРµРґ РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рј РґР»СЏ РјРµРЅСЏ
-export async function POST(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
-  const { id } = await ctx.params;
-const threadId = id;
-  if (!threadId) return bad("threadId is required", 400);
-
-  const meId = await getMeId(req);
-  if (!meId) return bad("Not authenticated (user id missing)", 401);
-
+/**
+ * PUT /api/chat/threads/[id]/read
+ * Пометить тред как прочитанный текущим пользователем.
+ * В текущей схеме БД места для хранения нет, делаем no-op, чтобы фронт не падал.
+ */
+export async function PUT(req: NextRequest, ctx: Ctx) {
   try {
-    await db.chatRead?.upsert({
-      where: { threadId_userId: { threadId, userId: meId } },
-      create: { threadId, userId: meId, lastReadAt: new Date() },
-      update: { lastReadAt: new Date() },
+    const { id: threadId } = await ctx.params;
+    const meId = requireUserId(req);
+
+    const t = await prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, aId: true, bId: true },
     });
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error("thread read POST error:", e);
-    return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
+    if (!t) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (t.aId !== meId && t.bId !== meId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // no-op: здесь бы мы писали отметку прочтения в таблицу,
+    // но её нет в текущей схеме. Возвращаем 200 OK.
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
