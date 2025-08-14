@@ -18,8 +18,8 @@ function ensureString(v: unknown): string | null {
 export async function PATCH(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   try {
     // 1) РѕСЃРЅРѕРІРЅРѕР№ РїСѓС‚СЊ вЂ” Р±РµСЂС‘Рј РёР· ctx.params
-    let id = ensureString(ctx?.id);
-    let userId = ensureString(ctx?.userid);
+    let id = ensureString((await ctx.params).id);
+    let userId = ensureString((await ctx.params).userid);
 
     // 2) Р·Р°РїР°СЃРЅРѕР№ РїСѓС‚СЊ вЂ” РїР°СЂСЃРёРј РёР· URL, РµСЃР»Рё РїРѕС‡РµРјСѓ-С‚Рѕ params РїСѓСЃС‚С‹Рµ/РєСЂРёРІС‹Рµ
     if (!id || !userId) {
@@ -71,6 +71,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<Record<stri
     );
   }
 }
+
 
 
 
