@@ -11,3 +11,9 @@ export async function POST(req: NextRequest) {
   pushTyping(ids, threadId);
   return NextResponse.json({ ok: true });
 }
+
+export async function GET(req: NextRequest) {
+  // Делегируем в POST для унификации поведения
+  // @ts-ignore - POST определён выше
+  return POST(req);
+}
