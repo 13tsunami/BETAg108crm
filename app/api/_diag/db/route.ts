@@ -1,7 +1,9 @@
+// app/api/_diag/db/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+
 export const runtime = "nodejs";
-export const preferredRegion = ["fra1","cdg1","arn1"];
+export const preferredRegion = ["fra1", "cdg1", "arn1"];
 
 export async function GET() {
   try {
