@@ -40,9 +40,9 @@ const threadId = id;
     const peerId = t.aId === meId ? t.bId : t.bId === meId ? t.aId : null;
 
     const [my, peer] = await Promise.all([
-      prisma.chatRead.findUnique({ where: { threadId_userId: { threadId, userId: meId } }, select: { lastReadAt: true } }),
+      db.chatRead?.findUnique({ where: { threadId_userId: { threadId, userId: meId } }, select: { lastReadAt: true } }) ?? Promise.resolve(null),
       peerId
-        ? prisma.chatRead.findUnique({ where: { threadId_userId: { threadId, userId: peerId } }, select: { lastReadAt: true } })
+        ? db.chatRead?.findUnique({ where: { threadId_userId: { threadId, userId: peerId } }, select: { lastReadAt: true } }) ?? Promise.resolve(null)
         : Promise.resolve(null),
     ]);
 
@@ -66,7 +66,7 @@ const threadId = id;
   if (!meId) return bad("Not authenticated (user id missing)", 401);
 
   try {
-    await prisma.chatRead.upsert({
+    await db.chatRead?.upsert({
       where: { threadId_userId: { threadId, userId: meId } },
       create: { threadId, userId: meId, lastReadAt: new Date() },
       update: { lastReadAt: new Date() },
@@ -77,6 +77,7 @@ const threadId = id;
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
+
 
 
 
