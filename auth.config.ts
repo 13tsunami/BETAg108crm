@@ -1,68 +1,74 @@
 // auth.config.ts
-import type { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
-import { compare } from "bcryptjs";
+import type { NextAuthOptions, DefaultSession } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { getServerSession } from 'next-auth';
+import { compare } from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
+
+declare module 'next-auth' {
+  interface Session extends DefaultSession {
+    user: DefaultSession['user'] & { id: string; role: string | null };
+  }
+  // при необходимости можно расширить тип User тут
+}
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
-  debug: true,
+  session: { strategy: 'jwt' },
   providers: [
     CredentialsProvider({
-      name: "Логин и пароль",
+      name: 'Credentials',
       credentials: {
-        username: { label: "Логин", type: "text" },
-        password: { label: "Пароль", type: "password" },
+        username: { label: 'Логин или Email', type: 'text' },
+        password: { label: 'Пароль', type: 'password' },
       },
       async authorize(credentials) {
-        const idf = credentials?.username?.toString().trim() ?? "";
-        const pwd = credentials?.password?.toString() ?? "";
-        if (!idf || !pwd) return null;
+        if (!credentials?.username || !credentials?.password) return null;
 
-        const cols = await prisma.$queryRawUnsafe<{ name: string }[]>(
-          `PRAGMA table_info('User');`
-        );
-        const hasUsername = cols.some((c) => c.name === "username");
+        const user =
+          (await prisma.user.findFirst({
+            where: {
+              OR: [
+                { username: credentials.username },
+                { email: credentials.username },
+              ],
+            },
+          })) || null;
 
-        let u: any = null;
-        if (hasUsername) {
-          const rows = await prisma.$queryRawUnsafe<any[]>(
-            `SELECT id, name, email, username, role, passwordHash
-             FROM "User" WHERE "username" = ? LIMIT 1`,
-            idf
-          );
-          u = rows[0] ?? null;
-        } else {
-          if (idf.includes("@")) u = await prisma.user.findUnique({ where: { email: idf } });
-          if (!u) {
-            const digits = idf.replace(/\D+/g, "");
-            if (digits.length >= 5) u = await prisma.user.findUnique({ where: { phone: idf } });
-          }
-          if (!u) u = await prisma.user.findFirst({ where: { name: idf } });
-        }
+        if (!user?.passwordHash) return null;
 
-        if (!u?.passwordHash) return null;
-        if (!(await compare(pwd, u.passwordHash))) return null;
+        const ok = await compare(credentials.password, user.passwordHash);
+        if (!ok) return null;
 
-        return { id: u.id, name: u.name ?? idf, email: u.email ?? null, role: u.role ?? "user" } as any;
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email ?? undefined,
+          role: user.role ?? null,
+        } as any;
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role ?? "user";
+        token.uid = (user as any).id;
+        token.role = (user as any).role ?? null;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role ?? "user";
+        (session.user as any).id = token.uid as string;
+        (session.user as any).role = (token as any).role ?? null;
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || "dev_secret_change_me",
+  pages: {
+    signIn: '/sign-in',
+  },
 };
+
+export async function auth() {
+  return getServerSession(authOptions);
+}
