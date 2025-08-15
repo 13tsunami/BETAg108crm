@@ -1,0 +1,21 @@
+.appShell {
+  display: grid;
+  grid-template-columns: 256px 1fr;  /* было 260px — можно 256px для пиксель‑перфекта */
+  min-height: 100dvh;
+  background: #f7f7f8;
+}
+
+.appSidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: auto;
+  background: #ffffff;
+  width: 256px;         /* ключ: фиксируем ширину контейнера */
+  flex: 0 0 256px;      /* запрещаем расширение */
+}
+
+.appMain {
+  min-width: 0;
+  padding: 16px;
+}

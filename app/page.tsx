@@ -1,4 +1,3 @@
-// app/page.tsx
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth.config';
 

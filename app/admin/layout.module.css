@@ -1,0 +1,22 @@
+/* app/admin/layout.module.css */
+.appShell {
+  display: grid;
+  grid-template-columns: 256px 1fr;
+  min-height: 100dvh;
+  background: #f7f7f8;
+}
+
+.appSidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: auto;
+  background: #ffffff;
+  width: 256px;
+  flex: 0 0 256px;
+}
+
+.appMain {
+  min-width: 0;
+  padding: 16px;
+}
