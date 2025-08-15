@@ -1,19 +1,32 @@
-import "@/styles/globals.css";
-import Sidebar from "@/components/Sidebar";
-import Providers from "@/components/Providers";
+// app/layout.tsx
+import '@/styles/globals.css';
+import Providers from '@/components/Providers';
+import { ReactNode } from 'react';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+function safeMetadataBase(): URL | undefined {
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXTAUTH_URL?.trim() ||
+    '';
+  if (!raw) return undefined;
+  try {
+    return new URL(raw);
+  } catch {
+    return undefined;
+  }
+}
+
+export const metadata = {
+  metadataBase: safeMetadataBase(),
+  title: 'G108 CRM',
+  description: 'Внутренняя CRM',
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru">
-      <body className="app-body">
-        <Providers>
-          <div className="app-shell">
-            <aside className="app-sidebar">
-              <Sidebar />
-            </aside>
-            <main className="app-content">{children}</main>
-          </div>
-        </Providers>
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
