@@ -7,8 +7,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const BRAND = "#8d2828";
-const FONT_STACK =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"';
 
 const ROLE_RU: Record<string, string> = {
   admin: "Администратор",
@@ -20,6 +18,7 @@ const ROLE_RU: Record<string, string> = {
 };
 
 type ThreadListItem = { id: string; unreadCount?: number | null };
+
 type TaskLite = {
   id: string;
   assignedTo?: Array<{ type?: "user"; id: string }>;
@@ -35,82 +34,102 @@ function splitFio(full?: string | null) {
 }
 
 function NavTile(props: {
-  label: string;
   href?: string;
   active?: boolean;
+  label: string;
   unread?: number | null;
   onClick?: () => void;
+  asButton?: boolean;
 }) {
-  const { label, href, active, unread, onClick } = props;
+  const { href, active, label, unread, onClick, asButton } = props;
   const hasUnread = typeof unread === "number" && unread > 0;
-  const isSingleWord = !/\s/.test(label);
+  const isSingleLongWord = !/\s/.test(label) && label.length >= 9;
 
-  const body = (
+  const content = (
     <div
       className={`tile glass ${active ? "active" : ""} ${hasUnread && !active ? "unread" : ""}`}
       role="button"
       aria-current={active ? "true" : undefined}
     >
-      <span className={`label ${isSingleWord ? "label--single" : "label--multi"}`} title={label}>
-        {label}
+      <span className={`label ${isSingleLongWord ? "label--single" : "label--multi"}`} title={label}>
+        {label.toLowerCase()}
       </span>
-      {hasUnread ? <span className="badge">{unread! > 99 ? "99+" : unread}</span> : null}
+
+      {hasUnread ? (
+        <span className="badge" aria-label="Счётчик">
+          {unread! > 99 ? "99+" : unread}
+        </span>
+      ) : null}
 
       <style jsx>{`
         .tile {
           position: relative;
           display: grid;
           place-items: center;
-          width: 100%;
+          text-align: center;
+          width: var(--tile-w, 78%); /* уменьшили ~вдвое за счёт масштаба внутри ячейки */
+          margin: 0 auto;
           aspect-ratio: 1 / 1;
           border-radius: 14px;
-          border: 1px solid rgba(229, 231, 235, 0.75);
-          padding: 6px;
+          border: 1px solid rgba(229, 231, 235, 0.8);
+          transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
           cursor: pointer;
-          transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
           overflow: hidden;
-          text-align: center;
+          padding: 4px;
+          isolation: isolate;
         }
         .glass {
-          background: linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.40));
+          background: linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.4));
           backdrop-filter: saturate(180%) blur(10px);
           -webkit-backdrop-filter: saturate(180%) blur(10px);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.35);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.35);
         }
-        .tile:hover { transform: translateY(-1px); border-color: #cfe3ff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .tile.active { outline: 2px solid rgba(207, 227, 255, 0.9); }
-        .tile.unread::before {
-          content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 100%; background: #ef9b28;
+        /* лёгкий блик */
+        .tile::before {
+          content: "";
+          position: absolute;
+          inset: -35% -35% auto -35%;
+          height: 55%;
+          background:
+            radial-gradient(120px 40px at 10% 0%, rgba(255,255,255,0.55), rgba(255,255,255,0) 60%),
+            linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.06));
+          opacity: 0;
+          transform: translateY(-10%);
+          transition: opacity 160ms ease, transform 200ms ease;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .tile:hover { transform: translateY(-1px); border-color: #cfe3ff; box-shadow: 0 8px 18px rgba(0,0,0,0.08); }
+        .tile:hover::before { opacity: 1; transform: translateY(0); }
+        .tile.active { outline: 2px solid rgba(207,227,255,0.9); }
+        .tile.unread::after {
+          content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 100%; background: #ef9b28; z-index: 2;
         }
 
         .label {
-          font-family: ${FONT_STACK};
+          position: relative; z-index: 3;
           color: #0f172a;
-          font-weight: 800;
-          line-height: 1.1;
+          font-weight: 700;
+          line-height: 1.08;
           max-width: 100%;
           text-align: center;
-          white-space: normal;        /* переносы только между словами */
-          word-break: keep-all;       /* слова не ломаем */
+          text-decoration: none;
+          text-transform: none;
+          font-variant-caps: normal;
+          white-space: normal;
+          word-break: keep-all;
           overflow-wrap: normal;
-          text-wrap: balance;
-        }
-        .label--multi {
-          font-size: clamp(11.5px, 1.65vw, 13px);
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
-        .label--single {
-          font-size: clamp(11px, 1.55vw, 12.5px);
-          letter-spacing: 0.02em;
-          font-stretch: 96%;
-        }
+        .label--multi { font-size: 12px; letter-spacing: 0.01em; }
+        .label--single { font-size: 11px; letter-spacing: 0.01em; font-stretch: 95%; }
 
         .badge {
-          position: absolute; right: 8px; top: 8px;
-          font-size: 11px; line-height: 18px;
+          position: absolute; right: 6px; top: 6px;
+          font-size: 10.5px; line-height: 18px;
           min-width: 22px; text-align: center;
           padding: 0 6px; border-radius: 9999px;
           background: ${BRAND}; color: #fff; font-weight: 800;
@@ -120,19 +139,22 @@ function NavTile(props: {
     </div>
   );
 
-  if (onClick && !href) {
+  if (asButton) {
     return (
-      <button className="tile-btn" onClick={onClick}>
-        {body}
+      <button onClick={onClick} className="tile-btn">
+        {content}
         <style jsx>{` .tile-btn { all: unset; display: block; } `}</style>
       </button>
     );
   }
 
   return (
-    <Link className="tile-link" href={href || "#"} prefetch>
-      {body}
-      <style jsx>{` .tile-link { display: block; text-decoration: none; } `}</style>
+    <Link href={href || "#"} className="navlink" aria-current={active ? "true" : undefined}>
+      {content}
+      <style jsx>{`
+        .navlink { display: block; text-decoration: none !important; }
+        .navlink * { text-decoration: none !important; }
+      `}</style>
     </Link>
   );
 }
@@ -142,32 +164,40 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const authed = Boolean(data?.user);
-  const roleSlug = (data?.user as any)?.role as string | null | undefined;
-  const isAdminRole = roleSlug === "admin" || roleSlug === "director" || roleSlug === "deputy_plus";
+  const roleSlug = (data?.user as any)?.role as string | null;
   const roleRu = roleSlug ? (ROLE_RU[roleSlug] ?? roleSlug) : null;
+  const hasAdminRights = ["admin", "director", "deputy_plus"].includes(roleSlug || "");
 
   const uid = useMemo(() => (data?.user as any)?.id as string | undefined, [data?.user]);
 
-  // --- Чаты: непрочитанные
-  const [unreadTotal, setUnreadTotal] = useState(0);
+  // --- ЧАТ: счётчик ---
+  const [unreadTotal, setUnreadTotal] = useState<number>(0);
   async function refreshUnread() {
     if (!uid) return setUnreadTotal(0);
     try {
-      const r = await fetch("/api/chat/threads/list", { cache: "no-store", headers: { "X-User-Id": uid } }).catch(() => null);
+      const r = await fetch("/api/chat/threads/list", {
+        cache: "no-store",
+        headers: { "X-User-Id": uid },
+      }).catch(() => null);
       if (!r?.ok) return;
       const list = (await r.json()) as ThreadListItem[];
-      setUnreadTotal((list || []).reduce((acc, t) => acc + (t.unreadCount ?? 0), 0));
+      const total = (list || []).reduce((acc, t) => acc + (t.unreadCount ?? 0), 0);
+      setUnreadTotal(total);
     } catch {}
   }
 
-  // --- Задачи: «назначенные мне»
-  const [tasksToMe, setTasksToMe] = useState(0);
-  function assigneeIdsOf(t: TaskLite) {
-    if (Array.isArray(t.assignedTo) && t.assignedTo.length) return t.assignedTo.filter(a => !a.type || a.type === "user").map(a => a.id).filter(Boolean);
-    if (Array.isArray(t.assignees) && t.assignees.length) return t.assignees.map(a => a.userId).filter(Boolean);
+  // --- ЗАДАЧИ: счётчик ---
+  const [tasksToMe, setTasksToMe] = useState<number>(0);
+  function assigneeIdsOf(t: TaskLite): string[] {
+    if (Array.isArray(t.assignedTo) && t.assignedTo.length) {
+      return t.assignedTo.filter(a => !a.type || a.type === "user").map(a => a.id).filter(Boolean);
+    }
+    if (Array.isArray(t.assignees) && t.assignees.length) {
+      return t.assignees.map(a => a.userId).filter(Boolean);
+    }
     return [];
   }
-  function myAssigneeStatus(t: TaskLite, myId?: string | null) {
+  function myAssigneeStatus(t: TaskLite, myId?: string | null): string | null {
     if (!myId) return null;
     const rec = (t.assignees || []).find(a => a.userId === myId);
     return rec?.status ?? null;
@@ -184,13 +214,17 @@ export default function Sidebar() {
       const r = await fetch("/api/tasks", { cache: "no-store" });
       if (!r.ok) { tasksFromLocal(id); return; }
       const list = (await r.json()) as TaskLite[];
-      const count = Array.isArray(list) ? list.filter(t => assigneeIdsOf(t).includes(id) && myAssigneeStatus(t, id) !== "done").length : 0;
+      const count = Array.isArray(list)
+        ? list.filter(t => assigneeIdsOf(t).includes(id) && myAssigneeStatus(t, id) !== "done").length
+        : 0;
       setTasksToMe(count);
       try {
         localStorage.setItem(`tasks:u:${id}:toMeCount`, String(count));
         window.dispatchEvent(new Event("g108:tasks-count-updated"));
       } catch {}
-    } catch { tasksFromLocal(id); }
+    } catch {
+      tasksFromLocal(id);
+    }
   }
 
   useEffect(() => {
@@ -225,7 +259,7 @@ export default function Sidebar() {
     };
   }, [authed, uid]);
 
-  // --- Очистка базы (модалка)
+  // --- очистка базы ---
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [cleanMsg, setCleanMsg] = useState<string | null>(null);
@@ -254,7 +288,7 @@ export default function Sidebar() {
 
   return (
     <aside className="wrap">
-      {/* Шапка */}
+      {/* Шапка — крупная, как раньше */}
       <div className="head glass">
         <div className="who" title={(data?.user?.name as string) || "Гость"}>
           <div className="fio">
@@ -277,11 +311,10 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Навигация */}
+      {/* Навигация: 2 колонки */}
       <nav className="nav">
         {authed && (
           <>
-            {/* Базовые 8 плиток */}
             <div className="navGrid">
               <NavTile href="/dashboard"     active={pathname === "/dashboard"}     label="Главное" />
               <NavTile href="/chat"          active={pathname === "/chat"}          label="Чаты" unread={pathname !== "/chat" ? unreadTotal : 0} />
@@ -293,15 +326,14 @@ export default function Sidebar() {
               <NavTile href="/archive_tasks" active={pathname === "/archive_tasks"} label="Архив" />
             </div>
 
-            {/* Админ-блок для директор/заместитель+ и админ */}
-            {isAdminRole && (
+            {hasAdminRights && (
               <>
                 <div className="adminHeader">Администрирование</div>
                 <div className="navGrid">
                   <NavTile href="/admin"           active={pathname === "/admin"}           label="Админ‑панель" />
                   <NavTile href="/admin/db-status" active={pathname === "/admin/db-status"} label="Статус БД" />
                   <NavTile href="/admin/groups"    active={pathname === "/admin/groups"}    label="Кафедры" />
-                  <NavTile label="Очистка" onClick={() => setConfirmOpen(true)} />
+                  <NavTile asButton onClick={() => setConfirmOpen(true)} label="Очистка базы" />
                 </div>
               </>
             )}
@@ -311,7 +343,7 @@ export default function Sidebar() {
 
       {/* Низ */}
       <div className="foot">
-        {isAdminRole && (
+        {hasAdminRights && (
           <>
             {cleanMsg && <div className="note">{cleanMsg}</div>}
             {cleanErr && <div className="error">{cleanErr}</div>}
@@ -345,18 +377,19 @@ export default function Sidebar() {
 
       <style jsx>{`
         .wrap {
+          box-sizing: border-box;
           display: grid;
           grid-template-rows: auto 1fr auto;
+          width: 280px;                /* чуть шире */
           height: 100%;
-          width: 256px;                /* фиксированная ширина панели */
           background: #fff;
           border-right: 1px solid #e5e7eb;
           font-size: 14px;
-          font-family: ${FONT_STACK};
+          overflow-x: hidden;          /* убираем горизонтальный скролл */
         }
         .head {
           display: flex; align-items: center;
-          min-height: 74px; padding: 10px;
+          min-height: 92px; padding: 12px;      /* крупнее шапка */
           border-bottom: 1px solid rgba(229,231,235,0.8);
           position: relative;
         }
@@ -371,20 +404,15 @@ export default function Sidebar() {
         }
 
         .who { min-width: 0; display: grid; gap: 6px; width: 100%; }
-        .fio { line-height: 1.1; }
-        .last {
-          font-weight: 900; font-size: 18px; letter-spacing: 0.4px;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .rest {
-          font-weight: 700; font-size: 14px; color: #111827;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
+        .fio { line-height: 1.08; }
+        .last { font-weight: 900; font-size: 20px; letter-spacing: 0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rest { font-weight: 700; font-size: 15px; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .metaRow { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
         .rolePill {
           display: inline-block; font-size: 12px; color: #374151; padding: 2px 8px;
           border: 1px solid rgba(229,231,235,0.9); border-radius: 9999px;
           background: rgba(255,255,255,0.6); backdrop-filter: saturate(180%) blur(8px);
+          text-transform: none;
         }
         .settings {
           display: inline-flex; align-items: center; justify-content: center;
@@ -394,35 +422,25 @@ export default function Sidebar() {
         }
         .settings:hover { background: rgba(255,255,255,0.9); }
 
-        .nav { padding: 10px; }
+        .nav { padding: 10px; overflow: hidden; }
         .navGrid {
-          display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr)); /* две колонки */
+          gap: 8px;
         }
-        .adminHeader {
-          margin: 12px 4px 8px; font-size: 12px; color: #6b7280; font-weight: 700;
-          text-transform: uppercase; letter-spacing: 0.06em;
-        }
+        .adminHeader { margin: 12px 4px 8px; font-size: 12px; color: #6b7280; font-weight: 700; text-transform: none; letter-spacing: 0.02em; }
 
-        .foot {
-          padding: 12px; border-top: 1px solid #e5e7eb; display: grid; gap: 8px;
-        }
-        .btn {
-          height: 36px; border: 1px solid #e5e7eb; background: #fff; border-radius: 10px;
-          display: flex; align-items: center; justify-content: center; cursor: pointer;
-          font-family: ${FONT_STACK};
-        }
+        .foot { padding: 12px; border-top: 1px solid #e5e7eb; display: grid; gap: 8px; }
+        .btn { height: 34px; border: 1px solid #e5e7eb; background: #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-transform: none; }
         .btn:hover { background: #f9fafb; }
         .primary { background: ${BRAND}; color: #fff; border-color: ${BRAND}; }
         .primary:hover { filter: brightness(0.96); }
+
         .note { font-size: 12px; color: #16a34a; }
         .error { font-size: 12px; color: #ef4444; }
 
-        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
-        .modal-card { position: relative; width: 520px; max-width: calc(100vw - 32px); background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.2); }
-        .close { position: absolute; right: 8px; top: 6px; border: none; background: transparent; font-size: 20px; line-height: 1; cursor: pointer; }
-        .modal-title { margin: 0 0 8px; font-size: 16px; font-weight: 700; }
-        .modal-text { margin: 0 0 12px; font-size: 14px; color: #374151; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        /* гарантированно убираем подчёркивания внутри сайдбара */
+        :global(.wrap a), :global(.wrap a *), .label { text-decoration: none !important; }
       `}</style>
     </aside>
   );

@@ -1,0 +1,912 @@
+{
+  "generatedAt": "2025-08-15T16:54:34.783Z",
+  "root": "BETAg108crm.clean",
+  "node": "v24.5.0",
+  "next": "unknown",
+  "uiHints": {
+    "brand": "#8d2828",
+    "sidebarWidthPx": 22
+  },
+  "envVarNames": [
+    "NEXTAUTH_URL",
+    "NEXTAUTH_SECRET"
+  ],
+  "files": [
+    {
+      "path": ".env",
+      "size": 219,
+      "hash": "1cf6edf18ba171d9dc1937c57de91432fca9363a",
+      "textSample": "NEXTAUTH_URL=http://localhost:3000\nNEXTAUTH_SECRET=NzdjNmRjMmJiNTc2NGZjNjg2OWM0Zjg2ZjI0OGUwNGI=\r\nNEXTAUTH_SECRET=OWNhMGY5YmYzNjRiNGZmNDg1Mjc5MTkxYTdlZWZhYzY=\r\nNEXTAUTH_SECRET=MzY1ZWU2MTg3MjExNDNkYmE1YjhkMWI0ODgyYTMwZjA=",
+      "kind": "env",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": ".env.example",
+      "size": 287,
+      "hash": "e8afe59824c231c8557965af511c52316502cd1d",
+      "textSample": null,
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": null,
+      "mentionsSearchParams": false
+    },
+    {
+      "path": ".gitignore",
+      "size": 46,
+      "hash": "a5e5571681fac503d7e940750350eec2fc7743b7",
+      "textSample": null,
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": null,
+      "mentionsSearchParams": false
+    },
+    {
+      "path": ".introspection/endpoints.json",
+      "size": 2302,
+      "hash": "e97680e7090f11a5ff2bdec411cbfbd9efa7e3d7",
+      "textSample": "[\n  {\n    \"route\": \"/api/auth/:nextauth*\",\n    \"methods\": []\n  },\n  {\n    \"route\": \"/api/chat/search-users\",\n    \"methods\": [\n      \"GET\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/sse/user/:id\",\n    \"methods\": [\n      \"GET\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/threads/:id\",\n    \"methods\": [\n      \"DELETE\",\n      \"GET\",\n      \"PATCH\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/threads/:id/messages\",\n    \"methods\": [\n      \"GET\",\n      \"POST\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/threads/:id/read\",\n    \"methods\": [\n      \"GET\",\n      \"PUT\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/threads/ensure\",\n    \"methods\": [\n      \"POST\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/threads/list\",\n    \"methods\": [\n      \"GET\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/typing\",\n    \"methods\": [\n      \"GET\",\n      \"POST\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/users\",\n    \"methods\": [\n      \"GET\",\n      \"OPTIONS\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/users/_delete/:id\",\n    \"methods\": [\n      \"DELETE\",\n      \"OPTIONS\"\n    ]\n  },\n  {\n    \"route\": \"/api/chat/users/delete\",\n    \"methods\": [\n      \"OPTIONS\",\n      \"POST\"\n    ]\n  },\n  {\n    \"route\": \"/api/health\",\n    \"methods\": [\n      \"GET\"\n    ]\n  },\n  {\n    \"route\": \"/api/presence\",\n    \"methods\": [\n      \"GET\",\n      \"HEAD\",\n      \"OPTIONS\",\n      \"PATCH\",\n      \"POST\",\n      \"PUT\"\n    ]\n  },\n  {\n    \"route\": \"/api/profile\",\n    \"methods\": [\n      \"GET\",\n      \"PATCH\"\n    ]\n  },\n  {\n    \"route\": \"/api/profile/password\",\n    \"methods\": [\n      \"GET\",\n      \"POST\"\n    ]\n  },\n  {\n    \"route\": \"/api/tasks\",\n    \"methods\": [\n      \"DELETE\",\n      \"GET\",\n      \"PATCH\",\n      \"POST\"\n    ]\n  },\n  {\n    \"route\": \"/api/tasks/:id\",\n    \"methods\": [\n      \"DELETE\",\n      \"GET\",\n      \"PUT\"\n    ]\n  },\n  {\n    \"route\": \"/api/tasks/:id/assignees/:userid\",\n    \"methods\": [\n      \"PATCH\"\n    ]\n  },\n  {\n    \"route\": \"/api/tasks/:id/progress\",\n    \"methods\": [\n      \"GET\"\n    ]\n  },\n  {\n    \"route\": \"/api/users\",\n    \"methods\": [\n      \"GET\",\n      \"POST\",\n      \"PUT\"\n    ]\n  },\n  {\n    \"route\": \"/api/users/:id\",\n    \"methods\": [\n      \"GET\",\n      \"OPTIONS\",\n      \"PATCH\"\n    ]\n  },\n  {\n    \"route\": \"/api/users/:id/archive\",\n    \"methods\": [\n      \"OPTIONS\",\n      \"POST\"\n    ]\n  },\n  {\n    \"route\": \"/api/users/:id/groups\",\n    \"methods\": [\n      \"GET\"\n    ]\n  }\n]",
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/dashboard/page.module.css",
+      "size": 942,
+      "hash": "5256c8bd82583ad17ff8898bfc808af35c7a0d20",
+      "textSample": ".page { display:grid; gap:12px; }\r\n.head { padding:14px 16px; border-radius:16px; }\r\n.title { margin:0; font-weight:900; font-size:22px; letter-spacing:.2px; color:#0f172a; }\r\n.subtitle { margin:6px 0 0; font-size:14px; color:#374151; text-decoration:none; }\r\n\r\n.grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }\r\n.card {\r\n  border-radius:16px; padding:14px; border:1px solid rgba(229,231,235,.8); background:#fff;\r\n  box-shadow:0 4px 12px rgba(0,0,0,.04);\r\n}\r\n.cardTitle { font-weight:800; color:#0f172a; margin:0 0 6px; text-transform:none; }\r\n.cardText { color:#374151; font-size:14px; }\r\n\r\n.glass{\r\n  background:linear-gradient(180deg,rgba(255,255,255,.68),rgba(255,255,255,.4));\r\n  backdrop-filter:saturate(180%) blur(10px);\r\n  -webkit-backdrop-filter:saturate(180%) blur(10px);\r\n  border:1px solid rgba(229,231,235,.8);\r\n  box-shadow:0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);\r\n}\r\n\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/dashboard/page.tsx",
+      "size": 1112,
+      "hash": "f005e32d6d8f3df6c3e02a0d875982b74ef303a9",
+      "textSample": "import { redirect } from 'next/navigation';\r\nimport { auth } from '@/auth.config';\r\nimport styles from './page.module.css';\r\n\r\nexport default async function Dashboard() {\r\n  const session = await auth();\r\n  if (!session) redirect('/sign-in');\r\n\r\n  return (\r\n    <section className={styles.page}>\r\n      <header className={`${styles.glass} ${styles.head}`}>\r\n        <h1 className={styles.title}>Дашборд</h1>\r\n        <p className={styles.subtitle}>стартовая страница после входа</p>\r\n      </header>\r\n\r\n      <div className={styles.grid}>\r\n        <div className={styles.card}>\r\n          <div className={styles.cardTitle}>сводка</div>\r\n          <div className={styles.cardText}>здесь появятся ваши виджеты и показатели</div>\r\n        </div>\r\n        <div className={styles.card}>\r\n          <div className={styles.cardTitle}>обновления</div>\r\n          <div className={styles.cardText}>история действий и системные уведомления</div>\r\n        </div>\r\n      </div>\r\n    </section>\r\n  );\r\n}\r\n",
+      "kind": "app-route-file",
+      "routePath": "/dashboard",
+      "pageType": "page",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/layout.module.css",
+      "size": 833,
+      "hash": "b238ed2c55ba0ec19cd22452313b3b340a287371",
+      "textSample": "/* app/(app)/layout.module.css */\r\n.appShell {\r\n  display: grid;\r\n  grid-template-columns: 280px minmax(0, 1fr); /* ширина = ширине Sidebar */\r\n  min-height: 100dvh;\r\n  background: #f7f7f8;\r\n}\r\n\r\n.appSidebar {\r\n  position: sticky;\r\n  top: 0;\r\n  height: 100dvh;\r\n  overflow: hidden;             /* сайдбар без скроллов */\r\n  background: #ffffff;\r\n  width: 280px;                 /* фиксируем ширину контейнера */\r\n  flex: 0 0 280px;              /* не даём колонке сжиматься/расти */\r\n  border-right: 1px solid #e5e7eb;\r\n}\r\n\r\n.appMain {\r\n  min-width: 0;\r\n  height: 100dvh;\r\n  overflow: auto;               /* прокрутка — только у контента */\r\n  -webkit-overflow-scrolling: touch;\r\n  padding: 16px;\r\n  background: #f7f7f8;\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/layout.tsx",
+      "size": 626,
+      "hash": "62c28d4c53250c870cd826c20ab3009a54b43625",
+      "textSample": "// app/(app)/layout.tsx\r\nimport { redirect } from 'next/navigation';\r\nimport type { ReactNode } from 'react';\r\nimport { auth } from '@/auth.config';\r\nimport Sidebar from '@/components/Sidebar';\r\nimport styles from './layout.module.css';\r\n\r\nexport default async function AppLayout({ children }: { children: ReactNode }) {\r\n  const session = await auth();\r\n  if (!session) redirect('/sign-in');\r\n\r\n  return (\r\n    <div className={styles.appShell}>\r\n      <aside className={styles.appSidebar}>\r\n        <Sidebar />\r\n      </aside>\r\n      <main className={styles.appMain}>\r\n        {children}\r\n      </main>\r\n    </div>\r\n  );\r\n}\r\n",
+      "kind": "app-route-file",
+      "routePath": "/",
+      "pageType": "layout",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(auth)/sign-in/SignInForm.tsx",
+      "size": 2618,
+      "hash": "b481c7e4b8055d8bdcae908a5c4053a86a0009ec",
+      "textSample": "// app/(auth)/sign-in/SignInForm.tsx\r\n'use client';\r\nimport { useState, FormEvent } from 'react';\r\nimport { signIn } from 'next-auth/react';\r\n\r\nexport default function SignInForm({ callbackUrl }: { callbackUrl: string }) {\r\n  const [username, setUsername] = useState(''); \r\n  const [password, setPassword] = useState('');\r\n  const [pending, setPending] = useState(false);\r\n  const [localError, setLocalError] = useState<string | null>(null);\r\n\r\n  async function onSubmit(e: FormEvent<HTMLFormElement>) {\r\n    e.preventDefault();\r\n    setLocalError(null);\r\n    setPending(true);\r\n    try {\r\n      await signIn('credentials', { username, password, callbackUrl, redirect: true });\r\n    } catch {\r\n      setLocalError('Не удалось выполнить вход');\r\n    } finally {\r\n      setPending(false);\r\n    }\r\n  }\r\n\r\n  return (\r\n    <form onSubmit={onSubmit} className=\"auth-form\">\r\n      <label className=\"lbl\">Логин или Email</label>\r\n      <input className=\"inp\" type=\"text\" autoComplete=\"username\" value={username} onChange={e=>setUsername(e.target.value)} required />\r\n\r\n      <label className=\"lbl\">Пароль</label>\r\n      <input className=\"inp\" type=\"password\" autoComplete=\"current-password\" value={password} onChange={e=>setPassword(e.target.value)} required />\r\n\r\n      {localError && <div className=\"err\">{localError}</div>}\r\n\r\n      <button type=\"submit\" disabled={pending} className=\"btn\">\r\n        {pending ? 'Входим…' : 'Войти'}\r\n      </button>\r\n\r\n      <input type=\"hidden\" name=\"callbackUrl\" value={callbackUrl} />\r\n\r\n      <style jsx>{`\r\n        .auth-form {\r\n          width: 100%;\r\n          max-width: 360px;\r\n          display: grid;\r\n          gap: 10px;\r\n        }\r\n        .lbl { font-size: 13px; color: #374151; }\r\n        .inp {\r\n          width: 100%;\r\n          height: 38px;\r\n          border: 1px solid #e5e7eb;\r\n          border-radius: 10px;\r\n          padding: 0 12px;\r\n          background: #fff;\r\n        }\r\n        .err { color: #ef4444; font-size: 13px; }\r\n        .btn {\r\n          display: inline-flex;           /* ключ: НЕ растягиваемся на всю ширину */\r\n          align-items: center;\r\n          justify-content: center;\r\n          height: 38px;\r\n          padding: 0 14px;\r\n          border-radius: 10px;\r\n          border: 1px solid #e5e7eb;\r\n          background: #8d2828;            /* фирменный цвет */\r\n          color: #fff;\r\n          font-weight: 600;\r\n          cursor: pointer;\r\n        }\r\n        .btn:disabled { opacity: 0.6; cursor: default; }\r\n      `}</style>\r\n    </form>\r\n  );\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(auth)/sign-in/page.tsx",
+      "size": 2648,
+      "hash": "3099bb6c73fef6bd0cd752faf73c84ad963f53fe",
+      "textSample": "import { redirect } from 'next/navigation';\nimport { auth } from '@/auth.config';\nimport SignInForm from './SignInForm';\n\nexport const dynamic = 'force-dynamic';  // Обязательно динамическая страница (не статическая), т.к. зависит от сессии и query-параметров\n\nexport default async function SignInPage(props: { \n  searchParams?: Promise<Record<string, string | string[] | undefined>> \n}) {\n  // Проверяем наличие активной сессии через auth() (getServerSession). Если пользователь уже залогинен – перенаправляем на главную.\n  const session = await auth();\n  if (session) {\n    redirect('/');  // Если есть сессия, сразу уходим с страницы входа (редирект на главную/дешборд)\n  }\n\n  // Извлекаем query-параметры (?error=… & callbackUrl=…) из URL, учитывая что searchParams передаются как Promise\n  const sp = props.searchParams ? await props.searchParams : undefined;\n  const errorParam = sp?.error;\n  const callbackParam = sp?.callbackUrl;\n  const error = Array.isArray(errorParam) ? errorParam[0] : errorParam;\n  const callbackUrl = Array.isArray(callbackParam) ? callbackParam[0] : (callbackParam ?? '/dashboard');\n  // ↑ Если callbackUrl не задан, по умолчанию отправим пользователя на \"/dashboard\" после входа (основная страница после логина)\n\n  return (\n    <main className=\"mx-auto max-w-xl px-4 py-10\">\n      {/* Верхний блок с приветствием (визуал как в разработочной версии) */}\n      <div className=\"mb-8\">\n        <div className=\"text-lg text-neutral-600\">Гимназия № 108 имени В. Н. Татищева</div>\n        <h1 className=\"text-3xl font-semibold mt-1\">Добро пожаловать в CRM-систему</h1>\n        <div className=\"text-neutral-600 mt-2\">Необходим вход в систему</div>\n      </div>\n\n      {/* Сообщение об ошибке, если передан параметр error */}\n      {error && (\n        <p className=\"text-red-600 mb-4\">\n          Ошибка авторизации. {error === 'CredentialsSignin' ? 'Проверьте логин и пароль.' : error}\n        </p>\n      )}\n\n      {/* Форма входа (вынесена в отдельный компонент) */}\n      <SignInForm callbackUrl={callbackUrl} />\n    </main>\n  );\n}\n",
+      "kind": "app-route-file",
+      "routePath": "/sign-in",
+      "pageType": "page",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": true,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/admin/db-status/actions.ts",
+      "size": 2460,
+      "hash": "b7e1b502822b72af653aa4dd1fe3d1b787531b92",
+      "textSample": "// app/admin/db-status/actions.ts\r\n'use server';\r\n\r\nimport { revalidatePath } from 'next/cache';\r\nimport { redirect } from 'next/navigation';\r\nimport bcrypt from 'bcryptjs';\r\nimport { prisma } from '@/lib/prisma';\r\nimport { normalizeRole, Role } from '@/lib/roles';\r\n\r\n// остальной код без изменений\r\n\r\n\r\nfunction requireString(v: FormDataEntryValue | null, field: string): string {\r\n  if (typeof v !== 'string' || v.trim() === '') {\r\n    throw new Error(`Поле ${field} обязательно`);\r\n  }\r\n  return v.trim();\r\n}\r\n\r\nfunction optionalString(v: FormDataEntryValue | null): string | null {\r\n  return typeof v === 'string' && v.trim() !== '' ? v.trim() : null;\r\n}\r\n\r\nfunction pickRole(v: FormDataEntryValue | null): Role | null {\r\n  return normalizeRole(typeof v === 'string' ? v : null);\r\n}\r\n\r\nexport async function upsertUser(formData: FormData): Promise<void> {\r\n  const id = optionalString(formData.get('id'));\r\n  const name = requireString(formData.get('name'), 'name');\r\n  const username = optionalString(formData.get('username'));\r\n  const email = optionalString(formData.get('email'));\r\n  const phone = optionalString(formData.get('phone'));\r\n  const role = pickRole(formData.get('role')); // Role | null — тип совпадает с нашими предикатами\r\n\r\n  await prisma.user.upsert({\r\n    where: { id: id ?? '00000000-0000-0000-0000-000000000000' }, // заведомо несуществующий, чтобы сработал create\r\n    update: { name, username, email, phone, role },\r\n    create: {\r\n      name,\r\n      username,\r\n      email,\r\n      phone,\r\n      role,\r\n    },\r\n  });\r\n\r\n  revalidatePath('/admin/db-status');\r\n  redirect('/admin/db-status?ok=upsert');\r\n}\r\n\r\nexport async function forceResetPassword(formData: FormData): Promise<void> {\r\n  const id = requireString(formData.get('id'), 'id');\r\n  const newPassword = requireString(formData.get('newPassword'), 'newPassword');\r\n\r\n  const passwordHash = await bcrypt.hash(newPassword, 10);\r\n\r\n  await prisma.user.update({\r\n    where: { id },\r\n    data: { passwordHash },\r\n  });\r\n\r\n  revalidatePath('/admin/db-status');\r\n  redirect('/admin/db-status?ok=reset');\r\n}\r\n\r\nexport async function deleteUser(formData: FormData): Promise<void> {\r\n  const id = requireString(formData.get('id'), 'id');\r\n  await prisma.user.delete({ where: { id } });\r\n\r\n  revalidatePath('/admin/db-status');\r\n  redirect('/admin/db-status?ok=deleted');\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": true,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/admin/db-status/page.module.css",
+      "size": 2471,
+      "hash": "40e6993ecd77e49aaff49149ea9e362f778345f8",
+      "textSample": ".page { display:grid; gap:12px; }\r\n\r\n.head { padding:14px 16px; border-radius:16px; }\r\n.title { margin:0; font-weight:900; font-size:22px; color:#0f172a; }\r\n.subtitle { margin:6px 0 0; font-size:14px; color:#374151; }\r\n\r\n.note { padding:10px 12px; border-radius:12px; font-size:14px; }\r\n.ok { border:1px solid #c8e6c9; background:#f0fbf1; color:#166534; }\r\n.err { border:1px solid #fecaca; background:#fff1f2; color:#991b1b; }\r\n\r\n.panel { padding:12px 14px; border-radius:16px; }\r\n\r\n.h2 { margin:0 0 10px; font-size:16px; font-weight:800; color:#0f172a; }\r\n\r\n.tableWrap { padding:8px; border-radius:14px; }\r\n.table {\r\n  width:100%; border-collapse:separate; border-spacing:0; font-size:14px;\r\n}\r\n.table thead th {\r\n  text-align:left; font-weight:800; color:#0f172a; padding:8px;\r\n  border-bottom:1px solid rgba(229,231,235,.9); text-transform:none;\r\n}\r\n.table tbody td {\r\n  padding:8px; border-bottom:1px solid rgba(229,231,235,.6); color:#111827;\r\n}\r\n.table tbody tr:last-child td { border-bottom:0; }\r\n\r\n.actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }\r\n\r\n.form { display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:8px; align-items:center; }\r\n\r\n.input{\r\n  border:1px solid rgba(229,231,235,.9);\r\n  background:#fff; border-radius:10px; padding:8px 10px; font-size:14px; color:#0f172a; outline:none;\r\n}\r\n.input:focus { border-color:#cfe3ff; box-shadow:0 0 0 3px rgba(207,227,255,.4); }\r\n\r\n.btn{\r\n  height:34px; border-radius:10px; padding:0 12px;\r\n  border:1px solid rgba(229,231,235,.9); background:#fff; color:#0f172a;\r\n  cursor:pointer; transition:filter 120ms ease, box-shadow 120ms ease, transform 120ms ease;\r\n  text-decoration:none;\r\n}\r\n.btn:hover { filter:brightness(.98); }\r\n.primary{ background:var(--brand); color:#fff; border-color:var(--brand); }\r\n.primary:hover{ filter:brightness(.96); }\r\n.ghost{ background:rgba(255,255,255,.6); }\r\n\r\n.glass{\r\n  background:linear-gradient(180deg,rgba(255,255,255,.68),rgba(255,255,255,.4));\r\n  backdrop-filter:saturate(180%) blur(10px);\r\n  -webkit-backdrop-filter:saturate(180%) blur(10px);\r\n  border:1px solid rgba(229,231,235,.8);\r\n  box-shadow:0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);\r\n}\r\n.glassLite{\r\n  background:rgba(255,255,255,.55);\r\n  backdrop-filter:saturate(160%) blur(6px);\r\n  -webkit-backdrop-filter:saturate(160%) blur(6px);\r\n  border:1px solid rgba(229,231,235,.7);\r\n  border-radius:14px;\r\n  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/admin/db-status/page.tsx",
+      "size": 4837,
+      "hash": "c85238af177c625852a8a95a111ec3d09de57d03",
+      "textSample": "import { prisma } from '@/lib/prisma';\r\nimport { canViewAdmin } from '@/lib/roles';\r\nimport { auth } from '@/auth.config';\r\nimport { redirect } from 'next/navigation';\r\nimport { deleteUser, forceResetPassword, upsertUser } from './actions';\r\nimport styles from './page.module.css';\r\n\r\nexport const dynamic = 'force-dynamic';\r\n\r\ntype UserRow = {\r\n  id: string;\r\n  name: string;\r\n  username: string | null;\r\n  email: string | null;\r\n  phone: string | null;\r\n  role: string | null;\r\n};\r\n\r\nexport default async function DbStatusPage(props: {\r\n  searchParams?: Promise<Record<string, string | string[] | undefined>>;\r\n}) {\r\n  const session = await auth();\r\n  const role = (session?.user as any)?.role ?? null;\r\n  if (!canViewAdmin(role)) redirect('/');\r\n\r\n  const sp = (props.searchParams ? await props.searchParams : undefined) ?? undefined;\r\n  const okParam = sp?.ok;\r\n  const errorParam = sp?.error;\r\n  const ok = Array.isArray(okParam) ? okParam[0] : okParam;\r\n  const error = Array.isArray(errorParam) ? errorParam[0] : errorParam;\r\n\r\n  const users = await prisma.user.findMany({\r\n    orderBy: { name: 'asc' },\r\n    select: { id: true, name: true, username: true, email: true, phone: true, role: true },\r\n  });\r\n\r\n  return (\r\n    <main className={styles.page}>\r\n      <header className={`${styles.glass} ${styles.head}`}>\r\n        <h1 className={styles.title}>Статус БД</h1>\r\n        <p className={styles.subtitle}>пользователей: {users.length}. подключение активно.</p>\r\n      </header>\r\n\r\n      {(ok || error) && (\r\n        <div className={`${styles.note} ${ok ? styles.ok : styles.err}`}>\r\n          {ok ? <>Готово: {ok}</> : <>Ошибка: {error}</>}\r\n        </div>\r\n      )}\r\n\r\n      <section className={styles.panel + ' ' + styles.glass}>\r\n        <h2 className={styles.h2}>пользователи</h2>\r\n        <div className={styles.tableWrap + ' ' + styles.glassLite}>\r\n          <table className={styles.table}>\r\n            <thead>\r\n              <tr>\r\n                <th>имя</th>\r\n                <th>логин</th>\r\n                <th>email</th>\r\n                <th>телефон</th>\r\n                <th>роль</th>\r\n                <th>действия</th>\r\n              </tr>\r\n            </thead>\r\n            <tbody>\r\n              {users.map((u: UserRow) => (\r\n                <tr key={u.id}>\r\n                  <td>{u.name}</td>\r\n                  <td>{u.username ?? '—'}</td>\r\n                  <td>{u.email ?? '—'}</td>\r\n                  <td>{u.phone ?? '—'}</td>\r\n                  <td>{u.role ?? '—'}</td>\r\n                  <td className={styles.actions}>\r\n                    <form action={deleteUser}>\r\n                      <input type=\"hidden\" name=\"id\" value={u.id} />\r\n                      <button className={`${styles.btn} ${styles.ghost}`} type=\"submit\">удалить</button>\r\n                    </form>\r\n                    <form action={forceResetPassword} className={styles.resetForm}>\r\n                      <input type=\"hidden\" name=\"id\" value={u.id} />\r\n                      <input name=\"newPassword\" placeholder=\"Новый пароль\" className={styles.input} required />\r\n                      <button className={`${styles.btn} ${styles.ghost}`} type=\"submit\">сбросить</button>\r\n                    </form>\r\n                  </td>\r\n                </tr>\r\n              ))}\r\n            </tbody>\r\n          </table>\r\n        </div>\r\n      </section>\r\n\r\n      <section className={styles.panel + ' ' + styles.glass}>\r\n        <h2 className={styles.h2}>создать/обновить пользователя</h2>\r\n        <form action={upsertUser} className={styles.form}>\r\n          <input name=\"id\" placeholder=\"id (опц.)\" className={styles.input} />\r\n          <input name=\"name\" placeholder=\"Имя\" className={styles.input} required />\r\n          <input name=\"username\" placeholder=\"Логин\" className={styles.input} />\r\n          <input name=\"email\" placeholder=\"Email\" className={styles.input} />\r\n          <input name=\"phone\" placeholder=\"Телефон\" className={styles.input} />\r\n          <select name=\"role\" className={st",
+      "kind": "app-route-file",
+      "routePath": "/admin/db-status",
+      "pageType": "page",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": true,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/admin/layout.module.css",
+      "size": 788,
+      "hash": "a805426b3b4c6976577cc360e42211a9453dd84c",
+      "textSample": "/* app/admin/layout.module.css */\r\n.appShell {\r\n  display: grid;\r\n  grid-template-columns: 280px minmax(0, 1fr); /* синхронизировано с Sidebar */\r\n  min-height: 100dvh;\r\n  background: #f7f7f8;\r\n}\r\n\r\n.appSidebar {\r\n  position: sticky;\r\n  top: 0;\r\n  height: 100dvh;\r\n  width: 280px;          /* фиксируем контейнер */\r\n  flex: 0 0 280px;       /* запрещаем сжатие/растяжение */\r\n  overflow: hidden;      /* сайдбар без скроллов */\r\n  background: #ffffff;\r\n  border-right: 1px solid #e5e7eb;\r\n}\r\n\r\n.appMain {\r\n  min-width: 0;\r\n  height: 100dvh;\r\n  overflow: auto;        /* прокрутка только у контента */\r\n  -webkit-overflow-scrolling: touch;\r\n  padding: 16px;\r\n  background: #f7f7f8;\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/admin/layout.tsx",
+      "size": 845,
+      "hash": "a8b690f7f22ed88b7ab79e8b54c8ba679391a964",
+      "textSample": "// app/admin/layout.tsx\r\nimport { redirect } from 'next/navigation';\r\nimport type { ReactNode } from 'react';\r\nimport { auth } from '@/auth.config';\r\nimport { canViewAdmin, normalizeRole } from '@/lib/roles';\r\nimport Sidebar from '@/components/Sidebar';\r\nimport styles from './layout.module.css';\r\n\r\nexport const dynamic = 'force-dynamic';\r\n\r\nexport default async function AdminLayout({ children }: { children: ReactNode }) {\r\n  const session = await auth();\r\n  const role = normalizeRole((session?.user as any)?.role ?? null);\r\n\r\n  if (!session) redirect('/sign-in');\r\n  if (!canViewAdmin(role)) redirect('/');\r\n\r\n  return (\r\n    <div className={styles.appShell}>\r\n      <aside className={styles.appSidebar}>\r\n        <Sidebar />\r\n      </aside>\r\n      <main className={styles.appMain}>\r\n        {children}\r\n      </main>\r\n    </div>\r\n  );\r\n}\r\n",
+      "kind": "app-route-file",
+      "routePath": "/admin",
+      "pageType": "layout",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": true,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/admin/page.module.css",
+      "size": 753,
+      "hash": "32e89a81dbe6dcb671a42dcf96b67d831cbf3819",
+      "textSample": ".page { display:grid; gap:12px; }\r\n.head { padding:14px 16px; border-radius:16px; }\r\n.title { margin:0; font-weight:900; font-size:22px; color:#0f172a; }\r\n.subtitle { margin:6px 0 0; font-size:14px; color:#374151; }\r\n\r\n.info { padding:12px 14px; border-radius:16px; }\r\n.infoRow { display:grid; grid-template-columns:140px 1fr; gap:8px; align-items:center; }\r\n.infoKey { font-weight:800; color:#0f172a; }\r\n.infoVal { color:#374151; }\r\n\r\n.glass{\r\n  background:linear-gradient(180deg,rgba(255,255,255,.68),rgba(255,255,255,.4));\r\n  backdrop-filter:saturate(180%) blur(10px);\r\n  -webkit-backdrop-filter:saturate(180%) blur(10px);\r\n  border:1px solid rgba(229,231,235,.8);\r\n  box-shadow:0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);\r\n}\r\n\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/admin/page.tsx",
+      "size": 1028,
+      "hash": "bd4a7285ac2433cb92b9424539267034a7194c81",
+      "textSample": "import { redirect } from 'next/navigation';\nimport { auth } from '@/auth.config';\nimport { canViewAdmin, normalizeRole } from '@/lib/roles';\nimport styles from './page.module.css';\n\nexport const dynamic = 'force-dynamic';\n\nexport default async function AdminStub() {\n  const session = await auth();\n  const role = normalizeRole((session?.user as any)?.role ?? null);\n  if (!canViewAdmin(role)) redirect('/');\n\n  return (\n    <main className={styles.page}>\n      <header className={`${styles.glass} ${styles.head}`}>\n        <h1 className={styles.title}>Администрирование</h1>\n        <p className={styles.subtitle}>доступ: {role || '—'}</p>\n      </header>\n\n      <section className={styles.info + ' ' + styles.glass}>\n        <div className={styles.infoRow}>\n          <span className={styles.infoKey}>панель</span>\n          <span className={styles.infoVal}>доступ к инструментам управления системой</span>\n        </div>\n      </section>\n    </main>\n  );\n}\n",
+      "kind": "app-route-file",
+      "routePath": "/admin",
+      "pageType": "page",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": true,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/api/auth/[...nextauth]/route.ts",
+      "size": 236,
+      "hash": "eab432039eba77e26e308ffd0432fe36aa92dc1d",
+      "textSample": "import NextAuth from \"next-auth\";\nimport { authOptions } from \"@/auth.config\";\n\nexport const runtime = \"nodejs\";\nexport const dynamic = \"force-dynamic\";\n\nconst handler = NextAuth(authOptions);\nexport { handler as GET, handler as POST };",
+      "kind": "app-route-file",
+      "routePath": "/api/auth/[...nextauth]",
+      "pageType": "route",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": true,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/layout.tsx",
+      "size": 363,
+      "hash": "f88f42a610904eb8380f93edb1c48b6251eac249",
+      "textSample": "// app/layout.tsx\nimport type { ReactNode } from 'react';\nimport Providers from './providers';\n\nexport const metadata = {\n  title: 'G108 CRM',\n};\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang=\"ru\">\n      <body>\n        <Providers>\n          {children}\n        </Providers>\n      </body>\n    </html>\n  );\n}\n",
+      "kind": "app-route-file",
+      "routePath": "/",
+      "pageType": "layout",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": true
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/page.tsx",
+      "size": 205,
+      "hash": "5eb1ac80e3d2ca8ed05e3850f2170dd04ad12c88",
+      "textSample": "import { redirect } from 'next/navigation';\nimport { auth } from '@/auth.config';\n\nexport default async function Home() {\n  const session = await auth();\n  redirect(session ? '/dashboard' : '/sign-in');\n}\n",
+      "kind": "app-route-file",
+      "routePath": "/",
+      "pageType": "page",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/providers.tsx",
+      "size": 270,
+      "hash": "6f24d8c14c264c01749f0c6317fff154f522ed39",
+      "textSample": "// app/providers.tsx\r\n'use client';\r\n\r\nimport { SessionProvider } from 'next-auth/react';\r\nimport type { ReactNode } from 'react';\r\n\r\nexport default function Providers({ children }: { children: ReactNode }) {\r\n  return <SessionProvider>{children}</SessionProvider>;\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "auth.config.ts",
+      "size": 2068,
+      "hash": "0b09431572823c351d9aaa7c964cfeb810699a20",
+      "textSample": "// auth.config.ts\nimport type { NextAuthOptions, DefaultSession } from 'next-auth';\nimport CredentialsProvider from 'next-auth/providers/credentials';\nimport { getServerSession } from 'next-auth';\nimport { compare } from 'bcryptjs';\nimport { prisma } from '@/lib/prisma';\n\ndeclare module 'next-auth' {\n  interface Session extends DefaultSession {\n    user: DefaultSession['user'] & { id: string; role: string | null };\n  }\n  // при необходимости можно расширить тип User тут\n}\n\nexport const authOptions: NextAuthOptions = {\n  session: { strategy: 'jwt' },\n  providers: [\n    CredentialsProvider({\n      name: 'Credentials',\n      credentials: {\n        username: { label: 'Логин или Email', type: 'text' },\n        password: { label: 'Пароль', type: 'password' },\n      },\n      async authorize(credentials) {\n        if (!credentials?.username || !credentials?.password) return null;\n\n        const user =\n          (await prisma.user.findFirst({\n            where: {\n              OR: [\n                { username: credentials.username },\n                { email: credentials.username },\n              ],\n            },\n          })) || null;\n\n        if (!user?.passwordHash) return null;\n\n        const ok = await compare(credentials.password, user.passwordHash);\n        if (!ok) return null;\n\n        return {\n          id: user.id,\n          name: user.name,\n          email: user.email ?? undefined,\n          role: user.role ?? null,\n        } as any;\n      },\n    }),\n  ],\n  callbacks: {\n    async jwt({ token, user }) {\n      if (user) {\n        token.uid = (user as any).id;\n        token.role = (user as any).role ?? null;\n      }\n      return token;\n    },\n    async session({ session, token }) {\n      if (session.user) {\n        (session.user as any).id = token.uid as string;\n        (session.user as any).role = (token as any).role ?? null;\n      }\n      return session;\n    },\n  },\n  pages: {\n    signIn: '/sign-in',\n  },\n};\n\nexport async function auth() {\n  return getServerSession(authOptions);\n}\n",
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "components/Providers.tsx",
+      "size": 182,
+      "hash": "a6652d3615325982b87739ae4065cba049832f33",
+      "textSample": "// components/Providers.tsx\n'use client';\n\nimport { ReactNode } from 'react';\n\nexport default function Providers({ children }: { children: ReactNode }) {\n  return <>{children}</>;\n}\n",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "components/Sidebar.tsx",
+      "size": 18431,
+      "hash": "098ff0f284586ac8e7e4728d9850a81ab55e5891",
+      "textSample": "// components/Sidebar.tsx\n\"use client\";\n\nimport Link from \"next/link\";\nimport { useSession, signOut } from \"next-auth/react\";\nimport { usePathname } from \"next/navigation\";\nimport { useEffect, useMemo, useState } from \"react\";\n\nconst BRAND = \"#8d2828\";\n\nconst ROLE_RU: Record<string, string> = {\n  admin: \"Администратор\",\n  director: \"Директор\",\n  deputy_plus: \"Заместитель +\",\n  deputy: \"Заместитель\",\n  teacher_plus: \"Педагог +\",\n  teacher: \"Педагог\",\n};\n\ntype ThreadListItem = { id: string; unreadCount?: number | null };\n\ntype TaskLite = {\n  id: string;\n  assignedTo?: Array<{ type?: \"user\"; id: string }>;\n  assignees?: Array<{ userId: string; status?: string; doneAt?: string | null }>;\n};\n\nfunction splitFio(full?: string | null) {\n  const s = (full || \"\").trim();\n  if (!s) return { last: \"ГОСТЬ\", rest: \"\" };\n  const parts = s.split(/\\s+/);\n  if (parts.length >= 2) return { last: (parts[0] || \"\").toUpperCase(), rest: parts.slice(1).join(\" \") };\n  return { last: s.toUpperCase(), rest: \"\" };\n}\n\nfunction NavTile(props: {\n  href?: string;\n  active?: boolean;\n  label: string;\n  unread?: number | null;\n  onClick?: () => void;\n  asButton?: boolean;\n}) {\n  const { href, active, label, unread, onClick, asButton } = props;\n  const hasUnread = typeof unread === \"number\" && unread > 0;\n  const isSingleLongWord = !/\\s/.test(label) && label.length >= 9;\n\n  const content = (\n    <div\n      className={`tile glass ${active ? \"active\" : \"\"} ${hasUnread && !active ? \"unread\" : \"\"}`}\n      role=\"button\"\n      aria-current={active ? \"true\" : undefined}\n    >\n      <span className={`label ${isSingleLongWord ? \"label--single\" : \"label--multi\"}`} title={label}>\n        {label.toLowerCase()}\n      </span>\n\n      {hasUnread ? (\n        <span className=\"badge\" aria-label=\"Счётчик\">\n          {unread! > 99 ? \"99+\" : unread}\n        </span>\n      ) : null}\n\n      <style jsx>{`\n        .tile {\n          position: relative;\n          display: grid;\n          place-items: center;\n          text-align: center;\n          width: var(--tile-w, 78%); /* уменьшили ~вдвое за счёт масштаба внутри ячейки */\n          margin: 0 auto;\n          aspect-ratio: 1 / 1;\n          border-radius: 14px;\n          border: 1px solid rgba(229, 231, 235, 0.8);\n          transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;\n          cursor: pointer;\n          overflow: hidden;\n          padding: 4px;\n          isolation: isolate;\n        }\n        .glass {\n          background: linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.4));\n          backdrop-filter: saturate(180%) blur(10px);\n          -webkit-backdrop-filter: saturate(180%) blur(10px);\n          box-shadow: 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.35);\n        }\n        /* лёгкий блик */\n        .tile::before {\n          content: \"\";\n          position: absolute;\n          inset: -35% -35% auto -35%;\n          height: 55%;\n          background:\n            radial-gradient(120px 40px at 10% 0%, rgba(255,255,255,0.55), rgba(255,255,255,0) 60%),\n            linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.06));\n          opacity: 0;\n          transform: translateY(-10%);\n          transition: opacity 160ms ease, transform 200ms ease;\n          pointer-events: none;\n          z-index: 1;\n        }\n        .tile:hover { transform: translateY(-1px); border-color: #cfe3ff; box-shadow: 0 8px 18px rgba(0,0,0,0.08); }\n        .tile:hover::before { opacity: 1; transform: translateY(0); }\n        .tile.active { outline: 2px solid rgba(207,227,255,0.9); }\n        .tile.unread::after {\n          content: \"\"; position: absolute; left: 0; top: 0; height: 3px; width: 100%; background: #ef9b28; z-index: 2;\n        }\n\n        .label {\n          position: relative; z-index: 3;\n          color: #0f172a;\n          font-weight: 700;\n          line-height: 1.08;\n          max-width: 100%;\n          text-align: center;\n          text-decoration: none;\n          text-",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "components/UserMenu.tsx",
+      "size": 300,
+      "hash": "a64e68b57220dfa2f053c90826f55e51b3e04706",
+      "textSample": "// components/UserMenu.tsx\r\n'use client';\r\n\r\nimport { signOut } from 'next-auth/react';\r\n\r\nexport default function UserMenu() {\r\n  return (\r\n    <button\r\n      onClick={() => signOut({ callbackUrl: '/sign-in' })}\r\n      className=\"underline text-sm\"\r\n    >\r\n      Выход\r\n    </button>\r\n  );\r\n}\r\n",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/auth.ts",
+      "size": 2981,
+      "hash": "29080f73a72fcca883e0d75af988abf8089dcf7f",
+      "textSample": "// lib/auth.ts\r\nimport NextAuth, { NextAuthOptions, getServerSession } from \"next-auth\";\r\nimport Credentials from \"next-auth/providers/credentials\";\r\nimport bcrypt from \"bcryptjs\";\r\nimport { prisma } from \"@/lib/prisma\";\r\nimport * as RBAC from \"@/lib/rbac\";\r\n\r\nfunction isRootUserSafe(user: any): boolean {\r\n  try {\r\n    if (typeof (RBAC as any)?.isRootUser === \"function\") {\r\n      return !!(RBAC as any).isRootUser(user);\r\n    }\r\n  } catch {}\r\n  return user?.name === \"Евжик Иван Сергеевич\";\r\n}\r\n\r\nexport const authOptions: NextAuthOptions = {\r\n  debug: process.env.NODE_ENV === \"development\",\r\n  session: { strategy: \"jwt\" },\r\n  pages: { signIn: \"/sign-in\" },\r\n  providers: [\r\n    Credentials({\r\n      credentials: {\r\n        username: { label: \"username/email/ФИО\", type: \"text\" },\r\n        password: { label: \"password\", type: \"password\" },\r\n      },\r\n      authorize: async (creds) => {\r\n        try {\r\n          const username = String(creds?.username || \"\").trim();\r\n          const password = String(creds?.password || \"\");\r\n          if (!username || !password) return null;\r\n\r\n          const user =\r\n            (await prisma.user.findFirst({ where: { username } })) ||\r\n            (await prisma.user.findFirst({ where: { email: username } })) ||\r\n            (await prisma.user.findFirst({ where: { name: username } }));\r\n\r\n          if (!user || !user.passwordHash) return null;\r\n\r\n          const ok = await bcrypt.compare(password, user.passwordHash);\r\n          if (!ok) return null;\r\n\r\n          return {\r\n            id: user.id,\r\n            name: user.name,\r\n            email: user.email,\r\n            username: user.username,\r\n            role: user.role,\r\n          } as any;\r\n        } catch (e) {\r\n          console.error(\"[auth][authorize] error:\", e);\r\n          return null;\r\n        }\r\n      },\r\n    }),\r\n  ],\r\n  callbacks: {\r\n    async jwt({ token, user }) {\r\n      if (user) {\r\n        (token as any).uid = (user as any).id;\r\n        token.name = user.name || token.name;\r\n        (token as any).role = (user as any).role || null;\r\n        (token as any).username = (user as any).username || null;\r\n        (token as any).isRoot = isRootUserSafe(user);\r\n      }\r\n      return token;\r\n    },\r\n    async session({ session, token }) {\r\n      (session.user as any) = {\r\n        id: (token as any).uid || token.sub,\r\n        name: session.user?.name || (token as any).name || \"\",\r\n        email: session.user?.email || null,\r\n        username: (token as any).username || null,\r\n        role: (token as any).role || null,\r\n        isRoot: !!(token as any).isRoot,\r\n      };\r\n      return session;\r\n    },\r\n  },\r\n  secret: process.env.NEXTAUTH_SECRET,\r\n};\r\n\r\n// для совместимости с существующим кодом (`auth()` в API-роутах)\r\nexport const auth = () => getServerSession(authOptions);\r\n\r\n// next-auth handler для маршрута\r\nconst handler = NextAuth(authOptions);\r\nexport { handler };\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/chatSSE.ts",
+      "size": 1135,
+      "hash": "26460c523fa4b587e98d05ce37e7f118c32769ac",
+      "textSample": "// lib/chatSSE.ts\r\ntype Client = { controller: ReadableStreamDefaultController };\r\nconst channels = new Map<string, Set<Client>>();\r\nconst enc = new TextEncoder();\r\n\r\nexport function subscribe(threadId: string, controller: ReadableStreamDefaultController) {\r\n  let set = channels.get(threadId);\r\n  if (!set) { set = new Set(); channels.set(threadId, set); }\r\n  const client: Client = { controller };\r\n  set.add(client);\r\n  return () => {\r\n    const s = channels.get(threadId);\r\n    if (!s) return;\r\n    s.delete(client);\r\n    if (s.size === 0) channels.delete(threadId);\r\n  };\r\n}\r\n\r\nexport function publishMessage(threadId: string, messagePayload: unknown) {\r\n  broadcast(threadId, { type: \"message\", data: messagePayload });\r\n}\r\nexport function publishRead(threadId: string, readPayload: unknown) {\r\n  broadcast(threadId, { type: \"read\", data: readPayload });\r\n}\r\n\r\nfunction broadcast(threadId: string, payload: any) {\r\n  const s = channels.get(threadId);\r\n  if (!s || s.size === 0) return;\r\n  const data = enc.encode(`data: ${JSON.stringify(payload)}\\n\\n`);\r\n  for (const c of s) { try { c.controller.enqueue(data); } catch {} }\r\n}\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/db.ts",
+      "size": 367,
+      "hash": "290c7f4e3cf8ec339e932c04e3f4451a61d6175f",
+      "textSample": "﻿import { PrismaClient } from '@prisma/client';\r\n\r\nconst globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };\r\n\r\nexport const db =\r\n  globalForPrisma.prisma ??\r\n  new PrismaClient({\r\n    // log: ['query'], // при необходимости включай лог\r\n  });\r\n\r\nif (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/dbInfo.ts",
+      "size": 715,
+      "hash": "c231edc4c5364856851c6c3b973f68560d2a8e43",
+      "textSample": "// lib/dbInfo.ts\r\nexport function getDbInfo() {\r\n  const url = process.env.DATABASE_URL || \"\";\r\n  try {\r\n    const u = new URL(url);\r\n    const host = u.hostname;       // ep-summer-frog-...neon.tech\r\n    const database = u.pathname.replace(/^\\//, \"\") || \"\";\r\n    const isPgBouncer = /pgbouncer=true/i.test(u.search);\r\n    return { host, database, isPgBouncer, raw: url };\r\n  } catch {\r\n    return { host: \"\", database: \"\", isPgBouncer: false, raw: url };\r\n  }\r\n}\r\n\r\nexport function maskUrl(url: string) {\r\n  if (!url) return \"\";\r\n  try {\r\n    const u = new URL(url);\r\n    if (u.password) u.password = \"***\";\r\n    if (u.username) u.username = \"***\";\r\n    return u.toString();\r\n  } catch {\r\n    return url;\r\n  }\r\n}\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/edu.ts",
+      "size": 2622,
+      "hash": "282f9a719918958fed02b75806d363005fbaf301",
+      "textSample": "// lib/edu.ts\r\n// Справочники для форм. При желании — вытянем из БД, но пока так удобнее поддерживать.\r\n\r\nexport const SUBJECTS_2025_RU: string[] = [\r\n  // Языки и словесность\r\n  \"Русский язык\",\r\n  \"Литература\",\r\n  \"Иностранный язык (английский)\",\r\n  // Математика и информатика\r\n  \"Математика\",\r\n  \"Алгебра\",\r\n  \"Геометрия\",\r\n  \"Информатика\",\r\n  // Естественные науки\r\n  \"Физика\",\r\n  \"Химия\",\r\n  \"Биология\",\r\n  \"География\",\r\n  // Общественно-научные дисциплины\r\n  \"История России\",\r\n  \"Всеобщая история\",\r\n  \"Обществознание\",\r\n  \"Право (вариативный)\",\r\n  \"Экономика (вариативный)\",\r\n  // Искусство, технологии, безопасность, спорт\r\n  \"Изобразительное искусство\",\r\n  \"Музыка\",\r\n  \"Технология\",\r\n  \"Физическая культура\",\r\n  \"ОБиЗР\",\r\n  // Культурологические модули\r\n  \"ОДНКНР\",\r\n  // Старшая школа\r\n  \"Индивидуальный проект\"\r\n];\r\n\r\n// Методические объединения — по структуре раздела «Педагогический состав» гимназии №108.\r\nexport const METHODICAL_GROUPS_108: string[] = [\r\n  \"МО начальной школы\",\r\n  \"МО русского языка и литературы\",\r\n  \"МО иностранных языков\",\r\n  \"МО математики и информатики\",\r\n  \"МО естествознания\",\r\n  \"МО истории и обществознания\",\r\n  \"МО физической культуры и спорта\",\r\n  \"МО дополнительного образования\",\r\n  \"МО классных руководителей\",\r\n  \"Администрация\",\r\n  \"Техперсонал\",\r\n  \"Психологи\"\r\n];\r\n\r\n// Роли — читаем из БД через /api/roles, но на случай деградации можно подстраховаться:\r\nexport const FALLBACK_ROLES = [\r\n  { slug: \"director\",        name: \"Директор\" },\r\n  { slug: \"deputy_plus\",     name: \"Заместитель +\" },\r\n  { slug: \"deputy\",          name: \"Заместитель\" },\r\n  { slug: \"teacher_plus\",    name: \"Педагог +\" },\r\n  { slug: \"teacher\",         name: \"Педагог\" }\r\n];\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/http.ts",
+      "size": 345,
+      "hash": "d092c1396e662c339fc9e9e279bb341c5509661c",
+      "textSample": "// app/lib/http.ts\r\nexport async function safeJson<T = any>(res: Response): Promise<T> {\r\n  const text = await res.text();\r\n  if (!text) throw new Error(`Пустой ответ ${res.status}`);\r\n  try {\r\n    return JSON.parse(text) as T;\r\n  } catch {\r\n    throw new Error(`Неверный JSON ${res.status}: ${text.slice(0, 400)}`);\r\n  }\r\n}\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/prisma.ts",
+      "size": 366,
+      "hash": "203dde552e7a73ceb45b2fc8be5c74cbf9be7a15",
+      "textSample": "// lib/prisma.ts\nimport { PrismaClient } from '@prisma/client';\n\nconst g = globalThis as unknown as { prisma?: PrismaClient };\n\nexport const prisma =\n  g.prisma ??\n  new PrismaClient({\n    log:\n      process.env.NODE_ENV === 'development'\n        ? ['query', 'error', 'warn']\n        : ['error'],\n  });\n\nif (process.env.NODE_ENV !== 'production') g.prisma = prisma;\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/rbac.ts",
+      "size": 3842,
+      "hash": "50a3778e119d9023bf0c1b60489511a92be0ccdf",
+      "textSample": "﻿// lib/rbac.ts\r\nimport { prisma } from \"@/lib/prisma\";\r\n\r\nexport const ROLE = {\r\n  DIRECTOR: \"Р”РёСЂРµРєС‚РѕСЂ\",\r\n  DEPUTY_PLUS: \"Р—Р°РјРµСЃС‚РёС‚РµР»СЊ +\",\r\n  DEPUTY: \"Р—Р°РјРµСЃС‚РёС‚РµР»СЊ\",\r\n  TEACHER_PLUS: \"РџРµРґР°РіРѕРі +\",\r\n  TEACHER: \"РџРµРґР°РіРѕРі\",\r\n} as const;\r\n\r\nexport type Action =\r\n  | \"task.create\"\r\n  | \"task.assign\"\r\n  | \"task.hide\"\r\n  | \"task.viewHidden\"\r\n  | \"user.manage\"\r\n  | \"user.updatePhone:self\"\r\n  | \"user.updatePhone:any\"\r\n  | \"settings.changeUi\";\r\n\r\nfunction rootIds(): Set<string> {\r\n  const raw = process.env.ROOT_USER_IDS || \"\";\r\n  return new Set(raw.split(\",\").map((s) => s.trim()).filter(Boolean));\r\n}\r\n\r\ntype RoleRow = { name: string; power: number };\r\n\r\nexport async function getUserRoles(userId: string): Promise<RoleRow[]> {\r\n  const rows = await prisma.$queryRaw<RoleRow[]>`\r\n    SELECT r.name, r.power\r\n    FROM Role r\r\n    JOIN UserRole ur ON ur.roleId = r.id\r\n    WHERE ur.userId = ${userId}\r\n  `;\r\n  return rows;\r\n}\r\n\r\nexport async function maxPower(userId: string): Promise<number> {\r\n  if (rootIds().has(userId)) return Number.MAX_SAFE_INTEGER;\r\n  const roles = await getUserRoles(userId);\r\n  return roles.length ? Math.max(...roles.map((r) => r.power)) : 0;\r\n}\r\n\r\nexport async function hasAnyRole(userId: string, names: string[]) {\r\n  if (rootIds().has(userId)) return true;\r\n  const roles = await getUserRoles(userId);\r\n  return roles.some((r) => names.includes(r.name));\r\n}\r\n\r\nexport async function can(userId: string, action: Action): Promise<boolean> {\r\n  if (rootIds().has(userId)) return true;\r\n\r\n  switch (action) {\r\n    case \"settings.changeUi\":\r\n    case \"user.updatePhone:self\":\r\n      return true;\r\n    case \"user.manage\":\r\n    case \"task.create\":\r\n    case \"task.assign\":\r\n      return hasAnyRole(userId, [ROLE.DIRECTOR, ROLE.DEPUTY_PLUS]);\r\n    case \"task.hide\":\r\n      return hasAnyRole(userId, [ROLE.DIRECTOR, ROLE.DEPUTY_PLUS, ROLE.DEPUTY]);\r\n    case \"task.viewHidden\":\r\n      return hasAnyRole(userId, [ROLE.DIRECTOR, ROLE.DEPUTY_PLUS, ROLE.DEPUTY]);\r\n    case \"user.updatePhone:any\":\r\n      return hasAnyRole(userId, [ROLE.DIRECTOR, ROLE.DEPUTY_PLUS, ROLE.DEPUTY]);\r\n    default:\r\n      return false;\r\n  }\r\n}\r\n\r\n// -------------------- Р’РёРґРёРјРѕСЃС‚СЊ Р·Р°РґР°С‡Рё --------------------\r\n\r\ntype FlagRow = { hidden: number; minRolePowerToSeeHidden: number };\r\ntype CntRow = { cnt: number };\r\n\r\nexport async function canSeeTask(userId: string, taskId: string): Promise<boolean> {\r\n  if (rootIds().has(userId)) return true;\r\n\r\n  // 1) Р¤Р»Р°РіРё Р·Р°РґР°С‡Рё\r\n  const flags = await prisma.$queryRaw<FlagRow[]>`\r\n    SELECT hidden, minRolePowerToSeeHidden\r\n    FROM Task\r\n    WHERE id = ${taskId}\r\n    LIMIT 1\r\n  `;\r\n  if (!flags.length) return false;\r\n  const hidden = !!flags[0].hidden;\r\n  const threshold = flags[0].minRolePowerToSeeHidden;\r\n\r\n  if (!hidden) return true;\r\n\r\n  // 2) РќР°Р·РЅР°С‡РµРЅ РЅР°РїСЂСЏРјСѓСЋ?\r\n  const direct = await prisma.$queryRaw<CntRow[]>`\r\n    SELECT COUNT(*) as cnt FROM TaskAssigneeUser\r\n    WHERE taskId = ${taskId} AND userId = ${userId}\r\n  `;\r\n  if ((direct[0]?.cnt ?? 0) > 0) return true;\r\n\r\n  // 3) РќР°Р·РЅР°С‡РµРЅ С‡РµСЂРµР· РіСЂСѓРїРїСѓ?\r\n  const viaGroup = await prisma.$queryRaw<CntRow[]>`\r\n    SELECT COUNT(*) as cnt\r\n    FROM TaskAssigneeGroup tg\r\n    JOIN GroupMember gm ON gm.groupId = tg.groupId\r\n    WHERE tg.taskId = ${taskId} AND gm.userId = ${userId}\r\n  `;\r\n  if ((viaGroup[0]?.cnt ?? 0) > 0) return true;\r\n\r\n  // 4) Р”РѕСЃС‚Р°С‚РѕС‡РµРЅ Р»Рё СѓСЂРѕРІРµРЅСЊ СЂРѕР»Рё\r\n  const power = await maxPower(userId);\r\n  return power >= threshold;\r\n}\r\n\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/roles.ts",
+      "size": 1196,
+      "hash": "fb01c361f9c03bbf7e29075544bb283ad6c05fda",
+      "textSample": "// lib/roles.ts\nexport type Role =\n  | 'guest'\n  | 'user'\n  | 'student'\n  | 'staff'\n  | 'teacher'\n  | 'deputy'\n  | 'deputy_plus'\n  | 'director';\n\nexport const roleOrder: Role[] = [\n  'guest',\n  'user',\n  'student',\n  'staff',\n  'teacher',\n  'deputy',\n  'deputy_plus',\n  'director',\n];\n\nexport function isRole(value: unknown): value is Role {\n  return typeof value === 'string' && (roleOrder as string[]).includes(value);\n}\n\nexport function normalizeRole(value: unknown): Role | null {\n  if (typeof value !== 'string') return null;\n  const v = value.trim();\n  return isRole(v) ? (v as Role) : null;\n}\n\nexport function canViewAdmin(role: Role | null | undefined): boolean {\n  return role === 'director' || role === 'deputy_plus';\n}\n\nexport function canCreateTasks(role: Role | null | undefined): boolean {\n  if (!role) return false;\n  return roleOrder.indexOf(role) >= roleOrder.indexOf('deputy');\n}\n\nexport function canViewTasks(role: Role | null | undefined): boolean {\n  if (!role) return false;\n  return roleOrder.indexOf(role) >= roleOrder.indexOf('teacher');\n}\n\nexport function hasFullAccess(role: Role | null | undefined): boolean {\n  return role === 'deputy_plus' || role === 'director';\n}\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/serialize.ts",
+      "size": 604,
+      "hash": "8bcef753eb10a19f364f9857979b2e6c0865ddd8",
+      "textSample": "// app/lib/serialize.ts\r\nexport function parseStrArray(input: unknown): string[] {\r\n  if (Array.isArray(input)) return input.map(x => String(x ?? \"\")).filter(Boolean);\r\n  if (typeof input !== \"string\" || !input.trim()) return [];\r\n  try {\r\n    const v = JSON.parse(input);\r\n    return Array.isArray(v) ? v.map(x => String(x ?? \"\")).filter(Boolean) : [];\r\n  } catch {\r\n    return [];\r\n  }\r\n}\r\nexport function toDbStrArray(v: unknown): string | null {\r\n  if (!Array.isArray(v)) return null;\r\n  const arr = v.map(x => String(x ?? \"\")).filter(Boolean);\r\n  return arr.length ? JSON.stringify(arr) : null;\r\n}\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "middleware.ts",
+      "size": 309,
+      "hash": "b3010a7f6488efa9114151dbb6d9de6904712cb5",
+      "textSample": "import { withAuth } from \"next-auth/middleware\";\n\nexport default withAuth({\n  pages: { signIn: \"/sign-in\" },\n  callbacks: { authorized: ({ token }) => !!token },\n  secret: process.env.NEXTAUTH_SECRET\n});\n\nexport const config = {\n  matcher: [\"/((?!api/auth|_next/static|_next/image|favicon.ico|sign-in).*)\"]\n};",
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "next-env.d.ts",
+      "size": 216,
+      "hash": "4eeda91c7bb116ef5d18c84ce15e5588ec2133c3",
+      "textSample": "/// <reference types=\"next\" />\r\n/// <reference types=\"next/image-types/global\" />\r\n\r\n// NOTE: This file should not be edited\r\n// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.\r\n",
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "next.config.ts",
+      "size": 121,
+      "hash": "5bba21f2b8cad71a1c79903f8a28518f9f2647d1",
+      "textSample": "﻿import type { NextConfig } from \"next\";\r\nconst config: NextConfig = { reactStrictMode: true };\r\nexport default config;",
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "package-lock.json",
+      "size": 56952,
+      "hash": "8b73c2fb78db0559733fc15cdf0b5463c93af06a",
+      "textSample": "{\r\n  \"name\": \"g108crm-core\",\r\n  \"version\": \"0.1.0\",\r\n  \"lockfileVersion\": 3,\r\n  \"requires\": true,\r\n  \"packages\": {\r\n    \"\": {\r\n      \"name\": \"g108crm-core\",\r\n      \"version\": \"0.1.0\",\r\n      \"dependencies\": {\r\n        \"@prisma/client\": \"^6.14.0\",\r\n        \"@types/bcryptjs\": \"2.4.6\",\r\n        \"bcryptjs\": \"3.0.2\",\r\n        \"next\": \"^15.4.6\",\r\n        \"next-auth\": \"4.24.11\",\r\n        \"react\": \"^18.3.1\",\r\n        \"react-dom\": \"^18.3.1\"\r\n      },\r\n      \"devDependencies\": {\r\n        \"@types/node\": \"^24.2.1\",\r\n        \"@types/react\": \"^19.1.10\",\r\n        \"@types/react-dom\": \"^19.1.7\",\r\n        \"prisma\": \"^6.14.0\",\r\n        \"typescript\": \"^5.9.2\"\r\n      },\r\n      \"engines\": {\r\n        \"node\": \">=18\"\r\n      }\r\n    },\r\n    \"node_modules/@babel/runtime\": {\r\n      \"version\": \"7.28.2\",\r\n      \"resolved\": \"https://registry.npmjs.org/@babel/runtime/-/runtime-7.28.2.tgz\",\r\n      \"integrity\": \"sha512-KHp2IflsnGywDjBWDkR9iEqiWSpc8GIi0lgTT3mOElT0PP1tG26P4tmFI2YvAdzgq9RGyoHZQEIEdZy6Ec5xCA==\",\r\n      \"license\": \"MIT\",\r\n      \"engines\": {\r\n        \"node\": \">=6.9.0\"\r\n      }\r\n    },\r\n    \"node_modules/@emnapi/runtime\": {\r\n      \"version\": \"1.4.5\",\r\n      \"resolved\": \"https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.4.5.tgz\",\r\n      \"integrity\": \"sha512-++LApOtY0pEEz1zrd9vy1/zXVaVJJ/EbAF3u0fXIzPJEDtnITsBGbbK0EkM72amhl/R5b+5xx0Y/QhcVOpuulg==\",\r\n      \"license\": \"MIT\",\r\n      \"optional\": true,\r\n      \"dependencies\": {\r\n        \"tslib\": \"^2.4.0\"\r\n      }\r\n    },\r\n    \"node_modules/@img/sharp-darwin-arm64\": {\r\n      \"version\": \"0.34.3\",\r\n      \"resolved\": \"https://registry.npmjs.org/@img/sharp-darwin-arm64/-/sharp-darwin-arm64-0.34.3.tgz\",\r\n      \"integrity\": \"sha512-ryFMfvxxpQRsgZJqBd4wsttYQbCxsJksrv9Lw/v798JcQ8+w84mBWuXwl+TT0WJ/WrYOLaYpwQXi3sA9nTIaIg==\",\r\n      \"cpu\": [\r\n        \"arm64\"\r\n      ],\r\n      \"license\": \"Apache-2.0\",\r\n      \"optional\": true,\r\n      \"os\": [\r\n        \"darwin\"\r\n      ],\r\n      \"engines\": {\r\n        \"node\": \"^18.17.0 || ^20.3.0 || >=21.0.0\"\r\n      },\r\n      \"funding\": {\r\n        \"url\": \"https://opencollective.com/libvips\"\r\n      },\r\n      \"optionalDependencies\": {\r\n        \"@img/sharp-libvips-darwin-arm64\": \"1.2.0\"\r\n      }\r\n    },\r\n    \"node_modules/@img/sharp-darwin-x64\": {\r\n      \"version\": \"0.34.3\",\r\n      \"resolved\": \"https://registry.npmjs.org/@img/sharp-darwin-x64/-/sharp-darwin-x64-0.34.3.tgz\",\r\n      \"integrity\": \"sha512-yHpJYynROAj12TA6qil58hmPmAwxKKC7reUqtGLzsOHfP7/rniNGTL8tjWX6L3CTV4+5P4ypcS7Pp+7OB+8ihA==\",\r\n      \"cpu\": [\r\n        \"x64\"\r\n      ],\r\n      \"license\": \"Apache-2.0\",\r\n      \"optional\": true,\r\n      \"os\": [\r\n        \"darwin\"\r\n      ],\r\n      \"engines\": {\r\n        \"node\": \"^18.17.0 || ^20.3.0 || >=21.0.0\"\r\n      },\r\n      \"funding\": {\r\n        \"url\": \"https://opencollective.com/libvips\"\r\n      },\r\n      \"optionalDependencies\": {\r\n        \"@img/sharp-libvips-darwin-x64\": \"1.2.0\"\r\n      }\r\n    },\r\n    \"node_modules/@img/sharp-libvips-darwin-arm64\": {\r\n      \"version\": \"1.2.0\",\r\n      \"resolved\": \"https://registry.npmjs.org/@img/sharp-libvips-darwin-arm64/-/sharp-libvips-darwin-arm64-1.2.0.tgz\",\r\n      \"integrity\": \"sha512-sBZmpwmxqwlqG9ueWFXtockhsxefaV6O84BMOrhtg/YqbTaRdqDE7hxraVE3y6gVM4eExmfzW4a8el9ArLeEiQ==\",\r\n      \"cpu\": [\r\n        \"arm64\"\r\n      ],\r\n      \"license\": \"LGPL-3.0-or-later\",\r\n      \"optional\": true,\r\n      \"os\": [\r\n        \"darwin\"\r\n      ],\r\n      \"funding\": {\r\n        \"url\": \"https://opencollective.com/libvips\"\r\n      }\r\n    },\r\n    \"node_modules/@img/sharp-libvips-darwin-x64\": {\r\n      \"version\": \"1.2.0\",\r\n      \"resolved\": \"https://registry.npmjs.org/@img/sharp-libvips-darwin-x64/-/sharp-libvips-darwin-x64-1.2.0.tgz\",\r\n      \"integrity\": \"sha512-M64XVuL94OgiNHa5/m2YvEQI5q2cl9d/wk0qFTDVXcYzi43lxuiFTftMR1tOnFQovVXNZJ5TURSDK2pNe9Yzqg==\",\r\n      \"cpu\": [\r\n        \"x64\"\r\n      ],\r\n      \"license\": \"LGPL-3.0-or-later\",\r\n      \"optional\": true,\r\n      \"os\": [\r\n        \"darwin\"\r\n      ],\r\n      \"funding\": {\r\n        \"url\": \"https://opencollective.com/libvips\"\r\n      }\r\n    },\r\n    \"node_mo",
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "package.json",
+      "size": 1262,
+      "hash": "7cdc5a8f7692b221c874c82c56107dc7a1e9fe84",
+      "textSample": "{\r\n  \"name\": \"g108crm-core\",\r\n  \"private\": true,\r\n  \"version\": \"0.1.0\",\r\n  \"engines\": {\r\n    \"node\": \">=18\"\r\n  },\r\n  \"scripts\": {\r\n    \"snapshot\": \"node tools/snapshot.js\",\r\n    \"snapshot:env\": \"node tools/snapshot.js --include-env-names\",\r\n    \"typecheck\": \"tsc -p tsconfig.json --noEmit\",\r\n    \"list:endpoints\": \"node scripts/list-endpoints.mjs\",\r\n    \"dev\": \"next dev -p 3000\",\r\n    \"start\": \"next start -p 3000\",\r\n    \"prisma:generate\": \"prisma generate\",\r\n    \"prisma:migrate:deploy\": \"prisma migrate deploy\",\r\n    \"lint\": \"eslint . --ext .ts,.tsx --max-warnings=0\",\r\n    \"build\": \"next build\",\r\n    \"build:fast\": \"next build --no-lint\",\r\n    \"prisma:deploy\": \"prisma migrate deploy\",\r\n    \"db:seed\": \"prisma db seed\",\r\n    \"vercel-build\": \"prisma generate && prisma migrate deploy && next build\"\r\n  },\r\n  \"dependencies\": {\r\n    \"@prisma/client\": \"^6.14.0\",\r\n    \"@types/bcryptjs\": \"2.4.6\",\r\n    \"bcryptjs\": \"3.0.2\",\r\n    \"next\": \"^15.4.6\",\r\n    \"next-auth\": \"4.24.11\",\r\n    \"react\": \"^18.3.1\",\r\n    \"react-dom\": \"^18.3.1\"\r\n  },\r\n  \"devDependencies\": {\r\n    \"@types/node\": \"^24.2.1\",\r\n    \"@types/react\": \"^19.1.10\",\r\n    \"@types/react-dom\": \"^19.1.7\",\r\n    \"prisma\": \"^6.14.0\",\r\n    \"typescript\": \"^5.9.2\"\r\n  },\r\n  \"postinstall\": \"prisma generate\"\r\n  \r\n}\r\n",
+      "kind": "package",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "prisma/dev.db",
+      "size": 0,
+      "hash": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "textSample": null,
+      "kind": "prisma",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": null,
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "prisma/migrations/20250814151727_init/migration.sql",
+      "size": 4653,
+      "hash": "19c7a0e6571a9abecdb97baafe4fe0b8d933840b",
+      "textSample": "-- CreateTable\r\nCREATE TABLE \"public\".\"User\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"name\" TEXT NOT NULL,\r\n    \"username\" TEXT,\r\n    \"email\" TEXT,\r\n    \"phone\" TEXT,\r\n    \"birthday\" TIMESTAMP(3),\r\n    \"classroom\" TEXT,\r\n    \"role\" TEXT,\r\n    \"avatarUrl\" TEXT,\r\n    \"telegram\" TEXT,\r\n    \"about\" TEXT,\r\n    \"notifyEmail\" BOOLEAN NOT NULL DEFAULT true,\r\n    \"notifyTelegram\" BOOLEAN NOT NULL DEFAULT false,\r\n    \"subjects\" TEXT,\r\n    \"methodicalGroups\" TEXT,\r\n    \"passwordHash\" TEXT,\r\n    \"lastSeen\" TIMESTAMP(3),\r\n\r\n    CONSTRAINT \"User_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateTable\r\nCREATE TABLE \"public\".\"Group\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"name\" TEXT NOT NULL,\r\n\r\n    CONSTRAINT \"Group_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateTable\r\nCREATE TABLE \"public\".\"GroupMember\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"userId\" TEXT NOT NULL,\r\n    \"groupId\" TEXT NOT NULL,\r\n\r\n    CONSTRAINT \"GroupMember_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateTable\r\nCREATE TABLE \"public\".\"Thread\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"aId\" TEXT,\r\n    \"bId\" TEXT,\r\n    \"lastMessageAt\" TIMESTAMP(3),\r\n    \"lastMessageText\" TEXT,\r\n    \"title\" TEXT NOT NULL DEFAULT '',\r\n\r\n    CONSTRAINT \"Thread_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateTable\r\nCREATE TABLE \"public\".\"Message\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\r\n    \"text\" TEXT NOT NULL,\r\n    \"authorId\" TEXT NOT NULL,\r\n    \"threadId\" TEXT NOT NULL,\r\n\r\n    CONSTRAINT \"Message_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateTable\r\nCREATE TABLE \"public\".\"Task\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"title\" TEXT NOT NULL,\r\n    \"description\" TEXT NOT NULL,\r\n    \"dueDate\" TIMESTAMP(3) NOT NULL,\r\n    \"hidden\" BOOLEAN NOT NULL DEFAULT false,\r\n    \"priority\" TEXT NOT NULL DEFAULT 'normal',\r\n\r\n    CONSTRAINT \"Task_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateTable\r\nCREATE TABLE \"public\".\"TaskAssignee\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"taskId\" TEXT NOT NULL,\r\n    \"userId\" TEXT NOT NULL,\r\n\r\n    CONSTRAINT \"TaskAssignee_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateTable\r\nCREATE TABLE \"public\".\"Tag\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"name\" TEXT NOT NULL,\r\n\r\n    CONSTRAINT \"Tag_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateTable\r\nCREATE TABLE \"public\".\"TaskTag\" (\r\n    \"id\" TEXT NOT NULL,\r\n    \"taskId\" TEXT NOT NULL,\r\n    \"tagId\" TEXT NOT NULL,\r\n\r\n    CONSTRAINT \"TaskTag_pkey\" PRIMARY KEY (\"id\")\r\n);\r\n\r\n-- CreateIndex\r\nCREATE UNIQUE INDEX \"User_username_key\" ON \"public\".\"User\"(\"username\");\r\n\r\n-- CreateIndex\r\nCREATE UNIQUE INDEX \"User_email_key\" ON \"public\".\"User\"(\"email\");\r\n\r\n-- CreateIndex\r\nCREATE UNIQUE INDEX \"User_phone_key\" ON \"public\".\"User\"(\"phone\");\r\n\r\n-- CreateIndex\r\nCREATE INDEX \"Thread_lastMessageAt_id_idx\" ON \"public\".\"Thread\"(\"lastMessageAt\", \"id\");\r\n\r\n-- CreateIndex\r\nCREATE UNIQUE INDEX \"Tag_name_key\" ON \"public\".\"Tag\"(\"name\");\r\n\r\n-- AddForeignKey\r\nALTER TABLE \"public\".\"GroupMember\" ADD CONSTRAINT \"GroupMember_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"public\".\"User\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE;\r\n\r\n-- AddForeignKey\r\nALTER TABLE \"public\".\"GroupMember\" ADD CONSTRAINT \"GroupMember_groupId_fkey\" FOREIGN KEY (\"groupId\") REFERENCES \"public\".\"Group\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE;\r\n\r\n-- AddForeignKey\r\nALTER TABLE \"public\".\"Thread\" ADD CONSTRAINT \"Thread_aId_fkey\" FOREIGN KEY (\"aId\") REFERENCES \"public\".\"User\"(\"id\") ON DELETE SET NULL ON UPDATE CASCADE;\r\n\r\n-- AddForeignKey\r\nALTER TABLE \"public\".\"Thread\" ADD CONSTRAINT \"Thread_bId_fkey\" FOREIGN KEY (\"bId\") REFERENCES \"public\".\"User\"(\"id\") ON DELETE SET NULL ON UPDATE CASCADE;\r\n\r\n-- AddForeignKey\r\nALTER TABLE \"public\".\"Message\" ADD CONSTRAINT \"Message_authorId_fkey\" FOREIGN KEY (\"authorId\") REFERENCES \"public\".\"User\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE;\r\n\r\n-- AddForeignKey\r\nALTER TABLE \"public\".\"Message\" ADD CONSTRAINT \"Message_threadId_fkey\" FOREIGN KEY (\"threadId\") REFERENCES \"public\".\"Thread\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE;\r\n\r\n-- AddForeignKey\r\nALTER TABLE \"public\".\"TaskAssignee\" ADD CONSTRAINT \"TaskAssignee_taskId_fkey",
+      "kind": "prisma",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "prisma/migrations/migration_lock.toml",
+      "size": 128,
+      "hash": "7abbf1b5bc2ed90d381336ef493ef3a44c488e3d",
+      "textSample": "# Please do not edit this file manually\n# It should be added in your version-control system (e.g., Git)\nprovider = \"postgresql\"\n",
+      "kind": "prisma",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "prisma/schema.prisma",
+      "size": 2843,
+      "hash": "78c4c39230b3006aca69b847ce7df5a8ef8e73a2",
+      "textSample": "generator client {\n  provider = \"prisma-client-js\"\n}\n\ndatasource db {\n  provider  = \"postgresql\"\n  url       = env(\"DATABASE_URL\")\n  directUrl = env(\"DIRECT_URL\")\n}\n\nmodel User {\n  id               String    @id @default(uuid())\n  name             String\n  username         String?   @unique\n  email            String?   @unique\n  phone            String?   @unique\n  birthday         DateTime?\n  classroom        String?\n  role             String?\n  avatarUrl        String?\n  telegram         String?\n  about            String?\n  notifyEmail      Boolean   @default(true)\n  notifyTelegram   Boolean   @default(false)\n  subjects         String?\n  methodicalGroups String?\n  passwordHash     String?\n  lastSeen         DateTime?\n\n  messages         Message[]      @relation(\"UserMessages\")\n  threadsA         Thread[]       @relation(\"ThreadA\")\n  threadsB         Thread[]       @relation(\"ThreadB\")\n  groupMemberships GroupMember[]\n  taskAssignments  TaskAssignee[]\n}\n\nmodel Group {\n  id      String        @id @default(uuid())\n  name    String\n  members GroupMember[]\n}\n\nmodel GroupMember {\n  id      String @id @default(uuid())\n  userId  String\n  groupId String\n  user    User   @relation(fields: [userId], references: [id])\n  group   Group  @relation(fields: [groupId], references: [id])\n}\n\nmodel Thread {\n  id              String    @id @default(uuid())\n  aId             String?\n  bId             String?\n  lastMessageAt   DateTime?\n  lastMessageText String?\n  title           String    @default(\"\")\n  a               User?     @relation(\"ThreadA\", fields: [aId], references: [id])\n  b               User?     @relation(\"ThreadB\", fields: [bId], references: [id])\n  messages        Message[]\n\n  @@index([lastMessageAt, id])\n}\n\nmodel Message {\n  id        String   @id @default(uuid())\n  createdAt DateTime @default(now())\n  text      String\n  authorId  String\n  threadId  String\n  author    User     @relation(\"UserMessages\", fields: [authorId], references: [id])\n  thread    Thread   @relation(fields: [threadId], references: [id])\n}\n\nmodel Task {\n  id          String         @id @default(uuid())\n  title       String\n  description String\n  dueDate     DateTime\n  hidden      Boolean        @default(false)\n  priority    String         @default(\"normal\")\n  assignees   TaskAssignee[]\n  tags        TaskTag[]\n}\n\nmodel TaskAssignee {\n  id     String @id @default(uuid())\n  taskId String\n  userId String\n  task   Task   @relation(fields: [taskId], references: [id])\n  user   User   @relation(fields: [userId], references: [id])\n}\n\nmodel Tag {\n  id    String    @id @default(uuid())\n  name  String    @unique\n  tasks TaskTag[]\n}\n\nmodel TaskTag {\n  id     String @id @default(uuid())\n  taskId String\n  tagId  String\n  task   Task   @relation(fields: [taskId], references: [id])\n  tag    Tag    @relation(fields: [tagId], references: [id])\n}",
+      "kind": "prisma",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "prisma/seed.cjs",
+      "size": 764,
+      "hash": "fb18e2eea7347bda1908cc3be22262d65a46032f",
+      "textSample": null,
+      "kind": "prisma",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": null,
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "scripts/fix-admin.cjs",
+      "size": 629,
+      "hash": "e6f33ebbe53282ae1ee4c27fb655f17776de182e",
+      "textSample": null,
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": null,
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "scripts/list-endpoints.mjs",
+      "size": 2236,
+      "hash": "f74750e57f3edcdc5d6d2f4541dc4c81ce4b8cdc",
+      "textSample": null,
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": null,
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "scripts/upsert-admin.cjs",
+      "size": 846,
+      "hash": "1b5aa627d845ff0c1bcbe458f24779d2781af002",
+      "textSample": null,
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": null,
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "styles/globals.css",
+      "size": 3164,
+      "hash": "29a13eb25ca650d32d68ad25b8c7e5fc5ae54e26",
+      "textSample": "/* ====== Тема / токены ====== */\n:root{\n  --brand:#8d2828;\n  --bg:#f7f7f8;\n  --text:#111827;\n  --muted:#374151;\n\n  --border: rgba(229,231,235,.8);\n  --glass-top: rgba(255,255,255,.68);\n  --glass-bottom: rgba(255,255,255,.40);\n  --glass-shadow: 0 6px 16px rgba(0,0,0,.06);\n}\n\n/* ====== База/ресет (минимально) ====== */\n*,*::before,*::after{ box-sizing:border-box; }\nhtml,body{ height:100%; }\nbody{\n  margin:0;\n  color:var(--text);\n  background:var(--bg);\n  font-family: ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\";\n  text-rendering:optimizeLegibility;\n  -webkit-font-smoothing:antialiased;\n  -moz-osx-font-smoothing:grayscale;\n}\nbutton,input,select,textarea{ font:inherit; color:inherit; }\nbutton{ cursor:pointer; }\n:focus-visible{ outline:3px solid rgba(207,227,255,.7); outline-offset:2px; border-radius:8px; }\n\n/* ====== Ссылки — глобально без подчёркивания ====== */\na, a:visited, a:active{ color:inherit; text-decoration:none; }\na:hover{ text-decoration:none; }\n\n/* ====== Утилиты стекла (по стилю сайдбара) ====== */\n.u-glass{\n  background:linear-gradient(180deg,var(--glass-top),var(--glass-bottom));\n  backdrop-filter:saturate(180%) blur(10px);\n  -webkit-backdrop-filter:saturate(180%) blur(10px);\n  border:1px solid var(--border);\n  box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.35);\n  border-radius:16px;\n}\n.u-glass-lite{\n  background:rgba(255,255,255,.55);\n  backdrop-filter:saturate(160%) blur(6px);\n  -webkit-backdrop-filter:saturate(160%) blur(6px);\n  border:1px solid rgba(229,231,235,.7);\n  border-radius:14px;\n  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);\n}\n\n/* ====== Таблицы (общая база) ====== */\ntable{ border-collapse:separate; border-spacing:0; }\n\n/* ====== Страницы авторизации (оставил, но в «стекле») ====== */\n.auth-wrap{\n  max-width:420px; margin:64px auto; padding:16px; border-radius:16px;\n  background:linear-gradient(180deg,var(--glass-top),var(--glass-bottom));\n  backdrop-filter:saturate(180%) blur(10px);\n  -webkit-backdrop-filter:saturate(180%) blur(10px);\n  border:1px solid var(--border);\n  box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.35);\n}\n.auth-title{ font-size:22px; margin:0 0 12px; font-weight:900; color:var(--text); }\n.auth-error{ color:#b91c1c; margin:0 0 10px; }\n.auth-form{ display:grid; gap:12px; }\n.auth-form label{ display:grid; gap:6px; }\n.auth-form input{\n  padding:10px 12px; border:1px solid rgba(229,231,235,.9);\n  border-radius:10px; background:#fff; outline:none;\n}\n.auth-form input:focus{\n  border-color:#cfe3ff; box-shadow:0 0 0 3px rgba(207,227,255,.4);\n}\n.auth-form button{\n  height:36px; border:1px solid var(--brand); border-radius:10px;\n  background:var(--brand); color:#fff;\n}\n.auth-form button:hover{ filter:brightness(.96); }\n\n/* ====== На всякий: ссылки внутри кликабельных карточек/плиток без подчёркиваний ====== */\n[role=\"button\"], .tile-link, .navlink{ text-decoration:none !important; }\n",
+      "kind": "style",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "tools/snapshot.js",
+      "size": 9459,
+      "hash": "85a6c5673d5a476e65924e67287091cc787e4cbc",
+      "textSample": "// tools/snapshot.js\r\n/* \r\n  Проектный снимок: строит дерево и JSON-индекс проекта Next.js (App Router).\r\n  Запуск: node tools/snapshot.js [--include-env-names] [--max-bytes=16384]\r\n*/\r\n\r\nconst fs = require('fs');\r\nconst fsp = fs.promises;\r\nconst path = require('path');\r\nconst crypto = require('crypto');\r\n\r\nconst ROOT = process.cwd();\r\nconst OUT_DIR = path.join(ROOT, 'project-snapshot');\r\nconst MAX_BYTES = Number((process.argv.find(a => a.startsWith('--max-bytes=')) || '').split('=')[1] || 16384);\r\nconst INCLUDE_ENV_NAMES = process.argv.includes('--include-env-names');\r\n\r\nconst IGNORE_DIRS = new Set([\r\n  'node_modules', '.next', '.turbo', '.vercel', '.git', '.cache', 'coverage', 'dist', 'build'\r\n]);\r\n\r\nconst PAGE_FILES = new Set([\r\n  'page.tsx', 'page.jsx',\r\n  'layout.tsx', 'layout.jsx',\r\n  'route.ts', 'route.js',\r\n  'loading.tsx', 'loading.jsx',\r\n  'error.tsx', 'error.jsx',\r\n  'template.tsx', 'template.jsx',\r\n  'default.tsx', 'default.jsx',\r\n  'not-found.tsx', 'not-found.jsx'\r\n]);\r\n\r\nasync function ensureOut() {\r\n  await fsp.mkdir(OUT_DIR, { recursive: true });\r\n}\r\n\r\nfunction isTextFile(fp) {\r\n  return /\\.(tsx?|jsx?|css|md|json|yml|yaml|env|toml|prisma|sql|svg|html?)$/i.test(fp);\r\n}\r\n\r\nasync function sha1OfFile(fp) {\r\n  try {\r\n    const h = crypto.createHash('sha1');\r\n    const s = fs.createReadStream(fp);\r\n    return await new Promise((res, rej) => {\r\n      s.on('data', d => h.update(d));\r\n      s.on('end', () => res(h.digest('hex')));\r\n      s.on('error', rej);\r\n    });\r\n  } catch {\r\n    return null;\r\n  }\r\n}\r\n\r\nfunction appRouteFromFile(appDir, fileAbs) {\r\n  // Преобразуем app/(group)/users/[id]/page.tsx -> /users/[id]\r\n  const rel = path.relative(appDir, fileAbs).replaceAll(path.sep, '/');\r\n  const parts = rel.split('/');\r\n  // убираем файл\r\n  parts.pop();\r\n  const segments = parts.filter(seg => !(seg.startsWith('(') && seg.endsWith(')')));\r\n  const route = '/' + segments.join('/');\r\n  return route.replace(/\\/+/g, '/');\r\n}\r\n\r\nfunction detectIsClient(fileText) {\r\n  // 'use client' в начале файла?\r\n  const head = fileText.slice(0, 512);\r\n  return /['\"]use client['\"]/.test(head);\r\n}\r\n\r\nfunction detectHasUseServer(fileText) {\r\n  return /['\"]use server['\"]/.test(fileText);\r\n}\r\n\r\nfunction detectExports(fileText) {\r\n  const exp = {\r\n    dynamic: /export\\s+const\\s+dynamic\\s*=\\s*['\"`][^'\"`]+['\"`]/.test(fileText),\r\n    revalidate: /export\\s+const\\s+revalidate\\s*=/.test(fileText),\r\n    generateMetadata: /export\\s+async\\s+function\\s+generateMetadata|export\\s+function\\s+generateMetadata/.test(fileText),\r\n    metadata: /export\\s+const\\s+metadata\\s*=/.test(fileText),\r\n  };\r\n  return exp;\r\n}\r\n\r\nfunction detectSearchParamsMention(fileText) {\r\n  // не парсим строго типы, просто фиксируем, что параметр встречается в сигнатуре\r\n  return /(export\\s+default\\s+async\\s+function|export\\s+default\\s+function)\\s*\\([\\s\\S]*searchParams\\s*:?\\s*/.test(fileText);\r\n}\r\n\r\nasync function readHead(fp, maxBytes = MAX_BYTES) {\r\n  try {\r\n    const fh = await fsp.open(fp, 'r');\r\n    const { buffer, bytesRead } = await fh.read(Buffer.alloc(Math.min(maxBytes, (await fh.stat()).size)), 0, Math.min(maxBytes, (await fh.stat()).size), 0);\r\n    await fh.close();\r\n    return buffer.toString('utf8', 0, bytesRead);\r\n  } catch {\r\n    return '';\r\n  }\r\n}\r\n\r\nasync function walk(dir, acc = []) {\r\n  const entries = await fsp.readdir(dir, { withFileTypes: true });\r\n  for (const e of entries) {\r\n    if (IGNORE_DIRS.has(e.name)) continue;\r\n    const abs = path.join(dir, e.name);\r\n    if (e.isDirectory()) {\r\n      await walk(abs, acc);\r\n    } else {\r\n      acc.push(abs);\r\n    }\r\n  }\r\n  return acc;\r\n}\r\n\r\nfunction toTree(lines) {\r\n  // Формируем красивое дерево для README/вложения\r\n  const root = {};\r\n  for (const rel of lines) {\r\n    const parts = rel.split('/');\r\n    let node = root;\r\n    for (let i = 0; i < parts.length; i++) {\r\n      const p = parts[i];\r\n      node.children = node.children || {};\r\n      node.children[p] = node.children[p] || {};\r\n      node = node.children[p];\r\n   ",
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "tsconfig.json",
+      "size": 702,
+      "hash": "c74862a159ab404d1849b87ce1248ead926ad00f",
+      "textSample": "{\r\n  \"compilerOptions\": {\r\n    \"target\": \"ES2020\",\r\n    \"lib\": [\r\n      \"dom\",\r\n      \"esnext\"\r\n    ],\r\n    \"module\": \"esnext\",\r\n    \"moduleResolution\": \"bundler\",\r\n    \"strict\": true,\r\n    \"noEmit\": true,\r\n    \"jsx\": \"preserve\",\r\n    \"esModuleInterop\": true,\r\n    \"resolveJsonModule\": true,\r\n    \"skipLibCheck\": true,\r\n    \"paths\": {\r\n      \"@/*\": [\r\n        \"./*\"\r\n      ]\r\n    },\r\n    \"allowJs\": true,\r\n    \"incremental\": true,\r\n    \"isolatedModules\": true,\r\n    \"plugins\": [\r\n      {\r\n        \"name\": \"next\"\r\n      }\r\n    ],\r\n    \"baseUrl\": \".\"\r\n  },\r\n  \"include\": [\r\n    \"**/*.ts\",\r\n    \"**/*.tsx\",\r\n    \"next-env.d.ts\",\r\n    \".next/types/**/*.ts\"\r\n  ],\r\n  \"exclude\": [\r\n    \"node_modules\"\r\n  ]\r\n}",
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "tsconfig.tsbuildinfo",
+      "size": 110634,
+      "hash": "2753f4b9414f9d95f3bf3fc73cff7aba0f166937",
+      "textSample": null,
+      "kind": "file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": null,
+      "mentionsSearchParams": false
+    }
+  ]
+}

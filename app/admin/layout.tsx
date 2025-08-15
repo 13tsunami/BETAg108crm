@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await auth();
   const role = normalizeRole((session?.user as any)?.role ?? null);
+
   if (!session) redirect('/sign-in');
   if (!canViewAdmin(role)) redirect('/');
 

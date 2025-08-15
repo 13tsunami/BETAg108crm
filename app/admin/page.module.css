@@ -1,0 +1,18 @@
+.page { display:grid; gap:12px; }
+.head { padding:14px 16px; border-radius:16px; }
+.title { margin:0; font-weight:900; font-size:22px; color:#0f172a; }
+.subtitle { margin:6px 0 0; font-size:14px; color:#374151; }
+
+.info { padding:12px 14px; border-radius:16px; }
+.infoRow { display:grid; grid-template-columns:140px 1fr; gap:8px; align-items:center; }
+.infoKey { font-weight:800; color:#0f172a; }
+.infoVal { color:#374151; }
+
+.glass{
+  background:linear-gradient(180deg,rgba(255,255,255,.68),rgba(255,255,255,.4));
+  backdrop-filter:saturate(180%) blur(10px);
+  -webkit-backdrop-filter:saturate(180%) blur(10px);
+  border:1px solid rgba(229,231,235,.8);
+  box-shadow:0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);
+}
+

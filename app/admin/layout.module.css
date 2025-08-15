@@ -1,7 +1,7 @@
 /* app/admin/layout.module.css */
 .appShell {
   display: grid;
-  grid-template-columns: 256px 1fr;
+  grid-template-columns: 280px minmax(0, 1fr); /* синхронизировано с Sidebar */
   min-height: 100dvh;
   background: #f7f7f8;
 }
@@ -10,13 +10,18 @@
   position: sticky;
   top: 0;
   height: 100dvh;
-  overflow: auto;
+  width: 280px;          /* фиксируем контейнер */
+  flex: 0 0 280px;       /* запрещаем сжатие/растяжение */
+  overflow: hidden;      /* сайдбар без скроллов */
   background: #ffffff;
-  width: 256px;
-  flex: 0 0 256px;
+  border-right: 1px solid #e5e7eb;
 }
 
 .appMain {
   min-width: 0;
+  height: 100dvh;
+  overflow: auto;        /* прокрутка только у контента */
+  -webkit-overflow-scrolling: touch;
   padding: 16px;
+  background: #f7f7f8;
 }

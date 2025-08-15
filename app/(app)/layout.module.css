@@ -1,6 +1,7 @@
+/* app/(app)/layout.module.css */
 .appShell {
   display: grid;
-  grid-template-columns: 256px 1fr;  /* было 260px — можно 256px для пиксель‑перфекта */
+  grid-template-columns: 280px minmax(0, 1fr); /* ширина = ширине Sidebar */
   min-height: 100dvh;
   background: #f7f7f8;
 }
@@ -9,13 +10,18 @@
   position: sticky;
   top: 0;
   height: 100dvh;
-  overflow: auto;
+  overflow: hidden;             /* сайдбар без скроллов */
   background: #ffffff;
-  width: 256px;         /* ключ: фиксируем ширину контейнера */
-  flex: 0 0 256px;      /* запрещаем расширение */
+  width: 280px;                 /* фиксируем ширину контейнера */
+  flex: 0 0 280px;              /* не даём колонке сжиматься/расти */
+  border-right: 1px solid #e5e7eb;
 }
 
 .appMain {
   min-width: 0;
+  height: 100dvh;
+  overflow: auto;               /* прокрутка — только у контента */
+  -webkit-overflow-scrolling: touch;
   padding: 16px;
+  background: #f7f7f8;
 }

@@ -6,6 +6,8 @@
     "node": ">=18"
   },
   "scripts": {
+    "snapshot": "node tools/snapshot.js",
+    "snapshot:env": "node tools/snapshot.js --include-env-names",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "list:endpoints": "node scripts/list-endpoints.mjs",
     "dev": "next dev -p 3000",

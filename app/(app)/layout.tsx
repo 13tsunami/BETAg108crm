@@ -1,3 +1,4 @@
+// app/(app)/layout.tsx
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { auth } from '@/auth.config';
