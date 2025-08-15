@@ -1,55 +1,68 @@
-"use client";
+// components/Sidebar.tsx
+import Link from 'next/link';
+import { auth } from '@/auth.config';
+import { canCreateTasks, canViewAdmin, canViewTasks, normalizeRole } from '@/lib/roles';
+import UserMenu from './UserMenu';
 
-import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
-import { usePathname } from "next/navigation";
-import type { Role } from "@/lib/roles";
-import { canViewAdmin } from "@/lib/roles";
+export default async function Sidebar() {
+  const session = await auth();
+  const user = session?.user as any | undefined;
 
-export default function Sidebar() {
-  const { data: session } = useSession();
-  const pathname = usePathname();
-  const authed = !!session?.user;
-  const role = ((session?.user as any)?.role ?? "user") as Role;
+  const role = normalizeRole(user?.role ?? null);
+  const name = user?.name ?? 'Пользователь';
+  const showAdmin = canViewAdmin(role);
+  const showTasks = canViewTasks(role);
+  const showCreateTasks = canCreateTasks(role);
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-profile">
-        <div className="sidebar-name">{authed ? session?.user?.name : "Гость"}</div>
-        {authed && <div className="sidebar-role">{role}</div>}
-      </div>
+    <aside className="w-64 shrink-0 border-r bg-white p-4 space-y-4">
+      <header className="space-y-1">
+        <div className="font-semibold truncate">{name}</div>
+        <div className="text-xs text-gray-600">{role ?? '—'}</div>
+        <UserMenu />
+      </header>
 
-      {authed && (
-        <nav className="nav">
-          <ul className="navGrid">
-            <li>
-              <Link href="/" className={pathname === "/" ? "active" : ""}>Главная</Link>
-            </li>
-          </ul>
+      <nav className="space-y-3 text-sm">
+        <div>
+          <Link className="underline" href="/">
+            Главная
+          </Link>
+        </div>
 
-          {canViewAdmin(role) && (
-            <>
-              <div className="adminHeader">Администрирование</div>
-              <ul className="navGrid">
-                <li>
-                  <Link href="/admin" className={pathname === "/admin" ? "active" : ""}>Панель администратора</Link>
-                </li>
-                <li>
-                  <Link href="/admin/db-status" className={pathname === "/admin/db-status" ? "active" : ""}>Статус БД</Link>
-                </li>
-              </ul>
-            </>
-          )}
-        </nav>
-      )}
-
-      <div className="sidebar-footer">
-        {authed ? (
-          <button onClick={() => signOut({ callbackUrl: "/sign-in" })}>Выйти</button>
-        ) : (
-          <Link href="/sign-in">Войти</Link>
+        {showTasks && (
+          <div>
+            <div className="mt-3 text-xs uppercase text-gray-600">Работа</div>
+            <div className="mt-1">
+              <Link className="underline" href="/inboxTasks">
+                Задачи
+              </Link>
+            </div>
+            {showCreateTasks && (
+              <div className="mt-1">
+                <Link className="underline" href="/inboxTasks?create=1">
+                  Новая задача
+                </Link>
+              </div>
+            )}
+          </div>
         )}
-      </div>
+
+        {showAdmin && (
+          <div>
+            <div className="mt-4 text-xs uppercase text-gray-600">Администрирование</div>
+            <div className="mt-1">
+              <Link className="underline" href="/admin">
+                Админка
+              </Link>
+            </div>
+            <div className="mt-1">
+              <Link className="underline" href="/admin/db-status">
+                Статус БД
+              </Link>
+            </div>
+          </div>
+        )}
+      </nav>
     </aside>
   );
 }

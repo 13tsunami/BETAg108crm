@@ -1,8 +1,10 @@
 // app/layout.tsx
 import '@/styles/globals.css';
-import Providers from '@/components/Providers';
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
+import Providers from '@/components/Providers';
+import Sidebar from '@/components/Sidebar';
+import { auth } from '@/auth.config';
 
 function safeMetadataBase(): URL | undefined {
   const raw =
@@ -13,7 +15,7 @@ function safeMetadataBase(): URL | undefined {
   try {
     return new URL(raw);
   } catch {
-    return undefined; // не валим билд, если переменная окружения задана криво
+    return undefined;
   }
 }
 
@@ -23,11 +25,23 @@ export const metadata: Metadata = {
   description: 'Внутренняя CRM',
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const session = await auth();
+  const isAuthed = Boolean(session);
+
   return (
     <html lang="ru">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {isAuthed ? (
+            <div className="min-h-dvh flex">
+              <Sidebar />
+              <main className="flex-1 p-6">{children}</main>
+            </div>
+          ) : (
+            children
+          )}
+        </Providers>
       </body>
     </html>
   );
