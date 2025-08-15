@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-08-15T17:56:53.039Z",
+  "generatedAt": "2025-08-15T18:39:13.888Z",
   "root": "BETAg108crm.clean",
   "node": "v24.5.0",
   "next": "unknown",
@@ -72,6 +72,42 @@
       "mentionsSearchParams": false
     },
     {
+      "path": "app/(app)/chat/page.tsx",
+      "size": 15150,
+      "hash": "ef44e8359e7ae8ae3410492310407a919ffd6571",
+      "textSample": "// app/(app)/chat/page.tsx\r\nimport { auth } from '@/auth.config';\r\nimport { prisma } from '@/lib/prisma';\r\nimport { redirect } from 'next/navigation';\r\nimport { revalidatePath } from 'next/cache';\r\nimport { Suspense } from 'react';\r\nimport AutoRefresh from './refresh'; // ⬅️ лёгкий polling (клиентский компонент, ниже дам файл)\r\n\r\nexport const dynamic = 'force-dynamic';\r\n\r\n// ==== server actions\r\nexport async function ensureThreadAction(formData: FormData): Promise<void> {\r\n  'use server';\r\n  const session = await auth();\r\n  const me = (session?.user as any)?.id as string | undefined;\r\n  if (!me) redirect('/sign-in');\r\n\r\n  const otherId = String(formData.get('otherId') || '');\r\n  if (!otherId || otherId === me) redirect('/chat');\r\n\r\n  const existing = await prisma.thread.findFirst({\r\n    where: { OR: [{ aId: me, bId: otherId }, { aId: otherId, bId: me }] },\r\n    select: { id: true },\r\n  });\r\n\r\n  const tid =\r\n    existing?.id ??\r\n    (await prisma.thread.create({ data: { aId: me, bId: otherId } })).id;\r\n\r\n  revalidatePath('/(app)/chat', 'page');\r\n  redirect(`/chat?thread=${tid}`);\r\n}\r\n\r\nexport async function sendMessageAction(formData: FormData): Promise<void> {\r\n  'use server';\r\n  const session = await auth();\r\n  const me = (session?.user as any)?.id as string | undefined;\r\n  if (!me) redirect('/sign-in');\r\n\r\n  const threadId = String(formData.get('threadId') || '');\r\n  const text = (String(formData.get('text') || '')).trim();\r\n  if (!threadId || !text) redirect('/chat');\r\n\r\n  const th = await prisma.thread.findFirst({\r\n    where: { id: threadId, OR: [{ aId: me }, { bId: me }] },\r\n    select: { id: true },\r\n  });\r\n  if (!th) redirect('/chat');\r\n\r\n  await prisma.message.create({ data: { authorId: me, threadId, text } });\r\n  await prisma.thread.update({\r\n    where: { id: threadId },\r\n    data: { lastMessageAt: new Date(), lastMessageText: text },\r\n  });\r\n\r\n  revalidatePath('/(app)/chat', 'page');\r\n  redirect(`/chat?thread=${threadId}`);\r\n}\r\n\r\nexport async function deleteThreadAction(formData: FormData): Promise<void> {\r\n  'use server';\r\n  const session = await auth();\r\n  const me = (session?.user as any)?.id as string | undefined;\r\n  if (!me) redirect('/sign-in');\r\n\r\n  const threadId = String(formData.get('threadId') || '');\r\n  if (!threadId) redirect('/chat');\r\n\r\n  const th = await prisma.thread.findFirst({\r\n    where: { id: threadId, OR: [{ aId: me }, { bId: me }] },\r\n    select: { id: true },\r\n  });\r\n  if (th) {\r\n    await prisma.message.deleteMany({ where: { threadId } });\r\n    await prisma.thread.delete({ where: { id: threadId } });\r\n  }\r\n\r\n  revalidatePath('/(app)/chat', 'page');\r\n  redirect('/chat');\r\n}\r\n\r\n// ==== helpers\r\nasync function getThreads(uid: string) {\r\n  const rows = await prisma.thread.findMany({\r\n    where: { OR: [{ aId: uid }, { bId: uid }] },\r\n    orderBy: [{ lastMessageAt: 'desc' }, { id: 'asc' }],\r\n    include: { a: { select: { id: true, name: true } }, b: { select: { id: true, name: true } } },\r\n  });\r\n  return rows.map((t) => {\r\n    const peer = t.aId === uid ? t.b : t.a;\r\n    return {\r\n      id: t.id,\r\n      peerId: peer?.id ?? '',\r\n      peerName: peer?.name ?? '—',\r\n      lastMessageAt: t.lastMessageAt ?? null,\r\n      lastMessageText: t.lastMessageText ?? null,\r\n    };\r\n  });\r\n}\r\n\r\nasync function getMessages(tid: string) {\r\n  return prisma.message.findMany({\r\n    where: { threadId: tid },\r\n    orderBy: { createdAt: 'asc' },\r\n    select: { id: true, text: true, createdAt: true, author: { select: { id: true, name: true } } },\r\n  });\r\n}\r\n\r\nfunction fmtDate(d: Date) {\r\n  const M = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];\r\n  const dd = String(d.getDate()).padStart(2,'0');\r\n  const mm = M[d.getMonth()];\r\n  const yyyy = d.getFullYear();\r\n  const hh = String(d.getHours()).padStart(2,'0');\r\n  const min = String(d.getMinutes()).padStart(2,'0');\r\n  return `${dd} ${mm} ${yyyy}, ${hh}:${min}`;\r\n}\r\n\r\n// ==== page\r\nexport default async function ChatPage({\r\n  searchParams,\r\n}: {\r\n  ",
+      "kind": "app-route-file",
+      "routePath": "/chat",
+      "pageType": "page",
+      "isClient": false,
+      "hasUseServer": true,
+      "exportsFlags": {
+        "dynamic": true,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/chat/refresh.tsx",
+      "size": 524,
+      "hash": "806eb4bd83b212aac729046c43f16ba7df13847c",
+      "textSample": "'use client';\r\nimport { useEffect } from 'react';\r\nimport { useRouter } from 'next/navigation';\r\n\r\nexport default function AutoRefresh({ enabled, intervalMs = 8000 }: { enabled: boolean; intervalMs?: number }) {\r\n  const router = useRouter();\r\n  useEffect(() => {\r\n    if (!enabled) return;\r\n    const t = window.setInterval(() => {\r\n      if (document.visibilityState === 'visible') router.refresh();\r\n    }, intervalMs);\r\n    return () => window.clearInterval(t);\r\n  }, [enabled, intervalMs, router]);\r\n  return null;\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
       "path": "app/(app)/dashboard/page.module.css",
       "size": 942,
       "hash": "5256c8bd82583ad17ff8898bfc808af35c7a0d20",
@@ -108,6 +144,42 @@
       "mentionsSearchParams": false
     },
     {
+      "path": "app/(app)/heartbeat/Heartbeat.tsx",
+      "size": 1542,
+      "hash": "95edbe7694751e493f8ef6adae755927d05b5e8e",
+      "textSample": "'use client';\r\n\r\nimport { useEffect, useRef } from 'react';\r\nimport { usePathname } from 'next/navigation';\r\n\r\nexport default function Heartbeat({\r\n  action,\r\n  intervalMs = 60_000,     // раз в минуту\r\n}: {\r\n  action: (fd: FormData) => Promise<void>;\r\n  intervalMs?: number;\r\n}) {\r\n  const formRef = useRef<HTMLFormElement>(null);\r\n  const path = usePathname();\r\n\r\n  useEffect(() => {\r\n    const submit = () => {\r\n      const f = formRef.current;\r\n      if (!f) return;\r\n      // submit без перезагрузки/перехода\r\n      (f as any).requestSubmit ? (f as any).requestSubmit() : f.submit();\r\n    };\r\n\r\n    // пульс сразу + при видимости\r\n    submit();\r\n    const onVis = () => { if (document.visibilityState === 'visible') submit(); };\r\n\r\n    const t = window.setInterval(() => {\r\n      if (document.visibilityState === 'visible') submit();\r\n    }, intervalMs);\r\n\r\n    document.addEventListener('visibilitychange', onVis);\r\n    window.addEventListener('focus', onVis);\r\n\r\n    return () => {\r\n      window.clearInterval(t);\r\n      document.removeEventListener('visibilitychange', onVis);\r\n      window.removeEventListener('focus', onVis);\r\n    };\r\n  }, [intervalMs, path]);\r\n\r\n  return (\r\n    <form ref={formRef} action={action} style={{ display: 'none' }}>\r\n      {/* запасной параметр — вдруг захочешь что-то варьировать по текущему пути */}\r\n      <input type=\"hidden\" name=\"path\" value={path || ''} />\r\n    </form>\r\n  );\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/heartbeat/actions.ts",
+      "size": 584,
+      "hash": "83868c3759f315f472a14deb3150ba30e4388da5",
+      "textSample": "'use server';\r\n\r\nimport { prisma } from '@/lib/prisma';\r\nimport { auth } from '@/auth.config';\r\n\r\n// тихий пульс: обновляем lastSeen и выходим (без redirect/revalidate)\r\nexport async function heartbeat(): Promise<void> {\r\n  const session = await auth();\r\n  const id = (session?.user as any)?.id as string | undefined;\r\n  if (!id) return;\r\n  try {\r\n    await prisma.user.update({\r\n      where: { id },\r\n      data: { lastSeen: new Date() },\r\n    });\r\n  } catch {\r\n    // тишина: пульс не должен ломать навигацию\r\n  }\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": true,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
       "path": "app/(app)/layout.module.css",
       "size": 833,
       "hash": "b238ed2c55ba0ec19cd22452313b3b340a287371",
@@ -127,9 +199,9 @@
     },
     {
       "path": "app/(app)/layout.tsx",
-      "size": 626,
-      "hash": "62c28d4c53250c870cd826c20ab3009a54b43625",
-      "textSample": "// app/(app)/layout.tsx\r\nimport { redirect } from 'next/navigation';\r\nimport type { ReactNode } from 'react';\r\nimport { auth } from '@/auth.config';\r\nimport Sidebar from '@/components/Sidebar';\r\nimport styles from './layout.module.css';\r\n\r\nexport default async function AppLayout({ children }: { children: ReactNode }) {\r\n  const session = await auth();\r\n  if (!session) redirect('/sign-in');\r\n\r\n  return (\r\n    <div className={styles.appShell}>\r\n      <aside className={styles.appSidebar}>\r\n        <Sidebar />\r\n      </aside>\r\n      <main className={styles.appMain}>\r\n        {children}\r\n      </main>\r\n    </div>\r\n  );\r\n}\r\n",
+      "size": 890,
+      "hash": "5725c55768e12891260ee204c7c2fd18b5ac50ca",
+      "textSample": "// app/(app)/layout.tsx\r\nimport { redirect } from 'next/navigation';\r\nimport type { ReactNode } from 'react';\r\nimport { auth } from '@/auth.config';\r\nimport Sidebar from '@/components/Sidebar';\r\nimport styles from './layout.module.css';\r\n\r\n// ➕ вот это добавь:\r\nimport Heartbeat from './heartbeat/Heartbeat';\r\nimport { heartbeat } from './heartbeat/actions';\r\n\r\nexport default async function AppLayout({ children }: { children: ReactNode }) {\r\n  const session = await auth();\r\n  if (!session) redirect('/sign-in');\r\n\r\n  return (\r\n    <div className={styles.appShell}>\r\n      <aside className={styles.appSidebar}>\r\n        <Sidebar />\r\n      </aside>\r\n      <main className={styles.appMain}>\r\n        {children}\r\n        {/* ➕ тихий пульс раз в минуту */}\r\n        <Heartbeat action={heartbeat} intervalMs={60_000} />\r\n      </main>\r\n    </div>\r\n  );\r\n}\r\n",
       "kind": "app-route-file",
       "routePath": "/",
       "pageType": "layout",
@@ -181,9 +253,9 @@
     },
     {
       "path": "app/(app)/teachers/page.tsx",
-      "size": 10922,
-      "hash": "ea89c7a18238fcc08c54912c0bb061c702e641cf",
-      "textSample": "import { prisma } from '@/lib/prisma';\r\nimport { createUser, updateUser, deleteUser, archiveUser } from './actions';\r\nimport AddUserModal from '@/components/AddUserModal';\r\nimport EditUserModal from '@/components/EditUserModal';\r\nimport SearchBox from './SearchBox';\r\nimport { auth } from '@/auth.config';\r\nimport { Prisma } from '@prisma/client';\r\n\r\ntype Search = Promise<Record<string, string | string[] | undefined>>;\r\n\r\nexport const dynamic = 'force-dynamic';\r\n\r\nconst BORDER = 'rgba(229,231,235,.8)';\r\n\r\nexport default async function TeachersPage(props: { searchParams?: Search }) {\r\n  const sp = (props.searchParams ? await props.searchParams : undefined) ?? {};\r\n  const q = (Array.isArray(sp.q) ? sp.q[0] : sp.q) || '';\r\n  const ok = Array.isArray(sp.ok) ? sp.ok[0] : sp.ok;\r\n  const error = Array.isArray(sp.error) ? sp.error[0] : sp.error;\r\n\r\n  const session = await auth();\r\n  const role = (session?.user as any)?.role as string | undefined;\r\n  const canManage = role === 'director' || role === 'deputy_plus';\r\n\r\n  const s = q.trim();\r\n  const or: Prisma.UserWhereInput[] = s ? [\r\n    { name:      { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { email:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { phone:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { classroom: { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { username:  { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { role:      { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { telegram:  { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { about:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n  ] : [];\r\n  const where: Prisma.UserWhereInput | undefined = or.length ? { OR: or } : undefined;\r\n\r\n  const users = await prisma.user.findMany({\r\n    where,\r\n    orderBy: { name: 'asc' },\r\n    select: {\r\n      id: true, name: true, role: true, username: true, email: true, phone: true,\r\n      classroom: true, telegram: true, about: true, birthday: true,\r\n      notifyEmail: true, notifyTelegram: true,\r\n    },\r\n  });\r\n\r\n  const btnGhost: React.CSSProperties = { height: 32, padding: '4px 10px', borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', background: '#fff', cursor: 'pointer' };\r\n  const btnDanger: React.CSSProperties = { height: 32, padding: '4px 10px', borderRadius: 10, border: '1px solid #ef4444', background: '#fff', color: '#b91c1c', cursor: 'pointer' };\r\n\r\n  const clean = (x?: string | null) => x ?? '—';\r\n  const ruRole = (r?: string | null) =>\r\n    r === 'director' ? 'Директор'\r\n    : r === 'deputy_plus' ? 'Заместитель +'\r\n    : r === 'deputy' ? 'Заместитель'\r\n    : r === 'teacher_plus' ? 'Педагог +'\r\n    : r === 'teacher' ? 'Педагог'\r\n    : r === 'archived' ? 'В архиве'\r\n    : (r || '—');\r\n\r\n  return (\r\n    <section style={{ display: 'grid', gap: 12 }}>\r\n      {/* локальные стили для apple-expand */}\r\n      <style>{`\r\n        .glass-tile {\r\n          position: relative;\r\n          padding: 10px 12px;\r\n          border-radius: 12px;\r\n          border: 1px solid ${BORDER};\r\n          background: linear-gradient(180deg, rgba(255,255,255,0.70), rgba(255,255,255,0.44));\r\n          backdrop-filter: saturate(180%) blur(12px);\r\n          -webkit-backdrop-filter: saturate(180%) blur(12px);\r\n          box-shadow: 0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.45);\r\n          transition: transform .16s ease, box-shadow .16s ease, outline-color .16s ease;\r\n          user-select: none;\r\n        }\r\n        .glass-tile:hover {\r\n          transform: translateY(-1px);\r\n          box-shadow: 0 10px 24px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.5);\r\n        }\r\n        details[open] > summary .glass-tile {\r\n          outline: 2px solid rgba(207,227,255,.9);\r\n          box-shadow: 0 12px 28px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.55);\r\n        }\r\n        .expand-summary {\r\n          list-style: none;\r\n          cursor: pointer;\r\n        }\r\n        .caret",
+      "size": 12902,
+      "hash": "71dc468b3ec3ee1a185841fd5f4c24081f67cb37",
+      "textSample": "import { prisma } from '@/lib/prisma';\r\nimport { createUser, updateUser, deleteUser, archiveUser } from './actions';\r\nimport AddUserModal from '@/components/AddUserModal';\r\nimport EditUserModal from '@/components/EditUserModal';\r\nimport SearchBox from './SearchBox';\r\nimport { auth } from '@/auth.config';\r\nimport { Prisma } from '@prisma/client';\r\n\r\ntype Search = Promise<Record<string, string | string[] | undefined>>;\r\n\r\nexport const dynamic = 'force-dynamic';\r\n\r\nconst BORDER = 'rgba(229,231,235,.8)';\r\nconst ONLINE_WINDOW_MS = 5 * 60 * 1000; // 5 минут\r\n\r\nfunction fmtDateTime(d: Date) {\r\n  const tt = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });\r\n  const dd = d.toLocaleDateString('ru-RU');\r\n  return `${tt} ${dd}`;\r\n}\r\n\r\nexport default async function TeachersPage(props: { searchParams?: Search }) {\r\n  const sp = (props.searchParams ? await props.searchParams : undefined) ?? {};\r\n  const q = (Array.isArray(sp.q) ? sp.q[0] : sp.q) || '';\r\n  const okRaw = Array.isArray(sp.ok) ? sp.ok[0] : sp.ok;\r\nconst errorRaw = Array.isArray(sp.error) ? sp.error[0] : sp.error;\r\n// игнорим служебные редиректы Next\r\nconst ok = okRaw && !/^NEXT_REDIRECT/.test(okRaw) ? okRaw : undefined;\r\nconst error = errorRaw && !/^NEXT_REDIRECT/.test(errorRaw) ? errorRaw : undefined;\r\n\r\n  const session = await auth();\r\n  const role = (session?.user as any)?.role as string | undefined;\r\n  const canManage = role === 'director' || role === 'deputy_plus';\r\n\r\n  // where для поиска (по всем ключевым полям). Если q пуст — берём всех.\r\n  const s = q.trim();\r\n  const or: Prisma.UserWhereInput[] = s ? [\r\n    { name:      { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { email:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { phone:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { classroom: { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { username:  { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { role:      { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { telegram:  { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { about:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n  ] : [];\r\n  const where: Prisma.UserWhereInput | undefined = or.length ? { OR: or } : undefined;\r\n\r\n  const users = await prisma.user.findMany({\r\n    where,\r\n    orderBy: { name: 'asc' },\r\n    select: {\r\n      id: true, name: true, role: true, username: true, email: true, phone: true,\r\n      classroom: true, telegram: true, about: true, birthday: true,\r\n      notifyEmail: true, notifyTelegram: true,\r\n      lastSeen: true, // 👈 добавили\r\n    },\r\n  });\r\n\r\n  const btnGhost: React.CSSProperties = { height: 32, padding: '4px 10px', borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', background: '#fff', cursor: 'pointer' };\r\n  const btnDanger: React.CSSProperties = { height: 32, padding: '4px 10px', borderRadius: 10, border: '1px solid #ef4444', background: '#fff', color: '#b91c1c', cursor: 'pointer' };\r\n\r\n  const clean = (x?: string | null) => x ?? '—';\r\n  const ruRole = (r?: string | null) =>\r\n    r === 'director' ? 'Директор'\r\n    : r === 'deputy_plus' ? 'Заместитель +'\r\n    : r === 'deputy' ? 'Заместитель'\r\n    : r === 'teacher_plus' ? 'Педагог +'\r\n    : r === 'teacher' ? 'Педагог'\r\n    : r === 'archived' ? 'В архиве'\r\n    : (r || '—');\r\n\r\n  const now = new Date();\r\n\r\n  return (\r\n    <section style={{ display: 'grid', gap: 12 }}>\r\n      {/* локальные стили для apple-expand + статус */}\r\n      <style>{`\r\n        .glass-tile {\r\n          position: relative;\r\n          padding: 10px 12px;\r\n          border-radius: 12px;\r\n          border: 1px solid ${BORDER};\r\n          background: linear-gradient(180deg, rgba(255,255,255,0.70), rgba(255,255,255,0.44));\r\n          backdrop-filter: saturate(180%) blur(12px);\r\n          -webkit-backdrop-filter: saturate(180%) blur(12px);\r\n          box-shadow: 0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.45);\r\n          trans",
       "kind": "app-route-file",
       "routePath": "/teachers",
       "pageType": "page",

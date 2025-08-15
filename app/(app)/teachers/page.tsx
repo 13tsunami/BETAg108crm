@@ -22,8 +22,11 @@ function fmtDateTime(d: Date) {
 export default async function TeachersPage(props: { searchParams?: Search }) {
   const sp = (props.searchParams ? await props.searchParams : undefined) ?? {};
   const q = (Array.isArray(sp.q) ? sp.q[0] : sp.q) || '';
-  const ok = Array.isArray(sp.ok) ? sp.ok[0] : sp.ok;
-  const error = Array.isArray(sp.error) ? sp.error[0] : sp.error;
+  const okRaw = Array.isArray(sp.ok) ? sp.ok[0] : sp.ok;
+const errorRaw = Array.isArray(sp.error) ? sp.error[0] : sp.error;
+// игнорим служебные редиректы Next
+const ok = okRaw && !/^NEXT_REDIRECT/.test(okRaw) ? okRaw : undefined;
+const error = errorRaw && !/^NEXT_REDIRECT/.test(errorRaw) ? errorRaw : undefined;
 
   const session = await auth();
   const role = (session?.user as any)?.role as string | undefined;

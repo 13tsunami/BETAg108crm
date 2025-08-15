@@ -4,8 +4,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  url       = env("DATABASE_URL") // pooled (PgBouncer)
+  directUrl = env("DIRECT_URL") // прямое соединение для миграций
 }
 
 model User {
@@ -27,9 +27,13 @@ model User {
   passwordHash     String?
   lastSeen         DateTime?
 
-  messages         Message[]      @relation("UserMessages")
-  threadsA         Thread[]       @relation("ThreadA")
-  threadsB         Thread[]       @relation("ThreadB")
+  messages Message[] @relation("UserMessages")
+  threadsA Thread[]  @relation("ThreadA")
+  threadsB Thread[]  @relation("ThreadB")
+
+  // обратная сторона для отметок прочтения
+  readMarks ReadMark[] @relation("ReadMarkUser")
+
   groupMemberships GroupMember[]
   taskAssignments  TaskAssignee[]
 }
@@ -50,14 +54,17 @@ model GroupMember {
 
 model Thread {
   id              String    @id @default(uuid())
-  aId             String?
-  bId             String?
+  aId             String
+  bId             String
   lastMessageAt   DateTime?
   lastMessageText String?
   title           String    @default("")
-  a               User?     @relation("ThreadA", fields: [aId], references: [id])
-  b               User?     @relation("ThreadB", fields: [bId], references: [id])
-  messages        Message[]
+
+  a User @relation("ThreadA", fields: [aId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  b User @relation("ThreadB", fields: [bId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  messages  Message[]
+  readMarks ReadMark[] @relation("ReadMarkThread")
 
   @@index([lastMessageAt, id])
 }
@@ -68,8 +75,14 @@ model Message {
   text      String
   authorId  String
   threadId  String
-  author    User     @relation("UserMessages", fields: [authorId], references: [id])
-  thread    Thread   @relation(fields: [threadId], references: [id])
+
+  author User   @relation("UserMessages", fields: [authorId], references: [id])
+  thread Thread @relation(fields: [threadId], references: [id])
+
+  // обратная сторона для вложений
+  attachments Attachment[] @relation("MessageAttachments")
+
+  @@index([threadId, createdAt])
 }
 
 model Task {
@@ -103,4 +116,29 @@ model TaskTag {
   tagId  String
   task   Task   @relation(fields: [taskId], references: [id])
   tag    Tag    @relation(fields: [tagId], references: [id])
+}
+
+model ReadMark {
+  threadId String
+  userId   String
+  readAt   DateTime
+
+  thread Thread @relation("ReadMarkThread", fields: [threadId], references: [id])
+  user   User   @relation("ReadMarkUser", fields: [userId], references: [id])
+
+  @@id([threadId, userId])
+  @@index([userId])
+}
+
+model Attachment {
+  id        String @id @default(uuid())
+  messageId String
+  name      String
+  mime      String
+  size      Int
+  data      Bytes
+
+  message Message @relation("MessageAttachments", fields: [messageId], references: [id])
+
+  @@index([messageId])
 }

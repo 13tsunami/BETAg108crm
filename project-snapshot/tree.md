@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-15T17:56:53.039Z
+Generated: 2025-08-15T18:39:13.888Z
 ## UI hints
 ```json
 {
@@ -16,9 +16,15 @@ Generated: 2025-08-15T17:56:53.039Z
    │  └─ endpoints.json
    ├─ app
    │  ├─ (app)
+   │  │  ├─ chat
+   │  │  │  ├─ page.tsx
+   │  │  │  └─ refresh.tsx
    │  │  ├─ dashboard
    │  │  │  ├─ page.module.css
    │  │  │  └─ page.tsx
+   │  │  ├─ heartbeat
+   │  │  │  ├─ Heartbeat.tsx
+   │  │  │  └─ actions.ts
    │  │  ├─ layout.module.css
    │  │  ├─ layout.tsx
    │  │  └─ teachers
@@ -98,6 +104,7 @@ Generated: 2025-08-15T17:56:53.039Z
 /admin  ⟶  app/admin/page.tsx
 /admin/db-status  ⟶  app/admin/db-status/page.tsx
 /api/auth/[...nextauth]  ⟶  app/api/auth/[...nextauth]/route.ts
+/chat  ⟶  app/(app)/chat/page.tsx
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
 /sign-in  ⟶  app/(auth)/sign-in/page.tsx
 /teachers  ⟶  app/(app)/teachers/page.tsx
