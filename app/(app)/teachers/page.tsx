@@ -11,6 +11,13 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 export const dynamic = 'force-dynamic';
 
 const BORDER = 'rgba(229,231,235,.8)';
+const ONLINE_WINDOW_MS = 5 * 60 * 1000; // 5 минут
+
+function fmtDateTime(d: Date) {
+  const tt = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const dd = d.toLocaleDateString('ru-RU');
+  return `${tt} ${dd}`;
+}
 
 export default async function TeachersPage(props: { searchParams?: Search }) {
   const sp = (props.searchParams ? await props.searchParams : undefined) ?? {};
@@ -22,6 +29,7 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
   const role = (session?.user as any)?.role as string | undefined;
   const canManage = role === 'director' || role === 'deputy_plus';
 
+  // where для поиска (по всем ключевым полям). Если q пуст — берём всех.
   const s = q.trim();
   const or: Prisma.UserWhereInput[] = s ? [
     { name:      { contains: s, mode: Prisma.QueryMode.insensitive } },
@@ -42,6 +50,7 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
       id: true, name: true, role: true, username: true, email: true, phone: true,
       classroom: true, telegram: true, about: true, birthday: true,
       notifyEmail: true, notifyTelegram: true,
+      lastSeen: true, // 👈 добавили
     },
   });
 
@@ -58,9 +67,11 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
     : r === 'archived' ? 'В архиве'
     : (r || '—');
 
+  const now = new Date();
+
   return (
     <section style={{ display: 'grid', gap: 12 }}>
-      {/* локальные стили для apple-expand */}
+      {/* локальные стили для apple-expand + статус */}
       <style>{`
         .glass-tile {
           position: relative;
@@ -82,14 +93,8 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
           outline: 2px solid rgba(207,227,255,.9);
           box-shadow: 0 12px 28px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.55);
         }
-        .expand-summary {
-          list-style: none;
-          cursor: pointer;
-        }
-        .caret {
-          transition: transform .16s ease, opacity .16s ease;
-          opacity: .7;
-        }
+        .expand-summary { list-style: none; cursor: pointer; }
+        .caret { transition: transform .16s ease, opacity .16s ease; opacity: .7; }
         details[open] .caret { transform: rotate(90deg); opacity: 1; }
         .pill-arch {
           font-size: 12px; padding: 2px 8px; border-radius: 9999px;
@@ -102,6 +107,15 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
           border: 1px solid rgba(229,231,235,0.7);
           box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
         }
+        .status {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-size: 12px; font-weight: 700;
+        }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status--on  { color: #15803d; }   /* зелёный */
+        .status--off { color: #b91c1c; }   /* красный  */
+        .dot--on  { background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,.2); }
+        .dot--off { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.2); }
       `}</style>
 
       {/* Шапка */}
@@ -134,6 +148,9 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
         <div style={{ display: 'grid', gap: 8 }}>
           {users.map((u, idx) => {
             const isArchived = (u as any).role === 'archived';
+            const ls = u.lastSeen ? new Date(u.lastSeen as any) : null;
+            const online = !!(ls && (now.getTime() - ls.getTime() <= ONLINE_WINDOW_MS));
+
             return (
               <div
                 key={u.id}
@@ -146,16 +163,26 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                   borderTop: idx ? '1px solid #eef0f2' : 'none'
                 }}
               >
-                {/* LEFT: ФИО → expand */}
+                {/* LEFT: ФИО + статус → expand */}
                 <details>
                   <summary className="expand-summary">
                     <div className="glass-tile">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <svg className="caret" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                          <path fill="#0f172a" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41Z"/>
-                        </svg>
-                        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 16, lineHeight: '20px' }}>{u.name}</span>
-                        {isArchived && <span className="pill-arch">в архиве</span>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <svg className="caret" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#0f172a" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41Z"/>
+                          </svg>
+                          <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 16, lineHeight: '20px' }}>{u.name}</span>
+                          {isArchived && <span className="pill-arch">в архиве</span>}
+                        </div>
+
+                        {/* статус справа, мелким */}
+                        <span className={`status ${online ? 'status--on' : 'status--off'}`}>
+                          <span className={`dot ${online ? 'dot--on' : 'dot--off'}`} />
+                          {online
+                            ? 'онлайн'
+                            : (ls ? `оффлайн · был(а) ${fmtDateTime(ls)}` : 'оффлайн')}
+                        </span>
                       </div>
                     </div>
                   </summary>
@@ -172,7 +199,7 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                       <div style={{ display: 'grid', gap: 6 }}>
                         <div><strong>классное руководство:</strong> {clean(u.classroom)}</div>
                         <div><strong>telegram:</strong> {clean(u.telegram)}</div>
-                        <div><strong>дата рождения:</strong> {u.birthday ? new Date(u.birthday as any).toLocaleDateString() : '—'}</div>
+                        <div><strong>дата рождения:</strong> {u.birthday ? new Date(u.birthday as any).toLocaleDateString('ru-RU') : '—'}</div>
                         <div><strong>уведомления:</strong> {u.notifyEmail ? 'e-mail ' : ''}{u.notifyTelegram ? 'telegram' : (!u.notifyEmail ? '—' : '')}</div>
                       </div>
                       <div style={{ gridColumn: '1 / -1' }}>

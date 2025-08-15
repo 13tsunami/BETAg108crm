@@ -1,16 +1,11 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-15T16:54:34.783Z
+Generated: 2025-08-15T17:56:53.039Z
 ## UI hints
 ```json
 {
   "brand": "#8d2828",
   "sidebarWidthPx": 22
 }
-```
-## .env keys (names only)
-```text
-NEXTAUTH_URL
-NEXTAUTH_SECRET
 ```
 ## Tree
 ```text
@@ -25,7 +20,11 @@ NEXTAUTH_SECRET
    │  │  │  ├─ page.module.css
    │  │  │  └─ page.tsx
    │  │  ├─ layout.module.css
-   │  │  └─ layout.tsx
+   │  │  ├─ layout.tsx
+   │  │  └─ teachers
+   │  │     ├─ SearchBox.tsx
+   │  │     ├─ actions.ts
+   │  │     └─ page.tsx
    │  ├─ (auth)
    │  │  └─ sign-in
    │  │     ├─ SignInForm.tsx
@@ -48,8 +47,12 @@ NEXTAUTH_SECRET
    │  └─ providers.tsx
    ├─ auth.config.ts
    ├─ components
+   │  ├─ AddUserModal.tsx
+   │  ├─ EditUserModal.tsx
+   │  ├─ Modal.tsx
    │  ├─ Providers.tsx
    │  ├─ Sidebar.tsx
+   │  ├─ UserForm.tsx
    │  └─ UserMenu.tsx
    ├─ lib
    │  ├─ auth.ts
@@ -97,4 +100,5 @@ NEXTAUTH_SECRET
 /api/auth/[...nextauth]  ⟶  app/api/auth/[...nextauth]/route.ts
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
 /sign-in  ⟶  app/(auth)/sign-in/page.tsx
+/teachers  ⟶  app/(app)/teachers/page.tsx
 ```

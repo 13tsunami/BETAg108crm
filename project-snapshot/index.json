@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-08-15T16:54:34.783Z",
+  "generatedAt": "2025-08-15T17:56:53.039Z",
   "root": "BETAg108crm.clean",
   "node": "v24.5.0",
   "next": "unknown",
@@ -7,10 +7,7 @@
     "brand": "#8d2828",
     "sidebarWidthPx": 22
   },
-  "envVarNames": [
-    "NEXTAUTH_URL",
-    "NEXTAUTH_SECRET"
-  ],
+  "envVarNames": [],
   "files": [
     {
       "path": ".env",
@@ -140,6 +137,60 @@
       "hasUseServer": false,
       "exportsFlags": {
         "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/teachers/SearchBox.tsx",
+      "size": 2387,
+      "hash": "a37902fcaa8ed012a2d451a8c440b923af0187b6",
+      "textSample": "'use client';\r\n\r\nimport { usePathname, useRouter, useSearchParams } from 'next/navigation';\r\nimport { useEffect, useMemo, useRef, useState } from 'react';\r\n\r\nexport default function SearchBox({ initial }: { initial?: string }) {\r\n  const router = useRouter();\r\n  const pathname = usePathname();\r\n  const sp = useSearchParams();\r\n  const [q, setQ] = useState(initial ?? '');\r\n\r\n  const base = useMemo(() => {\r\n    const obj = Object.fromEntries(sp?.entries() ?? []);\r\n    delete obj.ok; delete obj.error;\r\n    return obj;\r\n  }, [sp]);\r\n\r\n  // debounce + IME-guard (не триггерим во время набора по раскладке/IME)\r\n  const timerRef = useRef<number | null>(null);\r\n  const composingRef = useRef(false);\r\n\r\n  useEffect(() => { setQ(initial ?? ''); }, [initial]);\r\n\r\n  function push(qNext: string) {\r\n    const params = new URLSearchParams(base);\r\n    if (qNext) params.set('q', qNext); else params.delete('q');\r\n    router.replace(params.size ? `${pathname}?${params.toString()}` : pathname);\r\n  }\r\n\r\n  function schedule(qNext: string) {\r\n    if (timerRef.current) window.clearTimeout(timerRef.current);\r\n    // только если пусто или 2+ символа — чтобы не дергать сервер каждую букву\r\n    const shouldUpdate = qNext.length === 0 || qNext.length >= 2;\r\n    timerRef.current = window.setTimeout(() => {\r\n      if (!composingRef.current && shouldUpdate) push(qNext);\r\n    }, 450);\r\n  }\r\n\r\n  return (\r\n    <input\r\n      value={q}\r\n      onChange={(e) => { const v = e.target.value; setQ(v); schedule(v); }}\r\n      onCompositionStart={() => { composingRef.current = true; }}\r\n      onCompositionEnd={(e) => { composingRef.current = false; schedule((e.target as HTMLInputElement).value); }}\r\n      onBlur={(e) => push(e.currentTarget.value)}         // мгновенно по blur\r\n      onKeyDown={(e) => { if (e.key === 'Enter') push(q); }} // мгновенно по Enter\r\n      placeholder=\"поиск: фио, email, телефон, классное руководство, логин, роль…\"\r\n      style={{\r\n        height: 36,\r\n        fontSize: 14,\r\n        width: 520,\r\n        maxWidth: '60ch',\r\n        padding: '6px 10px',\r\n        borderRadius: 10,\r\n        border: '1px solid rgba(229,231,235,.9)',\r\n        background: '#fff',\r\n        outline: 'none',\r\n      }}\r\n    />\r\n  );\r\n}\r\n",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/teachers/actions.ts",
+      "size": 4618,
+      "hash": "b587e5c563dbf4e0c807fbbb5c505b7ec3c0ccaf",
+      "textSample": "'use server';\r\n\r\nimport { prisma } from '@/lib/prisma';\r\nimport { revalidatePath } from 'next/cache';\r\nimport { redirect } from 'next/navigation';\r\nimport bcrypt from 'bcryptjs';\r\nimport { auth } from '@/auth.config';\r\n\r\nfunction s(v: FormDataEntryValue | null | undefined) { return (v == null ? '' : String(v)).trim(); }\r\nfunction n(v: string) { return v ? v : null; }\r\nfunction err(msg: string) { redirect(`/teachers?error=${encodeURIComponent(msg)}`); }\r\n\r\nasync function requireManager() {\r\n  const session = await auth();\r\n  const role = (session?.user as any)?.role as string | undefined;\r\n  const ok = role === 'director' || role === 'deputy_plus';\r\n  if (!ok) err('Нет прав');\r\n}\r\n\r\nexport async function createUser(fd: FormData): Promise<void> {\r\n  try {\r\n    await requireManager();\r\n    const name = s(fd.get('name')); if (!name) err('Имя обязательно');\r\n\r\n    const role = s(fd.get('role')) || 'teacher';\r\n    const username = n(s(fd.get('username')));\r\n    const email = n(s(fd.get('email')));\r\n    const phone = n(s(fd.get('phone')));\r\n    const classroom = n(s(fd.get('classroom')));\r\n    const telegram = n(s(fd.get('telegram')));\r\n    const about = n(s(fd.get('about')));\r\n    const birthdayStr = s(fd.get('birthday'));\r\n    const notifyEmail = s(fd.get('notifyEmail')) === 'on';\r\n    const notifyTelegram = s(fd.get('notifyTelegram')) === 'on';\r\n    const password = s(fd.get('password'));\r\n\r\n    await prisma.user.create({\r\n      data: {\r\n        name, role, username, email, phone, classroom, telegram, about,\r\n        notifyEmail, notifyTelegram,\r\n        birthday: birthdayStr ? new Date(birthdayStr) : null,\r\n        passwordHash: password ? await bcrypt.hash(password, 10) : null,\r\n      },\r\n    });\r\n\r\n    revalidatePath('/teachers');\r\n    redirect('/teachers?ok=создан');\r\n  } catch (e: any) {\r\n    err(e?.message || 'Не удалось создать');\r\n  }\r\n}\r\n\r\nexport async function updateUser(fd: FormData): Promise<void> {\r\n  try {\r\n    await requireManager();\r\n    const id = s(fd.get('id')); if (!id) err('Нет ID');\r\n\r\n    const patch: Record<string, unknown> = {};\r\n    const name = s(fd.get('name')); if (name) patch.name = name;\r\n    const role = s(fd.get('role')); if (role) patch.role = role;\r\n\r\n    (['username','email','phone','classroom','telegram','about'] as const).forEach((k) => {\r\n      const v = s(fd.get(k));\r\n      if (v) patch[k] = v;\r\n      if (v === '') patch[k] = null;\r\n    });\r\n\r\n    const birthday = s(fd.get('birthday'));\r\n    if (birthday) patch.birthday = new Date(birthday);\r\n    if (birthday === '') patch.birthday = null;\r\n\r\n    const ne = fd.get('notifyEmail'); if (ne != null) patch.notifyEmail = s(ne) === 'on';\r\n    const nt = fd.get('notifyTelegram'); if (nt != null) patch.notifyTelegram = s(nt) === 'on';\r\n\r\n    const newPassword = s(fd.get('newPassword'));\r\n    if (newPassword) patch.passwordHash = await bcrypt.hash(newPassword, 10);\r\n\r\n    await prisma.user.update({ where: { id }, data: patch });\r\n\r\n    revalidatePath('/teachers');\r\n    redirect('/teachers?ok=сохранено');\r\n  } catch (e: any) {\r\n    err(e?.message || 'Не удалось сохранить');\r\n  }\r\n}\r\n\r\nexport async function deleteUser(fd: FormData): Promise<void> {\r\n  try {\r\n    await requireManager();\r\n    const id = s(fd.get('id')); if (!id) err('Нет ID');\r\n    await prisma.user.delete({ where: { id } });\r\n    revalidatePath('/teachers');\r\n    redirect('/teachers?ok=удалён');\r\n  } catch (e: any) {\r\n    err(e?.message || 'Не удалось удалить');\r\n  }\r\n}\r\n\r\nexport async function archiveUser(fd: FormData): Promise<void> {\r\n  try {\r\n    await requireManager();\r\n    const id = s(fd.get('id')); if (!id) err('Нет ID');\r\n    await prisma.user.update({ where: { id }, data: { role: 'archived' } });\r\n    revalidatePath('/teachers');\r\n    redirect('/teachers?ok=архивирован');\r\n  } catch (e: any) {\r\n    err(e?.message || 'Не удалось архивировать');\r\n  }\r\n}\r\n\r\nexport async function forceResetPassword(fd: FormData): Promise<void> {\r\n  try {\r\n    await requireManager();\r\n    const id =",
+      "kind": "app-helper-file",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": true,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "app/(app)/teachers/page.tsx",
+      "size": 10922,
+      "hash": "ea89c7a18238fcc08c54912c0bb061c702e641cf",
+      "textSample": "import { prisma } from '@/lib/prisma';\r\nimport { createUser, updateUser, deleteUser, archiveUser } from './actions';\r\nimport AddUserModal from '@/components/AddUserModal';\r\nimport EditUserModal from '@/components/EditUserModal';\r\nimport SearchBox from './SearchBox';\r\nimport { auth } from '@/auth.config';\r\nimport { Prisma } from '@prisma/client';\r\n\r\ntype Search = Promise<Record<string, string | string[] | undefined>>;\r\n\r\nexport const dynamic = 'force-dynamic';\r\n\r\nconst BORDER = 'rgba(229,231,235,.8)';\r\n\r\nexport default async function TeachersPage(props: { searchParams?: Search }) {\r\n  const sp = (props.searchParams ? await props.searchParams : undefined) ?? {};\r\n  const q = (Array.isArray(sp.q) ? sp.q[0] : sp.q) || '';\r\n  const ok = Array.isArray(sp.ok) ? sp.ok[0] : sp.ok;\r\n  const error = Array.isArray(sp.error) ? sp.error[0] : sp.error;\r\n\r\n  const session = await auth();\r\n  const role = (session?.user as any)?.role as string | undefined;\r\n  const canManage = role === 'director' || role === 'deputy_plus';\r\n\r\n  const s = q.trim();\r\n  const or: Prisma.UserWhereInput[] = s ? [\r\n    { name:      { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { email:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { phone:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { classroom: { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { username:  { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { role:      { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { telegram:  { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n    { about:     { contains: s, mode: Prisma.QueryMode.insensitive } },\r\n  ] : [];\r\n  const where: Prisma.UserWhereInput | undefined = or.length ? { OR: or } : undefined;\r\n\r\n  const users = await prisma.user.findMany({\r\n    where,\r\n    orderBy: { name: 'asc' },\r\n    select: {\r\n      id: true, name: true, role: true, username: true, email: true, phone: true,\r\n      classroom: true, telegram: true, about: true, birthday: true,\r\n      notifyEmail: true, notifyTelegram: true,\r\n    },\r\n  });\r\n\r\n  const btnGhost: React.CSSProperties = { height: 32, padding: '4px 10px', borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', background: '#fff', cursor: 'pointer' };\r\n  const btnDanger: React.CSSProperties = { height: 32, padding: '4px 10px', borderRadius: 10, border: '1px solid #ef4444', background: '#fff', color: '#b91c1c', cursor: 'pointer' };\r\n\r\n  const clean = (x?: string | null) => x ?? '—';\r\n  const ruRole = (r?: string | null) =>\r\n    r === 'director' ? 'Директор'\r\n    : r === 'deputy_plus' ? 'Заместитель +'\r\n    : r === 'deputy' ? 'Заместитель'\r\n    : r === 'teacher_plus' ? 'Педагог +'\r\n    : r === 'teacher' ? 'Педагог'\r\n    : r === 'archived' ? 'В архиве'\r\n    : (r || '—');\r\n\r\n  return (\r\n    <section style={{ display: 'grid', gap: 12 }}>\r\n      {/* локальные стили для apple-expand */}\r\n      <style>{`\r\n        .glass-tile {\r\n          position: relative;\r\n          padding: 10px 12px;\r\n          border-radius: 12px;\r\n          border: 1px solid ${BORDER};\r\n          background: linear-gradient(180deg, rgba(255,255,255,0.70), rgba(255,255,255,0.44));\r\n          backdrop-filter: saturate(180%) blur(12px);\r\n          -webkit-backdrop-filter: saturate(180%) blur(12px);\r\n          box-shadow: 0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.45);\r\n          transition: transform .16s ease, box-shadow .16s ease, outline-color .16s ease;\r\n          user-select: none;\r\n        }\r\n        .glass-tile:hover {\r\n          transform: translateY(-1px);\r\n          box-shadow: 0 10px 24px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.5);\r\n        }\r\n        details[open] > summary .glass-tile {\r\n          outline: 2px solid rgba(207,227,255,.9);\r\n          box-shadow: 0 12px 28px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.55);\r\n        }\r\n        .expand-summary {\r\n          list-style: none;\r\n          cursor: pointer;\r\n        }\r\n        .caret",
+      "kind": "app-route-file",
+      "routePath": "/teachers",
+      "pageType": "page",
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": true,
         "revalidate": false,
         "generateMetadata": false,
         "metadata": false
@@ -399,6 +450,60 @@
       "mentionsSearchParams": false
     },
     {
+      "path": "components/AddUserModal.tsx",
+      "size": 782,
+      "hash": "61ad018a62ab4894627acdc1d669eeb6646f76bf",
+      "textSample": "'use client';\r\n\r\nimport React from 'react';\r\nimport Modal from './Modal';\r\nimport UserForm from './UserForm';\r\n\r\nexport default function AddUserModal({ action }: { action: (fd: FormData) => Promise<void> }) {\r\n  const [open, setOpen] = React.useState(false);\r\n\r\n  return (\r\n    <>\r\n      <button\r\n        onClick={() => setOpen(true)}\r\n        style={{\r\n          height: 36, padding: '6px 12px', borderRadius: 10,\r\n          border: '1px solid #8d2828', background: '#8d2828', color: '#fff', cursor: 'pointer'\r\n        }}\r\n      >\r\n        добавить\r\n      </button>\r\n\r\n      <Modal open={open} onClose={() => setOpen(false)} title=\"Создать пользователя\" width={780}>\r\n        <UserForm action={action} mode=\"create\" />\r\n      </Modal>\r\n    </>\r\n  );\r\n}\r\n",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "components/EditUserModal.tsx",
+      "size": 952,
+      "hash": "be1a0e236c06356a2d79f6d87535a905361b27dc",
+      "textSample": "'use client';\r\n\r\nimport React from 'react';\r\nimport Modal from './Modal';\r\nimport UserForm, { UserFormInitials } from './UserForm';\r\n\r\nexport default function EditUserModal({\r\n  action, userId, initial,\r\n}: {\r\n  action: (fd: FormData) => Promise<void>;\r\n  userId: string;\r\n  initial: UserFormInitials & { name: string };\r\n}) {\r\n  const [open, setOpen] = React.useState(false);\r\n\r\n  return (\r\n    <>\r\n      <button\r\n        onClick={() => setOpen(true)}\r\n        style={{\r\n          height: 32, padding: '4px 10px', borderRadius: 10,\r\n          border: '1px solid rgba(229,231,235,.9)', background: '#fff', cursor: 'pointer'\r\n        }}\r\n      >\r\n        редактировать\r\n      </button>\r\n\r\n      <Modal open={open} onClose={() => setOpen(false)} title={`Редактировать: ${initial.name}`} width={780}>\r\n        <UserForm action={action} mode=\"edit\" initialId={userId} initialValues={initial} />\r\n      </Modal>\r\n    </>\r\n  );\r\n}\r\n",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "components/Modal.tsx",
+      "size": 2002,
+      "hash": "5bb5b6434c7af53e8683a2b750b69fc0385677b3",
+      "textSample": "'use client';\r\n\r\nimport React, { useEffect, useState } from 'react';\r\nimport { createPortal } from 'react-dom';\r\n\r\nexport default function Modal({\r\n  open, onClose, title, width = 780, children,\r\n}: { open: boolean; onClose: () => void; title?: string; width?: number; children: React.ReactNode }) {\r\n  const [mounted, setMounted] = useState(false);\r\n  useEffect(() => setMounted(true), []);\r\n  if (!open || !mounted) return null;\r\n\r\n  return createPortal(\r\n    <div\r\n      onClick={onClose}\r\n      style={{\r\n        position: 'fixed', inset: 0, zIndex: 50,\r\n        background: 'rgba(0,0,0,.44)',\r\n        display: 'flex', alignItems: 'center', justifyContent: 'center',\r\n        padding: 12,\r\n      }}\r\n    >\r\n      <div\r\n        onClick={(e) => e.stopPropagation()}\r\n        style={{\r\n          width, maxWidth: '96vw',\r\n          borderRadius: 18,\r\n          border: '1px solid rgba(229,231,235,.85)',\r\n          background: 'linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.42))',\r\n          backdropFilter: 'saturate(180%) blur(14px)',\r\n          WebkitBackdropFilter: 'saturate(180%) blur(14px)',\r\n          boxShadow: '0 18px 48px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.35)',\r\n          overflow: 'hidden',\r\n        }}\r\n      >\r\n        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(229,231,235,.9)' }}>\r\n          <div style={{ display: 'flex', alignItems: 'center' }}>\r\n            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: '#0f172a', flex: 1 }}>{title}</h3>\r\n            <button\r\n              onClick={onClose}\r\n              aria-label=\"Закрыть\"\r\n              style={{\r\n                height: 36, width: 36, borderRadius: 12,\r\n                border: '1px solid rgba(229,231,235,.9)', background: '#fff', cursor: 'pointer'\r\n              }}\r\n            >×</button>\r\n          </div>\r\n        </div>\r\n        <div style={{ padding: 16 }}>{children}</div>\r\n      </div>\r\n    </div>,\r\n    document.body\r\n  );\r\n}\r\n",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
       "path": "components/Providers.tsx",
       "size": 182,
       "hash": "a6652d3615325982b87739ae4065cba049832f33",
@@ -421,6 +526,24 @@
       "size": 18431,
       "hash": "098ff0f284586ac8e7e4728d9850a81ab55e5891",
       "textSample": "// components/Sidebar.tsx\n\"use client\";\n\nimport Link from \"next/link\";\nimport { useSession, signOut } from \"next-auth/react\";\nimport { usePathname } from \"next/navigation\";\nimport { useEffect, useMemo, useState } from \"react\";\n\nconst BRAND = \"#8d2828\";\n\nconst ROLE_RU: Record<string, string> = {\n  admin: \"Администратор\",\n  director: \"Директор\",\n  deputy_plus: \"Заместитель +\",\n  deputy: \"Заместитель\",\n  teacher_plus: \"Педагог +\",\n  teacher: \"Педагог\",\n};\n\ntype ThreadListItem = { id: string; unreadCount?: number | null };\n\ntype TaskLite = {\n  id: string;\n  assignedTo?: Array<{ type?: \"user\"; id: string }>;\n  assignees?: Array<{ userId: string; status?: string; doneAt?: string | null }>;\n};\n\nfunction splitFio(full?: string | null) {\n  const s = (full || \"\").trim();\n  if (!s) return { last: \"ГОСТЬ\", rest: \"\" };\n  const parts = s.split(/\\s+/);\n  if (parts.length >= 2) return { last: (parts[0] || \"\").toUpperCase(), rest: parts.slice(1).join(\" \") };\n  return { last: s.toUpperCase(), rest: \"\" };\n}\n\nfunction NavTile(props: {\n  href?: string;\n  active?: boolean;\n  label: string;\n  unread?: number | null;\n  onClick?: () => void;\n  asButton?: boolean;\n}) {\n  const { href, active, label, unread, onClick, asButton } = props;\n  const hasUnread = typeof unread === \"number\" && unread > 0;\n  const isSingleLongWord = !/\\s/.test(label) && label.length >= 9;\n\n  const content = (\n    <div\n      className={`tile glass ${active ? \"active\" : \"\"} ${hasUnread && !active ? \"unread\" : \"\"}`}\n      role=\"button\"\n      aria-current={active ? \"true\" : undefined}\n    >\n      <span className={`label ${isSingleLongWord ? \"label--single\" : \"label--multi\"}`} title={label}>\n        {label.toLowerCase()}\n      </span>\n\n      {hasUnread ? (\n        <span className=\"badge\" aria-label=\"Счётчик\">\n          {unread! > 99 ? \"99+\" : unread}\n        </span>\n      ) : null}\n\n      <style jsx>{`\n        .tile {\n          position: relative;\n          display: grid;\n          place-items: center;\n          text-align: center;\n          width: var(--tile-w, 78%); /* уменьшили ~вдвое за счёт масштаба внутри ячейки */\n          margin: 0 auto;\n          aspect-ratio: 1 / 1;\n          border-radius: 14px;\n          border: 1px solid rgba(229, 231, 235, 0.8);\n          transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;\n          cursor: pointer;\n          overflow: hidden;\n          padding: 4px;\n          isolation: isolate;\n        }\n        .glass {\n          background: linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.4));\n          backdrop-filter: saturate(180%) blur(10px);\n          -webkit-backdrop-filter: saturate(180%) blur(10px);\n          box-shadow: 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.35);\n        }\n        /* лёгкий блик */\n        .tile::before {\n          content: \"\";\n          position: absolute;\n          inset: -35% -35% auto -35%;\n          height: 55%;\n          background:\n            radial-gradient(120px 40px at 10% 0%, rgba(255,255,255,0.55), rgba(255,255,255,0) 60%),\n            linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.06));\n          opacity: 0;\n          transform: translateY(-10%);\n          transition: opacity 160ms ease, transform 200ms ease;\n          pointer-events: none;\n          z-index: 1;\n        }\n        .tile:hover { transform: translateY(-1px); border-color: #cfe3ff; box-shadow: 0 8px 18px rgba(0,0,0,0.08); }\n        .tile:hover::before { opacity: 1; transform: translateY(0); }\n        .tile.active { outline: 2px solid rgba(207,227,255,0.9); }\n        .tile.unread::after {\n          content: \"\"; position: absolute; left: 0; top: 0; height: 3px; width: 100%; background: #ef9b28; z-index: 2;\n        }\n\n        .label {\n          position: relative; z-index: 3;\n          color: #0f172a;\n          font-weight: 700;\n          line-height: 1.08;\n          max-width: 100%;\n          text-align: center;\n          text-decoration: none;\n          text-",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "components/UserForm.tsx",
+      "size": 4263,
+      "hash": "98c6ca646a6ef3111de4610713d3e95366924de6",
+      "textSample": "'use client';\r\n\r\nimport React from 'react';\r\n\r\nconst BORDER = 'rgba(229,231,235,.9)';\r\nconst BRAND = '#8d2828';\r\n\r\nconst inp: React.CSSProperties = {\r\n  height: 36, fontSize: 14, padding: '6px 10px',\r\n  borderRadius: 10, border: `1px solid ${BORDER}`, background: '#fff', outline: 'none',\r\n};\r\nconst btnPrimary: React.CSSProperties = {\r\n  height: 36, padding: '6px 12px', borderRadius: 10,\r\n  border: `1px solid ${BRAND}`, background: BRAND, color: '#fff', cursor: 'pointer',\r\n};\r\n\r\nexport type UserFormInitials = {\r\n  name?: string; username?: string; email?: string; phone?: string; classroom?: string;\r\n  role?: string; birthday?: string; telegram?: string; about?: string;\r\n  notifyEmail?: boolean; notifyTelegram?: boolean;\r\n};\r\n\r\nexport default function UserForm({\r\n  action, mode, initialId, initialValues,\r\n}: {\r\n  action: (fd: FormData) => Promise<void>;\r\n  mode: 'create' | 'edit';\r\n  initialId?: string;\r\n  initialValues?: UserFormInitials;\r\n}) {\r\n  return (\r\n    <form action={action}>\r\n      {mode === 'edit' && <input type=\"hidden\" name=\"id\" defaultValue={initialId} />}\r\n\r\n      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>\r\n        <Field label=\"ФИО\"><input name=\"name\" defaultValue={initialValues?.name} style={inp} required /></Field>\r\n        <Field label=\"Логин\"><input name=\"username\" defaultValue={initialValues?.username} style={inp} /></Field>\r\n\r\n        <Field label=\"E-mail\"><input name=\"email\" type=\"email\" defaultValue={initialValues?.email} style={inp} /></Field>\r\n        <Field label=\"Телефон\"><input name=\"phone\" defaultValue={initialValues?.phone} style={inp} /></Field>\r\n\r\n        <Field label=\"Классное руководство\"><input name=\"classroom\" defaultValue={initialValues?.classroom} style={inp} /></Field>\r\n        <Field label=\"Роль\">\r\n          <select name=\"role\" defaultValue={initialValues?.role ?? 'teacher'} style={inp}>\r\n            <option value=\"director\">Директор</option>\r\n            <option value=\"deputy_plus\">Заместитель +</option>\r\n            <option value=\"deputy\">Заместитель</option>\r\n            <option value=\"teacher_plus\">Педагог +</option>\r\n            <option value=\"teacher\">Педагог</option>\r\n          </select>\r\n        </Field>\r\n\r\n        <Field label=\"Дата рождения\"><input name=\"birthday\" type=\"date\" defaultValue={initialValues?.birthday} style={inp} /></Field>\r\n        <Field label=\"Telegram\"><input name=\"telegram\" defaultValue={initialValues?.telegram} style={inp} /></Field>\r\n\r\n        <div style={{ gridColumn: '1 / -1' }}>\r\n          <Field label=\"О себе\">\r\n            <textarea name=\"about\" defaultValue={initialValues?.about} style={{ ...inp, minHeight: 96 }} />\r\n          </Field>\r\n        </div>\r\n\r\n        {mode === 'create'\r\n          ? <Field label=\"Пароль (при создании)\"><input name=\"password\" type=\"password\" style={inp} /></Field>\r\n          : <Field label=\"Новый пароль (опционально)\"><input name=\"newPassword\" type=\"password\" style={inp} /></Field>\r\n        }\r\n\r\n        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>\r\n          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>\r\n            <input type=\"checkbox\" name=\"notifyEmail\" defaultChecked={!!initialValues?.notifyEmail} />\r\n            уведомлять по e-mail\r\n          </label>\r\n          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>\r\n            <input type=\"checkbox\" name=\"notifyTelegram\" defaultChecked={!!initialValues?.notifyTelegram} />\r\n            уведомлять в telegram\r\n          </label>\r\n        </div>\r\n\r\n        <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>\r\n          <button style={btnPrimary} type=\"submit\">{mode === 'create' ? 'создать' : 'сохранить'}</button>\r\n        </div>\r\n      </div>\r\n    </form>\r\n  );\r\n}\r\n\r\nfunction Field({ label, children }: { label: string; children: React.ReactNode }) {\r\n  return (\r\n    <div style={{ display: 'grid', gap: 6 }}>\r\n      <label style={{ font",
       "kind": "component",
       "routePath": null,
       "pageType": null,
