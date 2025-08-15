@@ -1,8 +1,8 @@
-export default function HomePage() {
-  return (
-    <div>
-      <h1>Добро пожаловать в G108 CRM</h1>
-      <p>Минимальная сборка: авторизация + сайдбар. Остальные страницы добавим по очереди.</p>
-    </div>
-  );
+// app/page.tsx
+import { redirect } from 'next/navigation';
+import { auth } from '@/auth.config';
+
+export default async function Home() {
+  const session = await auth();
+  redirect(session ? '/dashboard' : '/sign-in');
 }
