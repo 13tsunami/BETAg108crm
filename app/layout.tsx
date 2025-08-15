@@ -1,6 +1,7 @@
 // app/layout.tsx
 import '@/styles/globals.css';
 import Providers from '@/components/Providers';
+import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 
 function safeMetadataBase(): URL | undefined {
@@ -12,11 +13,11 @@ function safeMetadataBase(): URL | undefined {
   try {
     return new URL(raw);
   } catch {
-    return undefined;
+    return undefined; // не валим билд, если переменная окружения задана криво
   }
 }
 
-export const metadata = {
+export const metadata: Metadata = {
   metadataBase: safeMetadataBase(),
   title: 'G108 CRM',
   description: 'Внутренняя CRM',
