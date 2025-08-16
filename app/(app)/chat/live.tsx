@@ -1,4 +1,4 @@
-// app/(app)/chat/live.tsx
+//'use client' файл
 'use client';
 import { useEffect, useRef, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,10 @@ type P =
   | { type: 'threadCreated'; threadId: string; at: number }
   | { type: 'threadDeleted'; threadId: string; at: number; byId: string; byName: string }
   | { type?: string; [k: string]: any };
+
+function emit(name: string, detail: any) {
+  try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch {}
+}
 
 export default function Live({ uid, activeThreadId }: { uid: string; activeThreadId?: string }) {
   const router = useRouter();
@@ -39,23 +43,28 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
         let p: P;
         try { p = JSON.parse(e.data || '{}'); } catch { softRefresh(500); return; }
 
-        // если открыт этот тред — отдаём напрямую клиенту и НЕ делаем refresh
+        // Активный тред — мгновенная дорисовка без refresh
         if (activeThreadId && p.threadId === activeThreadId) {
           const api = (window as any).__chatApi;
           if (api && api.threadId === activeThreadId) {
-            if (p.type === 'message')           { try { api.push(p); } catch {} return; }
-            if (p.type === 'messageEdited')     { try { api.edit(p); } catch {} return; }
-            if (p.type === 'messageDeleted')    { try { api.del(p); }  catch {} return; }
-            if (p.type === 'read')              { try { api.read?.(p);} catch {} return; }
-            if (p.type === 'threadDeleted')     {
-              try { api.onThreadDeleted?.(p); } catch {}
+            if (p.type === 'message')        { api.push?.(p); return; }
+            if (p.type === 'messageEdited')  { api.edit?.(p); return; }
+            if (p.type === 'messageDeleted') { api.del?.(p);  return; }
+            if (p.type === 'read')           { api.read?.(p); return; }
+            if (p.type === 'threadDeleted')  {
+              api.onThreadDeleted?.(p);
               startTransition(() => router.replace('/chat'));
               return;
             }
           }
         }
 
-        // не тот тред или окно закрыто — мягко обновляем счётчики/списки
+        // Фоновый приход сообщения — мгновенно плюсуем бейдж в сайдбаре
+        if (p.type === 'message' && p.authorId !== uid) {
+          emit('app:unread-bump', { threadId: p.threadId });
+        }
+
+        // Остальное — мягкий refresh для списков/бейджей
         if (p.type === 'threadDeleted' || p.type === 'threadCreated') { softRefresh(150); return; }
         if (p.type === 'message' || p.type === 'messageEdited' || p.type === 'messageDeleted' || p.type === 'read') {
           softRefresh(300); return;

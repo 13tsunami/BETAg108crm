@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 const BRAND = '#8d2828';
 
@@ -79,7 +80,10 @@ function Tile({
         .tile.unread::after { content:""; position:absolute; left:0; top:0; height:3px; width:100%; background:#ef9b28; z-index:2; }
 
         .label { position:relative; z-index:3; color:#0f172a; font-weight:700; line-height:1.08;
-                 display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+                 display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden;
+                 line-clamp: 2;         /* стандарт */
+                 -webkit-line-clamp: 2; /* fallback для WebKit */
+        }
         .label--multi { font-size:12px; letter-spacing:.01em; }
         .label--single { font-size:11px; letter-spacing:.01em; font-stretch:95%; }
 
@@ -99,6 +103,15 @@ export default function Sidebar({ unreadChats = 0 }: { unreadChats?: number }) {
   const roleRu = roleSlug ? (ROLE_RU[roleSlug] ?? roleSlug) : null;
   const hasAdminBlock = ['director', 'deputy_plus', 'Директор', 'Заместитель +'].includes(roleSlug || '');
   const fio = splitFio((data?.user?.name as string) || null);
+
+  // быстрый клиентский счётчик непрочитанных для «Чатов»
+  const [unread, setUnread] = useState(unreadChats);
+  useEffect(() => setUnread(unreadChats), [unreadChats]); // синхронизируемся с сервером при смене страницы/рендере
+  useEffect(() => {
+    const onBump = () => setUnread(x => x + 1);
+    window.addEventListener('app:unread-bump', onBump as any);
+    return () => window.removeEventListener('app:unread-bump', onBump as any);
+  }, []);
 
   return (
     <aside className="wrap">
@@ -125,12 +138,15 @@ export default function Sidebar({ unreadChats = 0 }: { unreadChats?: number }) {
         {authed && (
           <>
             <div className="grid">
-              <Tile href="/dashboard"  label="Главное"    active={pathname === '/dashboard'} />
-              <Tile href="/teachers"   label="Педагоги"   active={pathname === '/teachers'} />
-              <Tile href="/chat"       label="Чаты"       active={pathname === '/chat'} unread={pathname === '/chat' ? 0 : unreadChats} />
-              <Tile href="/inboxTasks" label="Задачи"     active={pathname === '/inboxTasks'} />
-              <Tile href="/calendar"   label="Календарь"  active={pathname === '/calendar'} />
-              <Tile href="/schedule"   label="Расписание" active={pathname === '/schedule'} />
+              <Tile href="/dashboard"              label="Главное"     active={pathname === '/dashboard'} />
+              <Tile href="/teachers"               label="Педагоги"    active={pathname === '/teachers'} />
+              <Tile href="/chat"                   label="Чаты"        active={pathname === '/chat'} unread={pathname === '/chat' ? 0 : unread} />
+              <Tile href="/inboxTasks"             label="Задачи"      active={pathname === '/inboxTasks'} />
+              <Tile href="/calendar"               label="Календарь"   active={pathname === '/calendar'} />
+              <Tile href="/schedule"               label="Расписание"  active={pathname === '/schedule'} />
+              {/* новые плитки, видны всем */}
+              <Tile href="/inboxTasks/archive"     label="Архив задач" active={pathname === '/inboxTasks/archive'} />
+              <Tile href="/discussions"            label="Обсуждения"  active={pathname === '/discussions'} />
             </div>
 
             {hasAdminBlock && (
