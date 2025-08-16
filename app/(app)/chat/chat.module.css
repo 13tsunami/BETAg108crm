@@ -7,11 +7,9 @@
   --line: #e5e7eb;
 
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 360px 1fr;
   gap: 12px;
-
-  /* фикс по высоте, чтобы правая панель всегда имела жёсткую область прокрутки */
-  min-height: calc(100dvh - 24px);
+  height: calc(100dvh - 24px);  /* фикс, чтобы правая колонка не растягивалась */
 }
 
 .glass {
@@ -23,84 +21,69 @@
 }
 
 /* левая колонка */
-.threads { border-right: 0; font-size: 13px; padding: 12px; }
+.threads { font-size: 13px; padding: 12px; }
 .block { padding: 12px; }
 .block + .block { margin-top: 12px; }
 .blockTitle { font-weight: 800; margin-bottom: 8px; position: relative; color: var(--ink); }
 .blockTitle::after { content:""; position:absolute; left:0; right:0; bottom:-6px; height:2px; background:var(--brand); opacity:.12; border-radius:2px; }
 
-/* поиск слева с автодропдауном */
+/* поиск слева — дропдаун только при фокусе поля */
 .searchBlock { position: relative; z-index: 20; }
 .searchRow { position: relative; margin-top: 10px; }
 .searchInput { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; outline: none; background: #fff; }
 .searchInput:focus { border-color:#c7e3ff; box-shadow: 0 0 0 4px rgba(59,130,246,.08); }
 
+/* прячем дропдаун как только инпут теряет фокус (включая после Enter/перезагрузки) */
+.searchBlock:not(:focus-within) .dd { display: none; }
+
 .dd { position:absolute; left:0; right:0; top:calc(100% + 6px); background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 16px rgba(0,0,0,.08), 0 4px 6px rgba(0,0,0,.06); z-index:2000; max-height:260px; overflow:auto; }
 .ddItem { width:100%; text-align:left; padding:10px 12px; border:0; background:transparent; cursor:pointer; }
 .ddItem:hover { background:#f9fafb; }
 
-/* список тредов */
+/* список тредов — подчистил «лишнее» */
 .threadWrap { position:relative; }
 .thread {
   width:100%;
   text-align:left;
-  padding:14px 72px 14px 12px;
-  min-height:76px;
+  padding:12px 40px 12px 12px;
   border-radius:12px;
   border:1px solid var(--line);
   background:#fff;
-  position:relative;
   cursor:pointer;
-  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+  transition: border-color 120ms ease, transform 80ms ease;
 }
 .thread + .thread { margin-top: 8px; }
 .thread:hover { transform: translateY(-1px); border-color: #c7e3ff; }
-.threadActive { background: #eef6ff; border-color: #c7e3ff; }
-.threadUnread { background: #fff7ed; border-color: #fde68a; }
-.threadUnread::before { content:""; position:absolute; left:-1px; top:-1px; bottom:-1px; width:4px; background:#ef9b28; border-top-left-radius:12px; border-bottom-left-radius:12px; }
-
-.threadTop { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+.threadActive { border-color: #c7e3ff; background:#f6faff; }
+.threadUnread { border-color: #fde68a; }
+.threadTop { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .peer { display:flex; align-items:center; gap:8px; min-width: 0; }
-.avatar { width:32px; height:32px; border-radius:50%; display:grid; place-items:center; font-weight:800; color:#fff; font-size:12px; background: radial-gradient(120% 120% at 0% 0%, #c34a4a 0%, var(--brand) 60%, #5a1818 100%); box-shadow:0 2px 6px rgba(0,0,0,.12); flex-shrink: 0; }
+.avatar { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-weight:800; color:#fff; font-size:11px; background: radial-gradient(120% 120% at 0% 0%, #c34a4a 0%, var(--brand) 60%, #5a1818 100%); flex-shrink:0; }
 .threadName { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.threadDate { color: var(--muted); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+.threadDate { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.threadLast { margin-top:4px; color:#374151; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-/* последний месседж в item'е */
-.threadLast {
-  color:#374151;
-  overflow:hidden;
-  display:-webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  word-break: normal;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  text-wrap: balance;
-}
-.threadLastMine { text-align: right; }
-
-.badge { position:absolute; right:44px; top:8px; font-size:11px; background:var(--brand); color:#fff; padding:0 7px; line-height:20px; min-width:22px; text-align:center; border-radius:9999px; box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:800; }
-.btnDel { position:absolute; right:8px; top:8px; width:26px; height:26px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.9); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color: var(--muted); opacity:0; transition: opacity 120ms ease, background 120ms ease; }
-.threadWrap:hover .btnDel, .btnDel:focus-visible { opacity: 1; }
-.btnDel:hover { background:#fff; }
+/* бейдж непрочитанного и иконка удаления только по :hover */
+.badge { position:absolute; right:10px; top:10px; font-size:11px; background:var(--brand); color:#fff; padding:0 7px; line-height:18px; min-width:20px; text-align:center; border-radius:9999px; box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:800; }
+.btnDel { display:none; }
+.threadWrap:hover .btnDel { display:inline-flex; position:absolute; right:10px; bottom:10px; width:24px; height:24px; border-radius:8px; border:1px solid var(--line); background:#fff; align-items:center; justify-content:center; color: var(--muted); }
 .btnDelIcon { width:14px; height:14px; }
 
-/* правая панель */
+/* правая панель — ЖЁСТКАЯ фиксация */
 .pane {
   padding: 12px;
   display:grid;
   grid-template-rows: auto 1fr auto;
   gap: 12px;
-
-  /* строгая фиксация высоты панели, прокрутка только в теле сообщений */
-  min-height: calc(100dvh - 24px);
+  height: 100%;             /* фикс: равна высоте chatRoot */
+  min-height: 0;            /* чтобы внутренняя прокрутка работала корректно */
 }
 
-/* фиксированная область сообщений с прокруткой */
+/* область сообщений только прокручивается, не тянет контейнер */
 .paneBody {
   position: relative;
   overflow: auto;
+  height: 100%;
   padding: 8px 8px 24px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -109,51 +92,42 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* верх панели (кнопки/поиск) */
+/* верх панели */
 .blockTop { display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .blockTopRight { display:flex; gap:8px; }
-.blockTop .btn { border: 1px solid var(--line); background:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; }
-.blockTop .btn:hover { background:#fafafa; }
 
 /* поиск в активном чате */
-.inlineSearch {
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
+.inlineSearch { display:flex; align-items:center; gap:8px; }
 .inlineSearchInput {
   width: 220px;
-  max-width: 38vw;
+  max-width: 40vw;
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
   outline: none;
   background:#fff;
 }
-.inlineSearchBtn {
-  border: 1px solid var(--line);
-  background:#fff;
-  padding:6px 10px;
-  border-radius:8px;
-  cursor:pointer;
-}
+.inlineSearchBtn { border: 1px solid var(--line); background:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; }
 .inlineSearchBtn:hover { background:#fafafa; }
 
-/* пузырьки сообщений */
+/* пузырьки сообщений — фиксированная ширина, не распирают панель */
 .msgRow { display:flex; margin: 6px 0; }
 .msgMine { justify-content: flex-end; }
 
 .msgCard {
-  max-width: min(720px, 88%);
+  max-width: 72ch;          /* фиксированная читабельная ширина как у Telegram */
+  width: fit-content;
   border: 1px solid var(--glass-brd);
   border-radius: 14px;
   box-shadow: 0 2px 6px rgba(0,0,0,.04);
   padding: 8px 10px;
   color: var(--ink);
   background: #fff;
+  word-break: break-word;
+  overflow-wrap: anywhere;   /* длинные куски не тянут контейнер */
 }
-.msgMineBg { background: #e6ffea; }    /* моё: бледно-зелёный */
-.msgOtherBg { background: #e4f4ff; }   /* собеседник: бледно-синий */
+.msgMineBg { background: #e6ffea; }
+.msgOtherBg { background: #e4f4ff; }
 
 .msgHead { display:flex; align-items:baseline; gap:6px; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
 .headMine { justify-content: flex-end; text-align: right; }
@@ -161,9 +135,9 @@
 
 .msgAuthor { color: var(--ink); font-weight: 800; }
 .msgMeta { color: var(--muted); }
-.msgText { white-space: pre-wrap; word-break: break-word; }
+.msgText { white-space: pre-wrap; }
 
-/* подсветка совпадений поиска */
+/* подсветка совпадений */
 .match { outline: 2px solid #93c5fd; outline-offset: 2px; }
 
 /* композер */
@@ -193,3 +167,13 @@
   background:rgba(255,255,255,0.7); border:1px solid rgba(229,231,235,0.9);
   backdrop-filter:saturate(180%) blur(8px); font-size:12px; color:#374151;
 }
+
+/* модалка */
+.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, .35); display: grid; place-items: center; }
+.modalCard { width: min(520px, 92vw); background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow: 0 20px 40px rgba(0,0,0,.15); padding: 12px; }
+.modalTitle { font-weight: 900; margin-bottom: 10px; color:#0f172a; }
+.modalRow { display:flex; gap:8px; }
+.modalInput { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
+.modalBtn { border:1px solid var(--line); background:#fff; padding:6px 10px; border-radius:10px; cursor:pointer; }
+.modalBtn:hover { background:#fafafa; }
+.modalBtnDanger { border-color:#fca5a5; color:#991b1b; }

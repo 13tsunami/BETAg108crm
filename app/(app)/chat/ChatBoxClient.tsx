@@ -371,36 +371,39 @@ export default function ChatBoxClient({
       </form>
 
       {modalOf ? (
-        <div className={s.modal} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.25)', display:'grid', placeItems:'center' }}>
-          <div className={s.modalCard} style={{ width:'min(520px,92vw)', background:'#fff', border:'1px solid var(--line)', borderRadius:12, padding:12 }}>
-            <div className={s.modalTitle} style={{ fontWeight:800, marginBottom:8 }}>Действия</div>
-            {modalOf.authorId === meId ? (
-              <>
-                <form onSubmit={submitEdit}>
-                  <input
-                    value={editText}
-                    onChange={(e)=>setEditText(e.target.value)}
-                    placeholder="новый текст"
-                    style={{ width:'100%', padding:'8px 10px', border:'1px solid var(--line)', borderRadius:10 }}
-                  />
-                  <div style={{ display:'flex', gap:8, marginTop:8 }}>
-                    <button className={s.btn} type="submit">сохранить</button>
-                    <button className={s.btnDel} type="button" onClick={()=>deleteBoth(modalOf)}>удалить для всех</button>
-                  </div>
-                </form>
-                <div style={{ marginTop:8 }}>
-                  <button className={s.btn} onClick={()=>deleteSelf(modalOf)}>удалить для себя</button>
-                </div>
-              </>
-            ) : (
-              <button className={s.btn} onClick={()=>deleteSelf(modalOf)}>удалить для себя</button>
-            )}
-            <div style={{ marginTop:8 }}>
-              <button className={s.btn} onClick={()=>setModalOf(null)}>закрыть</button>
+  <div className={s.modal} onClick={() => setModalOf(null)}>
+    <div className={s.modalCard} onClick={e => e.stopPropagation()}>
+      <div className={s.modalTitle}>Действия</div>
+
+      {modalOf.authorId === meId ? (
+        <>
+          <form onSubmit={submitEdit}>
+            <input
+              value={editText}
+              onChange={(e)=>setEditText(e.target.value)}
+              placeholder="новый текст"
+              className={s.modalInput}
+            />
+            <div className={s.modalRow} style={{ marginTop: 8 }}>
+              <button className={s.modalBtn} type="submit">сохранить</button>
+              <button className={`${s.modalBtn} ${s.modalBtnDanger}`} type="button" onClick={()=>deleteBoth(modalOf)}>удалить для всех</button>
             </div>
+          </form>
+          <div style={{ marginTop:8 }}>
+            <button className={s.modalBtn} onClick={()=>deleteSelf(modalOf)}>удалить для себя</button>
           </div>
-        </div>
-      ) : null}
+        </>
+      ) : (
+        <button className={s.modalBtn} onClick={()=>deleteSelf(modalOf)}>удалить для себя</button>
+      )}
+
+      <div style={{ marginTop:8, textAlign:'right' }}>
+        <button className={s.modalBtn} onClick={()=>setModalOf(null)}>закрыть</button>
+      </div>
+    </div>
+  </div>
+) : null}
+
     </div>
   );
 }
