@@ -11,23 +11,19 @@ type P =
   | { type: 'threadDeleted'; threadId: string; at: number; byId: string; byName: string }
   | { type?: string; [k: string]: any };
 
-function emit(name: string, detail: any) {
-  try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch {}
-}
-
 export default function Live({ uid, activeThreadId }: { uid: string; activeThreadId?: string }) {
   const router = useRouter();
   const esRef = useRef<EventSource | null>(null);
-  const last = useRef(0);
+  const lastRefresh = useRef(0);
 
   useEffect(() => {
     if (!uid) return;
     let stop = false;
 
-    const softRefresh = (gap: number) => {
+    const softRefresh = (gapMs: number) => {
       const now = Date.now();
-      if (now - last.current > gap) {
-        last.current = now;
+      if (now - lastRefresh.current > gapMs) {
+        lastRefresh.current = now;
         startTransition(() => router.refresh());
       }
     };
@@ -40,9 +36,9 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
 
       es.onmessage = (e) => {
         let p: P;
-        try { p = JSON.parse(e.data || '{}'); } catch { softRefresh(500); return; }
+        try { p = JSON.parse(e.data || '{}'); } catch { softRefresh(400); return; }
 
-        // Активный тред — никаких refresh, только точечные апдейты
+        // если открыт активный тред — без refresh, только точечные апдейты
         if (activeThreadId && p.threadId === activeThreadId) {
           const api = (window as any).__chatApi;
           if (api && api.threadId === activeThreadId) {
@@ -58,16 +54,21 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
           }
         }
 
-        // Фоновый приход — только бейджи/списки
-        if (p.type === 'message' && p.authorId !== uid) emit('app:unread-bump', { threadId: p.threadId });
-        if (p.type === 'threadDeleted' || p.type === 'threadCreated') { softRefresh(150); return; }
-        if (p.type === 'message' || p.type === 'messageEdited' || p.type === 'messageDeleted' || p.type === 'read') {
-          softRefresh(300); return;
+        // фоновая вкладка / другие страницы
+        if (p.type === 'message' && p.authorId !== uid) {
+          try { window.dispatchEvent(new CustomEvent('app:unread-bump', { detail: { threadId: p.threadId } })); } catch {}
+          softRefresh(250);
+          return;
         }
-        softRefresh(600);
+        if (p.type === 'threadDeleted' || p.type === 'threadCreated') { softRefresh(120); return; }
+        if (p.type === 'messageEdited' || p.type === 'messageDeleted' || p.type === 'read') { softRefresh(300); return; }
+        softRefresh(800);
       };
 
-      es.onerror = () => { try { es.close(); } catch {} ; if (!stop) setTimeout(connect, 800); };
+      es.onerror = () => {
+        try { es.close(); } catch {}
+        if (!stop) setTimeout(connect, 900);
+      };
     };
 
     connect();

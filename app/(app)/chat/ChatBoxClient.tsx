@@ -2,22 +2,44 @@
 
 import { useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { sendMessageAction, editMessageAction, deleteMessageAction, markReadAction, deleteThreadAction } from './actions';
+import s from './chat.module.css';
+import {
+  sendMessageAction,
+  editMessageAction,
+  deleteMessageAction,
+  markReadAction,
+  deleteThreadAction,
+} from './actions';
 
+// ===== Types =====
 type Msg = {
   id: string;
   text: string;
-  ts: string;        // ISO
+  ts: string;       // ISO
   authorId: string;
   edited?: boolean;
   deleted?: boolean;
-  temp?: { clientId: string }; // локовый маркер для склейки
+  temp?: { clientId: string }; // local-only marker for replacement
 };
+
+type ChatApi = {
+  threadId: string;
+  push: (p: { messageId: string; text: string; authorId: string; ts: string; clientId?: string }) => void;
+  edit: (p: { messageId: string; text: string }) => void;
+  del:  (p: { messageId: string; scope: 'self'|'both' }) => void;
+  read: (p: { threadId: string }) => void;
+  onThreadDeleted: (p: { byName: string }) => void;
+};
+
+declare global {
+  interface Window { __chatApi?: ChatApi }
+}
 
 export default function ChatBoxClient({
   meId, threadId, peerReadAtIso, initial,
 }: { meId: string; threadId: string; peerReadAtIso: string | null; initial: Msg[] }) {
   const router = useRouter();
+
   const [msgs, setMsgs] = useState<Msg[]>(initial);
   const [input, setInput] = useState('');
   const [modalOf, setModalOf] = useState<Msg | null>(null);
@@ -26,7 +48,7 @@ export default function ChatBoxClient({
 
   const peerReadAt = useMemo(() => (peerReadAtIso ? new Date(peerReadAtIso) : null), [peerReadAtIso]);
 
-  // merge server -> client + зачистка висячих temp при серверном ререндере
+  // merge server -> client и зачистка висячих temp при серверном ререндере
   useEffect(() => {
     setMsgs(prev => {
       const official = new Map(initial.map(m => [m.id, { ...m }]));
@@ -39,14 +61,15 @@ export default function ChatBoxClient({
     });
   }, [initial]);
 
+  // автоскролл
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end' }); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' }); }, [msgs.length]);
 
   // Глобальный API для Live: никогда не добавляем второй пузырь для моих событий
   useEffect(() => {
-    const api = {
+    const api: ChatApi = {
       threadId,
-      push: (p: { messageId: string; text: string; authorId: string; ts: string; clientId?: string }) => {
+      push: (p) => {
         setMsgs(xs => {
           if (xs.some(m => m.id === p.messageId)) return xs; // уже есть
           if (p.authorId === meId) {
@@ -66,7 +89,7 @@ export default function ChatBoxClient({
               next[j] = { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId };
               return next;
             }
-            // 3) уже есть почти такой же real — ничего не делаем
+            // 3) уже есть «почти такой же» real — ничего не делаем
             const tReal = new Date(p.ts).getTime();
             const existsSame = xs.some(m => m.authorId===meId && !m.temp && m.text===p.text && Math.abs(new Date(m.ts).getTime() - tReal) <= 30000);
             if (existsSame) return xs;
@@ -75,17 +98,13 @@ export default function ChatBoxClient({
           return [...xs, { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId }];
         });
       },
-      edit: (p: { messageId: string; text: string }) => {
-        setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: p.text, edited: true } : m));
-      },
-      del: (p: { messageId: string; scope: 'self'|'both' }) => {
-        if (p.scope === 'both') setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: '', deleted: true } : m));
-      },
-      read: (_p: any) => {},
-      onThreadDeleted: (_p: { byName: string }) => { try { alert('Ваш чат был удалён собеседником.'); } catch {} },
+      edit: (p) => setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: p.text, edited: true } : m)),
+      del:  (p) => { if (p.scope === 'both') setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: '', deleted: true } : m)); },
+      read: () => {},
+      onThreadDeleted: () => { try { alert('Ваш чат был удалён собеседником.'); } catch {} },
     };
-    (window as any).__chatApi = api;
-    return () => { if ((window as any).__chatApi?.threadId === threadId) (window as any).__chatApi = undefined; };
+    window.__chatApi = api;
+    return () => { if (window.__chatApi?.threadId === threadId) window.__chatApi = undefined; };
   }, [threadId, meId]);
 
   // отправка — сразу «финальный» пузырь; id заменится по SSE
@@ -141,40 +160,40 @@ export default function ChatBoxClient({
   };
 
   return (
-    <div className="chatbox" style={{ display:'grid', gridTemplateRows:'auto 1fr auto', height:640 }}>
-      <div style={{ display:'flex', justifyContent:'flex-end', padding:'6px 12px' }}>
-        <button className="btn" onClick={onMarkRead} disabled={!threadId} style={{
-          height:36, padding:'0 12px', borderRadius:10, border:'1px solid rgba(229,231,235,.9)', background:'#fff', cursor:'pointer'
-        }}>отметить прочитанным</button>
-        <button onClick={onDeleteThread} className="btn danger" disabled={!threadId} style={{
-          marginLeft:8, height:36, padding:'0 12px', borderRadius:10, border:'1px solid #ef4444', background:'#fff', color:'#b91c1c', cursor:'pointer'
-        }}>удалить диалог</button>
+    <div className={s.block} style={{ display:'grid', gridTemplateRows:'auto 1fr auto' }}>
+      {/* верхняя панель */}
+      <div className={s.blockTop} style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
+        <button onClick={onMarkRead} className={s.btn} disabled={!threadId}>отметить прочитанным</button>
+        <button onClick={onDeleteThread} className={s.btnDel} disabled={!threadId}>
+          <span className={s.btnDelIcon} aria-hidden /> удалить диалог
+        </button>
       </div>
 
-      <div className="messages" style={{ overflow:'auto', padding:10 }}>
-        {msgs.length === 0 ? <div className="pill" style={{ margin:10 }}>нет сообщений</div> : null}
+      {/* сообщения */}
+      <div style={{ overflow:'auto', padding: 6 }}>
         {msgs.map((m) => {
           const mine = m.authorId === meId;
           const createdAt = new Date(m.ts);
           const read = mine && peerReadAt ? peerReadAt >= createdAt : false;
           const isDeleted = !!m.deleted && m.text === '';
+
           return (
-            <div key={m.id} className={`msg ${mine ? 'me' : ''}`} onClick={() => setModalOf(m)} style={{
-              maxWidth:'72%', margin:'8px 0', padding:'10px 12px', borderRadius:12, border:'1px solid rgba(229,231,235,.8)',
-              background:'#fff', boxShadow:'0 4px 12px rgba(0,0,0,.04)', marginLeft: mine ? 'auto' : undefined, opacity: isDeleted ? .7 : 1
-            }}>
-              <div style={{ whiteSpace:'pre-wrap' }}>
-                {isDeleted ? 'сообщение удалено' : m.text}
-                {m.edited && !isDeleted ? ' · ред.' : ''}
-              </div>
-              <div className="time" style={{ fontSize:11, color:'#6b7280', marginTop:6, display:'flex', gap:6, alignItems:'center' }}>
-                <span>{fmt(createdAt)}</span>
-                {mine ? (
-                  <span className="checks" title={read ? 'прочитано' : 'доставлено'} style={{ display:'inline-flex', alignItems:'center', gap:2, transform:'translateY(1px)' }}>
-                    <i className="c" style={{ width:12, height:12, display:'inline-block', borderBottom:'2px solid #9ca3af', borderLeft:'2px solid #9ca3af', transform:'rotate(-45deg)', borderRadius:1 }} />
-                    <i className="c" style={{ width:12, height:12, display:'inline-block', borderBottom:`2px solid ${read ? '#8d2828' : '#9ca3af'}`, borderLeft:`2px solid ${read ? '#8d2828' : '#9ca3af'}`, transform:'rotate(-45deg)', borderRadius:1, opacity: read ? 1 : .35 }} />
-                  </span>
-                ) : null}
+            <div key={m.id} className={`${s.msgRow} ${mine ? s.msgMine : ''}`}>
+              <div className={`${s.msgCard} ${mine ? s.msgTailMine : s.msgTailOther}`}>
+                <div className={s.msgHead}>
+                  <span className={s.msgMeta}>{fmt(createdAt)}</span>
+                  {mine ? (
+                    <span className={s.msgMeta} title={read ? 'прочитано' : 'доставлено'} style={{ display:'inline-flex', gap:4 }}>
+                      <i aria-hidden style={{ width:12, height:12, display:'inline-block', borderBottom:'2px solid #9ca3af', borderLeft:'2px solid #9ca3af', transform:'rotate(-45deg)', borderRadius:1 }} />
+                      <i aria-hidden style={{ width:12, height:12, display:'inline-block', borderBottom:`2px solid ${read ? '#8d2828' : '#9ca3af'}`, borderLeft:`2px solid ${read ? '#8d2828' : '#9ca3af'}`, transform:'rotate(-45deg)', borderRadius:1, opacity: read ? 1 : .35 }} />
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className={s.msgText} onClick={() => setModalOf(m)} style={{ opacity: isDeleted ? .7 : 1 }}>
+                  {isDeleted ? 'сообщение удалено' : m.text}
+                  {m.edited && !isDeleted ? ' · ред.' : ''}
+                </div>
               </div>
             </div>
           );
@@ -182,40 +201,51 @@ export default function ChatBoxClient({
         <div ref={bottomRef} />
       </div>
 
-      <form action={onSend as any} className="composer" style={{ display:'flex', gap:8, padding:10, borderTop:'1px solid rgba(229,231,235,.85)' }}>
+      {/* композер */}
+      <form action={onSend as any} className={s.composer} style={{ display:'flex', alignItems:'center', gap:8 }}>
         <input type="hidden" name="threadId" value={threadId} />
-        <input type="text" name="text" placeholder="напишите сообщение…" value={input} onChange={(e) => setInput(e.target.value)}
-               disabled={!threadId}
-               style={{ flex:1, height:40, padding:'8px 10px', border:'1px solid rgba(229,231,235,.9)', borderRadius:10, outline:'none', background:'#fff' }}
+        <textarea
+          name="text"
+          className={s.textarea}
+          placeholder="напишите сообщение…"
+          value={input}
+          onChange={(e)=>setInput(e.target.value)}
+          rows={2}
+          disabled={!threadId}
         />
-        <button className="btn primary" type="submit" disabled={!threadId || !input.trim()} style={{
-          height:40, padding:'0 14px', borderRadius:10, border:'1px solid rgba(229,231,235,.9)', background:'#fff', cursor:'pointer'
-        }}>отправить</button>
+        <button className={s.sendBtn} type="submit" disabled={!threadId || !input.trim()}>
+          отправить
+        </button>
       </form>
 
+      {/* модалка */}
       {modalOf ? (
-        <div className="modal" style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.2)', display:'grid', placeItems:'center' }}>
-          <div className="modal__card" style={{ width:'min(520px, 92vw)', background:'#fff', border:'1px solid rgba(229,231,235,.9)', borderRadius:12, padding:12 }}>
-            <div style={{ fontWeight:700, marginBottom:8 }}>Действия</div>
+        <div className={s.modal} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.25)', display:'grid', placeItems:'center' }}>
+          <div className={s.modalCard} style={{ width:'min(520px,92vw)', background:'#fff', border:'1px solid var(--line)', borderRadius:12, padding:12 }}>
+            <div className={s.modalTitle} style={{ fontWeight:800, marginBottom:8 }}>Действия</div>
             {modalOf.authorId === meId ? (
               <>
                 <form onSubmit={submitEdit}>
-                  <input value={editText} onChange={(e) => setEditText(e.target.value)} placeholder="новый текст"
-                         style={{ width:'100%', padding:'8px 10px', border:'1px solid rgba(229,231,235,.9)', borderRadius:10 }} />
+                  <input
+                    value={editText}
+                    onChange={(e)=>setEditText(e.target.value)}
+                    placeholder="новый текст"
+                    style={{ width:'100%', padding:'8px 10px', border:'1px solid var(--line)', borderRadius:10 }}
+                  />
                   <div style={{ display:'flex', gap:8, marginTop:8 }}>
-                    <button className="btn" type="submit" style={{ height:36, padding:'0 12px', borderRadius:10, border:'1px solid rgba(229,231,235,.9)', background:'#fff' }}>сохранить</button>
-                    <button className="btn danger" type="button" onClick={() => deleteBoth(modalOf)} style={{ height:36, padding:'0 12px', borderRadius:10, border:'1px solid #ef4444', background:'#fff', color:'#b91c1c' }}>удалить для всех</button>
+                    <button className={s.btn} type="submit">сохранить</button>
+                    <button className={s.btnDel} type="button" onClick={()=>deleteBoth(modalOf)}>удалить для всех</button>
                   </div>
                 </form>
                 <div style={{ marginTop:8 }}>
-                  <button className="btn" onClick={() => deleteSelf(modalOf)} style={{ height:36, padding:'0 12px', borderRadius:10, border:'1px solid rgba(229,231,235,.9)', background:'#fff' }}>удалить для себя</button>
+                  <button className={s.btn} onClick={()=>deleteSelf(modalOf)}>удалить для себя</button>
                 </div>
               </>
             ) : (
-              <button className="btn" onClick={() => deleteSelf(modalOf)} style={{ height:36, padding:'0 12px', borderRadius:10, border:'1px solid rgba(229,231,235,.9)', background:'#fff' }}>удалить для себя</button>
+              <button className={s.btn} onClick={()=>deleteSelf(modalOf)}>удалить для себя</button>
             )}
             <div style={{ marginTop:8 }}>
-              <button className="btn" onClick={() => setModalOf(null)} style={{ height:36, padding:'0 12px', borderRadius:10, border:'1px solid rgba(229,231,235,.9)', background:'#fff' }}>закрыть</button>
+              <button className={s.btn} onClick={()=>setModalOf(null)}>закрыть</button>
             </div>
           </div>
         </div>
