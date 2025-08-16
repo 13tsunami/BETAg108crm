@@ -235,9 +235,10 @@ const error = errorRaw && !/^NEXT_REDIRECT/.test(errorRaw) ? errorRaw : undefine
                     />
 
                     <form action={deleteUser} style={{ display: 'inline-block' }}>
-                      <input type="hidden" name="id" value={u.id} />
-                      <button style={btnDanger}>удалить</button>
-                    </form>
+  <input type="hidden" name="id" value={u.id} />
+  <button style={btnDanger} type="submit">удалить</button>
+</form>
+
                   </div>
                 )}
               </div>
