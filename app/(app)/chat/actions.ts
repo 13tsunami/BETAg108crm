@@ -1,4 +1,3 @@
-// app/(app)/chat/actions.ts
 'use server';
 
 import { auth } from '@/auth.config';
@@ -23,7 +22,6 @@ async function participantsOf(threadId: string): Promise<[string, string]> {
   return [th?.aId || '', th?.bId || ''] as [string, string];
 }
 
-/** Отправка сообщения. Возвращает ничего (контракт Next15), SSE отдаёт clientId для снятия «отправка…» */
 export async function sendMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -32,7 +30,6 @@ export async function sendMessageAction(fd: FormData): Promise<void> {
   const clientId = s(fd.get('clientId')).trim() || undefined;
   if (!threadId || !text) return;
 
-  // проверим, что я участник
   const th = await prisma.thread.findFirst({
     where: { id: threadId, OR: [{ aId: me }, { bId: me }] },
     select: { aId: true, bId: true },
@@ -67,11 +64,10 @@ export async function sendMessageAction(fd: FormData): Promise<void> {
     authorId: created.authorId,
     text: created.text,
     ts: created.createdAt.toISOString(),
-    clientId, // ← вернём клиентский id для склейки pending
-  });
+    clientId, // ← ключ к замене temp -> real
+  } as any);
 }
 
-/** Редактирование сообщения (только автор). */
 export async function editMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -97,7 +93,6 @@ export async function editMessageAction(fd: FormData): Promise<void> {
   } as any);
 }
 
-/** Удаление сообщения: scope='self' (скрыть у себя) или 'both' (обнулить текст у обоих, только автор). */
 export async function deleteMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -118,7 +113,6 @@ export async function deleteMessageAction(fd: FormData): Promise<void> {
       create: { messageId: m.id, userId: me },
     });
   } else {
-    // both — только автор
     if (m.authorId !== me) return;
     await prisma.message.update({ where: { id: m.id }, data: { text: '', deletedAt: now() } });
   }
@@ -129,11 +123,10 @@ export async function deleteMessageAction(fd: FormData): Promise<void> {
     at: Date.now(),
     messageId: m.id,
     byId: me,
-    scope: (scope as 'self' | 'both'),
+    scope: scope as 'self' | 'both',
   } as any);
 }
 
-/** Отметить тред прочитанным для текущего пользователя. */
 export async function markReadAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -155,7 +148,6 @@ export async function markReadAction(fd: FormData): Promise<void> {
   broker.publish([th.aId, th.bId], { type: 'read', threadId, at: Date.now() } as any);
 }
 
-/** Полное удаление треда у обоих. */
 export async function deleteThreadAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -170,7 +162,7 @@ export async function deleteThreadAction(fd: FormData): Promise<void> {
 
   await prisma.$transaction(async (tx) => {
     const mids = await tx.message.findMany({ where: { threadId }, select: { id: true } });
-    const ids = mids.map(m => m.id);
+    const ids = mids.map((m) => m.id);
     if (ids.length) await tx.messageHide.deleteMany({ where: { messageId: { in: ids } } });
     await tx.readMark.deleteMany({ where: { threadId } });
     await tx.message.deleteMany({ where: { threadId } });
@@ -186,6 +178,5 @@ export async function deleteThreadAction(fd: FormData): Promise<void> {
     byName,
   } as any);
 
-  // инициатор — сразу на список
   redirect('/chat');
 }

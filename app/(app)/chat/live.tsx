@@ -1,10 +1,9 @@
-//'use client' файл
 'use client';
 import { useEffect, useRef, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
 type P =
-  | { type: 'message'; threadId: string; at: number; messageId: string; authorId: string; text: string; ts: string }
+  | { type: 'message'; threadId: string; at: number; messageId: string; authorId: string; text: string; ts: string; clientId?: string }
   | { type: 'messageEdited'; threadId: string; at: number; messageId: string; byId: string; text: string }
   | { type: 'messageDeleted'; threadId: string; at: number; messageId: string; byId: string; scope: 'self' | 'both' }
   | { type: 'read'; threadId: string; at: number }
@@ -43,11 +42,11 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
         let p: P;
         try { p = JSON.parse(e.data || '{}'); } catch { softRefresh(500); return; }
 
-        // Активный тред — мгновенная дорисовка без refresh
+        // Активный тред — никаких refresh, только точечные апдейты
         if (activeThreadId && p.threadId === activeThreadId) {
           const api = (window as any).__chatApi;
           if (api && api.threadId === activeThreadId) {
-            if (p.type === 'message')        { api.push?.(p); return; }
+            if (p.type === 'message')        { api.push?.({ ...p, clientId: (p as any).clientId }); return; }
             if (p.type === 'messageEdited')  { api.edit?.(p); return; }
             if (p.type === 'messageDeleted') { api.del?.(p);  return; }
             if (p.type === 'read')           { api.read?.(p); return; }
@@ -59,12 +58,8 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
           }
         }
 
-        // Фоновый приход сообщения — мгновенно плюсуем бейдж в сайдбаре
-        if (p.type === 'message' && p.authorId !== uid) {
-          emit('app:unread-bump', { threadId: p.threadId });
-        }
-
-        // Остальное — мягкий refresh для списков/бейджей
+        // Фоновый приход — только бейджи/списки
+        if (p.type === 'message' && p.authorId !== uid) emit('app:unread-bump', { threadId: p.threadId });
         if (p.type === 'threadDeleted' || p.type === 'threadCreated') { softRefresh(150); return; }
         if (p.type === 'message' || p.type === 'messageEdited' || p.type === 'messageDeleted' || p.type === 'read') {
           softRefresh(300); return;
@@ -72,21 +67,13 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
         softRefresh(600);
       };
 
-      es.onerror = () => {
-        try { es.close(); } catch {}
-        if (!stop) setTimeout(connect, 800);
-      };
+      es.onerror = () => { try { es.close(); } catch {} ; if (!stop) setTimeout(connect, 800); };
     };
 
     connect();
     const onVis = () => { if (document.visibilityState === 'visible') softRefresh(0); };
     document.addEventListener('visibilitychange', onVis);
-
-    return () => {
-      document.removeEventListener('visibilitychange', onVis);
-      stop = true;
-      try { esRef.current?.close(); } catch {}
-    };
+    return () => { document.removeEventListener('visibilitychange', onVis); stop = true; try { esRef.current?.close(); } catch {} };
   }, [router, uid, activeThreadId]);
 
   return null;
