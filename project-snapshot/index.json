@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-08-16T15:33:39.400Z",
+  "generatedAt": "2025-08-16T16:05:09.588Z",
   "root": "BETAg108crm.clean",
   "node": "v24.5.0",
   "next": "unknown",
@@ -145,8 +145,8 @@
     },
     {
       "path": "app/(app)/chat/chat.module.css",
-      "size": 8745,
-      "hash": "d273d0e5e1398ae8bd60d09cd87825e91bea3023",
+      "size": 8944,
+      "hash": "1c0b75e966fb6e66976f6063fc99a82d28cc7450",
       "textSample": "/* app/(app)/chat/chat.module.css */\r\n.chatRoot {\r\n  --brand: #8d2828;\r\n  --glass-bg: rgba(255,255,255,0.55);\r\n  --glass-brd: rgba(229,231,235,0.8);\r\n  --ink: #0f172a;\r\n  --muted: #6b7280;\r\n  --line: #e5e7eb;\r\n\r\n  display: grid;\r\n  grid-template-columns: 360px 1fr;\r\n  gap: 12px;\r\n  height: calc(100dvh - 24px);\r\n}\r\n\r\n/* вспомогательный класс — больше НЕ используется для левой колонки */\r\n.glass {\r\n  background: var(--glass-bg);\r\n  backdrop-filter: saturate(180%) blur(10px);\r\n  -webkit-backdrop-filter: saturate(180%) blur(10px);\r\n  border: 1px solid var(--glass-brd);\r\n  border-radius: 16px;\r\n}\r\n\r\n/* ===== левая колонка (матовая, без blur) ===== */\r\n.threads {\r\n  font-size: 13px;\r\n  padding: 12px;\r\n\r\n  /* обнуление любых «протёкших» эффектов */\r\n  background: transparent;\r\n  backdrop-filter: none !important;\r\n  -webkit-backdrop-filter: none !important;\r\n}\r\n\r\n.block {\r\n  padding: 12px;\r\n  background: transparent;               /* никакого стекла */\r\n  backdrop-filter: none !important;\r\n  -webkit-backdrop-filter: none !important;\r\n}\r\n.block + .block { margin-top: 12px; }\r\n\r\n.blockTitle {\r\n  font-weight: 800; margin-bottom: 8px; position: relative; color: var(--ink);\r\n}\r\n.blockTitle::after {\r\n  content:\"\"; position:absolute; left:0; right:0; bottom:-6px; height:2px;\r\n  background:var(--brand); opacity:.12; border-radius:2px;\r\n}\r\n\r\n/* поиск в колонке — матовый */\r\n.searchBlock { position: relative; z-index: 20; }\r\n.searchRow { position: relative; margin-top: 10px; }\r\n.searchInput {\r\n  width: 100%; padding: 10px 12px; border: 1px solid var(--line);\r\n  border-radius: 12px; outline: none; background: #fff;\r\n  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\r\n}\r\n.searchInput:focus { border-color:#c7e3ff; box-shadow: 0 0 0 4px rgba(59,130,246,.08); }\r\n\r\n/* дропдаун поиска — тоже без blur */\r\n.searchBlock:not(:focus-within) .dd { display: none; }\r\n.dd {\r\n  position:absolute; left:0; right:0; top:calc(100% + 6px);\r\n  background:#fff; border:1px solid var(--line); border-radius:12px;\r\n  box-shadow:0 12px 16px rgba(0,0,0,.08), 0 4px 6px rgba(0,0,0,.06);\r\n  z-index:2000; max-height:260px; overflow:auto;\r\n  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\r\n}\r\n.ddItem { width:100%; text-align:left; padding:10px 12px; border:0; background:transparent; cursor:pointer; }\r\n.ddItem:hover { background:#f9fafb; }\r\n\r\n/* список тредов — матовый фон карточек */\r\n.threadWrap { position:relative; }\r\n.thread {\r\n  width:100%; text-align:left; padding:12px 40px 12px 12px;\r\n  border-radius:12px; border:1px solid var(--line);\r\n  background:#fff; cursor:pointer;\r\n  transition: border-color 120ms ease, transform 80ms ease;\r\n  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\r\n}\r\n.thread + .thread { margin-top: 8px; }\r\n.thread:hover { transform: translateY(-1px); border-color: #c7e3ff; }\r\n.threadActive { border-color: #c7e3ff; background:#f6faff; }\r\n.threadUnread { border-color: #fde68a; }\r\n.threadTop { display:flex; align-items:center; justify-content:space-between; gap:8px; }\r\n.peer { display:flex; align-items:center; gap:8px; min-width: 0; }\r\n.avatar {\r\n  width:28px; height:28px; border-radius:50%; display:grid; place-items:center;\r\n  font-weight:800; color:#fff; font-size:11px;\r\n  background: radial-gradient(120% 120% at 0% 0%, #c34a4a 0%, var(--brand) 60%, #5a1818 100%);\r\n  flex-shrink:0;\r\n}\r\n.threadName { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\r\n.threadDate { color: var(--muted); font-size: 11px; white-space: nowrap; }\r\n.threadLast { margin-top:4px; color:#374151; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }\r\n\r\n/* бейдж непрочитанного и кнопка удаления */\r\n.badge { position:absolute; right:10px; top:10px; font-size:11px; background:var(--brand); color:#fff; padding:0 7px; line-height:18px; min-width:20px; text-align:center; border-radius:9999px; box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:800; }\r\n.btnDel { display",
       "kind": "app-helper-file",
       "routePath": null,
@@ -1044,6 +1044,42 @@
       "mentionsSearchParams": false
     },
     {
+      "path": "components/search/SearchProvider.tsx",
+      "size": 2664,
+      "hash": "6e5858f473dd79537daf2321d582811bd6e077c2",
+      "textSample": "/* components/search/SearchProvider.tsx */\r\n'use client';\r\n\r\nimport { createContext, use, useContext, useMemo, useState, useDeferredValue, startTransition } from 'react';\r\nimport type { SearchItem, SearchKind } from '@/lib/search/types';\r\n\r\ntype Ctx = {\r\n  items: SearchItem[];\r\n  query: string;\r\n  setQuery: (q: string) => void;\r\n  kinds?: ReadonlyArray<SearchKind>;\r\n  results: SearchItem[];\r\n  filterKinds: (kinds: ReadonlyArray<SearchKind>) => void;\r\n};\r\n\r\nconst SearchCtx = createContext<Ctx | null>(null);\r\n\r\nexport function SearchProvider(props: { items: SearchItem[]; kinds?: ReadonlyArray<SearchKind>; children: React.ReactNode }) {\r\n  const [query, setQueryState] = useState('');\r\n  const [kinds, setKinds] = useState<ReadonlyArray<SearchKind> | undefined>(props.kinds);\r\n\r\n  function setQuery(q: string) {\r\n    // не дергаем синхронно рендер дерева — позволяем браузеру не терять каретку\r\n    startTransition(() => setQueryState(q));\r\n  }\r\n\r\n  const norm = (s: string) => s.toLowerCase();\r\n\r\n  const deferred = useDeferredValue(query);\r\n  const results = useMemo(() => {\r\n    const q = norm(deferred).trim();\r\n    if (!q) {\r\n      // пустой запрос — показываем первые N каждого типа\r\n      const cap = 8;\r\n      const byKind = new Map<SearchKind, number>();\r\n      const out: SearchItem[] = [];\r\n      for (const it of props.items) {\r\n        if (kinds && !kinds.includes(it.kind)) continue;\r\n        const used = byKind.get(it.kind) ?? 0;\r\n        if (used < cap) {\r\n          out.push(it);\r\n          byKind.set(it.kind, used + 1);\r\n        }\r\n      }\r\n      return out;\r\n    }\r\n    // простой и быстрый contains + starts-with буст\r\n    const arr = kinds ? props.items.filter(it => kinds.includes(it.kind)) : props.items;\r\n    const starts: SearchItem[] = [];\r\n    const contains: SearchItem[] = [];\r\n    for (const it of arr) {\r\n      const s = it.q;\r\n      if (s.startsWith(q)) starts.push(it);\r\n      else if (s.includes(q)) contains.push(it);\r\n      if (starts.length + contains.length > 200) break; // отсечка безопасности\r\n    }\r\n    return [...starts, ...contains];\r\n  }, [deferred, props.items, kinds]);\r\n\r\n  const value: Ctx = {\r\n    items: props.items,\r\n    query,\r\n    setQuery,\r\n    kinds,\r\n    results,\r\n    filterKinds: setKinds,\r\n  };\r\n\r\n  return <SearchCtx.Provider value={value}>{props.children}</SearchCtx.Provider>;\r\n}\r\n\r\nexport function useSearch() {\r\n  const ctx = useContext(SearchCtx);\r\n  if (!ctx) throw new Error('useSearch must be used within <SearchProvider>');\r\n  return ctx;\r\n}\r\n",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "components/search/UniversalSearchInput.tsx",
+      "size": 2297,
+      "hash": "76f5e53865a9ce1a0f2a88dfb0f4eca009f87dae",
+      "textSample": "/* components/search/UniversalSearchInput.tsx */\r\n'use client';\r\n\r\nimport { useRef, useState } from 'react';\r\nimport { useSearch } from './SearchProvider';\r\nimport type { SearchKind, SearchItem } from '@/lib/search/types';\r\n\r\nexport function UniversalSearchInput(props: {\r\n  placeholder?: string;\r\n  onSelect: (item: SearchItem) => void;\r\n  allowKinds?: ReadonlyArray<SearchKind>; // если надо сузить типы «на лету»\r\n  autoFocus?: boolean;\r\n}) {\r\n  const { query, setQuery, results } = useSearch();\r\n  const [open, setOpen] = useState(false);\r\n  const composingRef = useRef(false);\r\n\r\n  function onChange(e: React.ChangeEvent<HTMLInputElement>) {\r\n    setOpen(true);\r\n    setQuery(e.target.value);\r\n  }\r\n\r\n  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {\r\n    if (e.key === 'Escape') {\r\n      setOpen(false);\r\n    }\r\n  }\r\n\r\n  return (\r\n    <div className=\"relative\">\r\n      <input\r\n        className=\"w-full rounded-xl border px-3 py-2 text-sm\"\r\n        placeholder={props.placeholder ?? 'Поиск…'}\r\n        value={query}\r\n        autoFocus={props.autoFocus}\r\n        onChange={onChange}\r\n        onKeyDown={onKeyDown}\r\n        onCompositionStart={() => (composingRef.current = true)}\r\n        onCompositionEnd={() => (composingRef.current = false)}\r\n      />\r\n      {open && results.length > 0 && (\r\n        <div className=\"absolute z-50 mt-1 w-full rounded-xl border bg-white shadow-lg max-h-80 overflow-auto\">\r\n          {results.map((it) => (\r\n            <button\r\n              key={`${it.kind}:${it.id}`}\r\n              type=\"button\"\r\n              className=\"w-full text-left px-3 py-2 hover:bg-gray-50\"\r\n              onClick={() => {\r\n                setOpen(false);\r\n                props.onSelect(it);\r\n              }}\r\n            >\r\n              <div className=\"text-sm\">{it.label}</div>\r\n              <div className=\"text-xs text-gray-500\">{badge(it.kind)}{it.hint ? ` • ${it.hint}` : ''}</div>\r\n            </button>\r\n          ))}\r\n        </div>\r\n      )}\r\n    </div>\r\n  );\r\n}\r\n\r\nfunction badge(kind: SearchKind): string {\r\n  if (kind === 'user') return 'ФИО';\r\n  if (kind === 'group') return 'Группа';\r\n  if (kind === 'subject') return 'Предмет';\r\n  if (kind === 'role') return 'Роль';\r\n  return kind;\r\n}\r\n",
+      "kind": "component",
+      "routePath": null,
+      "pageType": null,
+      "isClient": true,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
       "path": "lib/auth.ts",
       "size": 2981,
       "hash": "29080f73a72fcca883e0d75af988abf8089dcf7f",
@@ -1192,6 +1228,42 @@
       "size": 1196,
       "hash": "fb01c361f9c03bbf7e29075544bb283ad6c05fda",
       "textSample": "// lib/roles.ts\nexport type Role =\n  | 'guest'\n  | 'user'\n  | 'student'\n  | 'staff'\n  | 'teacher'\n  | 'deputy'\n  | 'deputy_plus'\n  | 'director';\n\nexport const roleOrder: Role[] = [\n  'guest',\n  'user',\n  'student',\n  'staff',\n  'teacher',\n  'deputy',\n  'deputy_plus',\n  'director',\n];\n\nexport function isRole(value: unknown): value is Role {\n  return typeof value === 'string' && (roleOrder as string[]).includes(value);\n}\n\nexport function normalizeRole(value: unknown): Role | null {\n  if (typeof value !== 'string') return null;\n  const v = value.trim();\n  return isRole(v) ? (v as Role) : null;\n}\n\nexport function canViewAdmin(role: Role | null | undefined): boolean {\n  return role === 'director' || role === 'deputy_plus';\n}\n\nexport function canCreateTasks(role: Role | null | undefined): boolean {\n  if (!role) return false;\n  return roleOrder.indexOf(role) >= roleOrder.indexOf('deputy');\n}\n\nexport function canViewTasks(role: Role | null | undefined): boolean {\n  if (!role) return false;\n  return roleOrder.indexOf(role) >= roleOrder.indexOf('teacher');\n}\n\nexport function hasFullAccess(role: Role | null | undefined): boolean {\n  return role === 'deputy_plus' || role === 'director';\n}\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/search/index.ts",
+      "size": 3237,
+      "hash": "7742dada016d8c5f6366cba209655e7cb7c10ae7",
+      "textSample": "/* lib/search/index.ts */\r\nimport 'server-only';\r\nimport { unstable_cache as cache } from 'next/cache';\r\nimport { prisma } from '@/lib/prisma';\r\nimport type { IndexOptions, SearchItem } from './types';\r\n\r\nfunction norm(s: string | null | undefined): string {\r\n  return (s ?? '').toLowerCase();\r\n}\r\n\r\nasync function buildIndex(opts: IndexOptions): Promise<SearchItem[]> {\r\n  const limit = opts.limitPerKind ?? 5000;\r\n\r\n  const tasks: Promise<SearchItem[]>[] = [];\r\n\r\n  if (opts.kinds.includes('user')) {\r\n    tasks.push(\r\n      prisma.user.findMany({\r\n        select: { id: true, name: true, role: true, classroom: true },\r\n        take: limit,\r\n        orderBy: { name: 'asc' },\r\n      }).then(rows =>\r\n        rows.map(r => ({\r\n          id: r.id,\r\n          kind: 'user' as const,\r\n          label: r.name,\r\n          hint: [r.role, r.classroom].filter(Boolean).join(' • ') || undefined,\r\n          q: [r.name, r.role, r.classroom].filter(Boolean).join(' '),\r\n        })),\r\n      )\r\n    );\r\n  }\r\n\r\n  if (opts.kinds.includes('group')) {\r\n    tasks.push(\r\n      prisma.group.findMany({\r\n        select: { id: true, name: true, _count: { select: { members: true } } },\r\n        take: limit,\r\n        orderBy: { name: 'asc' },\r\n      }).then(rows =>\r\n        rows.map(g => ({\r\n          id: g.id,\r\n          kind: 'group' as const,\r\n          label: g.name,\r\n          hint: g._count.members ? `участников: ${g._count.members}` : undefined,\r\n          q: g.name,\r\n        })),\r\n      )\r\n    );\r\n  }\r\n\r\n  if (opts.kinds.includes('subject')) {\r\n    tasks.push(\r\n      prisma.subject.findMany({\r\n        select: { id: true, name: true, _count: { select: { members: true } } },\r\n        take: limit,\r\n        orderBy: { name: 'asc' },\r\n      }).then(rows =>\r\n        rows.map(s => ({\r\n          id: s.id,\r\n          kind: 'subject' as const,\r\n          label: s.name,\r\n          hint: s._count.members ? `преподавателей: ${s._count.members}` : undefined,\r\n          q: s.name,\r\n        })),\r\n      )\r\n    );\r\n  }\r\n\r\n  if (opts.kinds.includes('role')) {\r\n    tasks.push(\r\n      prisma.user.findMany({\r\n        select: { role: true },\r\n        where: { role: { not: null } },\r\n        distinct: ['role'],\r\n        orderBy: { role: 'asc' },\r\n        take: limit,\r\n      }).then(rows =>\r\n        rows\r\n          .map(r => r.role!)\r\n          .filter(Boolean)\r\n          .map(role => ({\r\n            id: role,\r\n            kind: 'role' as const,\r\n            label: role,\r\n            q: role,\r\n          } satisfies SearchItem)),\r\n      )\r\n    );\r\n  }\r\n\r\n  const parts = await Promise.all(tasks);\r\n  const all = parts.flat();\r\n  return all.map(it => ({ ...it, q: norm(it.q) }));\r\n}\r\n\r\n// ВАЖНО: keyParts — массив строк; аргументы функции тоже попадают в ключ кэша.\r\n// Для устойчивости к порядку kinds канонизируем их перед сборкой.\r\nexport const getSearchIndex = cache(\r\n  async (opts: IndexOptions) => {\r\n    const kindsSorted = [...opts.kinds].sort() as IndexOptions['kinds'];\r\n    return buildIndex({ ...opts, kinds: kindsSorted });\r\n  },\r\n  ['search-index'],\r\n  { revalidate: 120, tags: ['search-index'] },\r\n);\r\n",
+      "kind": "lib",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "lib/search/types.ts",
+      "size": 494,
+      "hash": "41f291872bbb005a7fd66a9256a773a0f9f03fdf",
+      "textSample": "/* lib/search/types.ts */\r\nexport type SearchKind = 'user' | 'group' | 'subject' | 'role';\r\n\r\nexport type SearchItem = {\r\n  id: string;\r\n  kind: SearchKind;\r\n  label: string;     // основная строка показа\r\n  hint?: string;     // вторичная строка\r\n  q: string;         // нормализованная строка для быстрых фильтров\r\n};\r\n\r\nexport type IndexOptions = {\r\n  kinds: ReadonlyArray<SearchKind>;\r\n  limitPerKind?: number;\r\n};\r\n",
       "kind": "lib",
       "routePath": null,
       "pageType": null,
@@ -1421,6 +1493,24 @@
       "size": 3398,
       "hash": "76887c8f8656a16e9c97b7444d3949b1aa20ac9e",
       "textSample": "-- === Каскадное удаление пользователя и связанных данных ===\n\n-- Thread.aId / Thread.bId\nALTER TABLE \"Thread\" DROP CONSTRAINT IF EXISTS \"Thread_aId_fkey\";\nALTER TABLE \"Thread\" DROP CONSTRAINT IF EXISTS \"Thread_bId_fkey\";\n\nALTER TABLE \"Thread\"\n  ADD CONSTRAINT \"Thread_aId_fkey\"\n  FOREIGN KEY (\"aId\") REFERENCES \"User\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\nALTER TABLE \"Thread\"\n  ADD CONSTRAINT \"Thread_bId_fkey\"\n  FOREIGN KEY (\"bId\") REFERENCES \"User\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\n-- Message.authorId / Message.threadId\nALTER TABLE \"Message\" DROP CONSTRAINT IF EXISTS \"Message_authorId_fkey\";\nALTER TABLE \"Message\" DROP CONSTRAINT IF EXISTS \"Message_threadId_fkey\";\n\nALTER TABLE \"Message\"\n  ADD CONSTRAINT \"Message_authorId_fkey\"\n  FOREIGN KEY (\"authorId\") REFERENCES \"User\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\nALTER TABLE \"Message\"\n  ADD CONSTRAINT \"Message_threadId_fkey\"\n  FOREIGN KEY (\"threadId\") REFERENCES \"Thread\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\n-- Attachment.messageId\nALTER TABLE \"Attachment\" DROP CONSTRAINT IF EXISTS \"Attachment_messageId_fkey\";\n\nALTER TABLE \"Attachment\"\n  ADD CONSTRAINT \"Attachment_messageId_fkey\"\n  FOREIGN KEY (\"messageId\") REFERENCES \"Message\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\n-- ReadMark.threadId / ReadMark.userId\nALTER TABLE \"ReadMark\" DROP CONSTRAINT IF EXISTS \"ReadMark_threadId_fkey\";\nALTER TABLE \"ReadMark\" DROP CONSTRAINT IF EXISTS \"ReadMark_userId_fkey\";\n\nALTER TABLE \"ReadMark\"\n  ADD CONSTRAINT \"ReadMark_threadId_fkey\"\n  FOREIGN KEY (\"threadId\") REFERENCES \"Thread\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\nALTER TABLE \"ReadMark\"\n  ADD CONSTRAINT \"ReadMark_userId_fkey\"\n  FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\n-- GroupMember.userId / GroupMember.groupId\nALTER TABLE \"GroupMember\" DROP CONSTRAINT IF EXISTS \"GroupMember_userId_fkey\";\nALTER TABLE \"GroupMember\" DROP CONSTRAINT IF EXISTS \"GroupMember_groupId_fkey\";\n\nALTER TABLE \"GroupMember\"\n  ADD CONSTRAINT \"GroupMember_userId_fkey\"\n  FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\nALTER TABLE \"GroupMember\"\n  ADD CONSTRAINT \"GroupMember_groupId_fkey\"\n  FOREIGN KEY (\"groupId\") REFERENCES \"Group\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\n-- TaskAssignee.userId / TaskAssignee.taskId\nALTER TABLE \"TaskAssignee\" DROP CONSTRAINT IF EXISTS \"TaskAssignee_userId_fkey\";\nALTER TABLE \"TaskAssignee\" DROP CONSTRAINT IF EXISTS \"TaskAssignee_taskId_fkey\";\n\nALTER TABLE \"TaskAssignee\"\n  ADD CONSTRAINT \"TaskAssignee_userId_fkey\"\n  FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\nALTER TABLE \"TaskAssignee\"\n  ADD CONSTRAINT \"TaskAssignee_taskId_fkey\"\n  FOREIGN KEY (\"taskId\") REFERENCES \"Task\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\n-- MessageHide.messageId / MessageHide.userId\nALTER TABLE \"MessageHide\" DROP CONSTRAINT IF EXISTS \"MessageHide_messageId_fkey\";\nALTER TABLE \"MessageHide\" DROP CONSTRAINT IF EXISTS \"MessageHide_userId_fkey\";\n\nALTER TABLE \"MessageHide\"\n  ADD CONSTRAINT \"MessageHide_messageId_fkey\"\n  FOREIGN KEY (\"messageId\") REFERENCES \"Message\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;\n\nALTER TABLE \"MessageHide\"\n  ADD CONSTRAINT \"MessageHide_userId_fkey\"\n  FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\")\n  ON UPDATE CASCADE ON DELETE CASCADE;",
+      "kind": "prisma",
+      "routePath": null,
+      "pageType": null,
+      "isClient": false,
+      "hasUseServer": false,
+      "exportsFlags": {
+        "dynamic": false,
+        "revalidate": false,
+        "generateMetadata": false,
+        "metadata": false
+      },
+      "mentionsSearchParams": false
+    },
+    {
+      "path": "prisma/migrations/20250816_add_subjects/migration.sql",
+      "size": 1041,
+      "hash": "ed591842a73e949d2804a5502277e550ce137b43",
+      "textSample": "-- CreateTable Subject\r\nCREATE TABLE \"Subject\" (\r\n  \"id\"   TEXT NOT NULL,\r\n  \"name\" TEXT NOT NULL,\r\n  CONSTRAINT \"Subject_pkey\" PRIMARY KEY (\"id\"),\r\n  CONSTRAINT \"Subject_name_key\" UNIQUE (\"name\")\r\n);\r\n\r\n-- CreateTable SubjectMember\r\nCREATE TABLE \"SubjectMember\" (\r\n  \"id\"        TEXT NOT NULL,\r\n  \"userId\"    TEXT NOT NULL,\r\n  \"subjectId\" TEXT NOT NULL,\r\n  CONSTRAINT \"SubjectMember_pkey\" PRIMARY KEY (\"id\"),\r\n  CONSTRAINT \"SubjectMember_userId_subjectId_key\" UNIQUE (\"userId\",\"subjectId\"),\r\n  CONSTRAINT \"SubjectMember_userId_fkey\"\r\n    FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\")\r\n    ON UPDATE CASCADE ON DELETE CASCADE,\r\n  CONSTRAINT \"SubjectMember_subjectId_fkey\"\r\n    FOREIGN KEY (\"subjectId\") REFERENCES \"Subject\"(\"id\")\r\n    ON UPDATE CASCADE ON DELETE CASCADE\r\n);\r\n\r\n-- (при желании индексы на lookups)\r\nCREATE INDEX \"Subject_name_idx\" ON \"Subject\" (\"name\");\r\nCREATE INDEX \"SubjectMember_userId_idx\" ON \"SubjectMember\" (\"userId\");\r\nCREATE INDEX \"SubjectMember_subjectId_idx\" ON \"SubjectMember\" (\"subjectId\");\r\n",
       "kind": "prisma",
       "routePath": null,
       "pageType": null,

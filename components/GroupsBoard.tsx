@@ -53,6 +53,115 @@ export default function GroupsBoard(props: {
   function toggleUser(id: string) {
     setSelUserIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
+
+  // НОВОЕ: универсальный автокомплит в стиле проекта
+  function AutoComplete(props: {
+    value: string;
+    onChange: (s: string) => void;
+    items: { id: string; label: string; hint?: string }[];
+    placeholder: string;
+    onSelect: (id: string) => void;
+  }) {
+    const [open, setOpen] = React.useState(false);
+    const [hover, setHover] = React.useState(-1);
+    const boxRef = React.useRef<HTMLDivElement | null>(null);
+
+    const norm = (s: string) => s.trim().toLowerCase();
+    const q = norm(props.value);
+    const filtered = React.useMemo(() => {
+      if (!q) return props.items.slice(0, 20);
+      const starts: typeof props.items = [];
+      const contains: typeof props.items = [];
+      for (const it of props.items) {
+        const hay = (it.label + ' ' + (it.hint ?? '')).toLowerCase();
+        if (hay.startsWith(q)) starts.push(it);
+        else if (hay.includes(q)) contains.push(it);
+        if (starts.length + contains.length >= 50) break;
+      }
+      return [...starts, ...contains];
+    }, [q, props.items]);
+
+    React.useEffect(() => {
+      function onDoc(e: MouseEvent) {
+        if (!boxRef.current) return;
+        if (!boxRef.current.contains(e.target as Node)) setOpen(false);
+      }
+      document.addEventListener('mousedown', onDoc);
+      return () => document.removeEventListener('mousedown', onDoc);
+    }, []);
+
+    function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
+      if (!open && (e.key === 'ArrowDown' || e.key === 'Enter')) {
+        setOpen(true);
+        return;
+      }
+      if (!open) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); setHover((h) => Math.min(h + 1, filtered.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setHover((h) => Math.max(h - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        const it = filtered[hover] ?? filtered[0];
+        if (it) { props.onSelect(it.id); setOpen(false); }
+      } else if (e.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    return (
+      <div ref={boxRef} style={{ position: 'relative', marginTop: 8 }}>
+        <input
+          value={props.value}
+          onChange={(e) => { props.onChange(e.target.value); setOpen(true); setHover(-1); }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKey}
+          placeholder={props.placeholder}
+          style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10, background: '#fff' }}
+        />
+        {open && filtered.length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              zIndex: 1000,
+              top: '100%',
+              left: 0,
+              right: 0,
+              marginTop: 6,
+              background: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: 10,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              maxHeight: 300,
+              overflow: 'auto'
+            }}
+          >
+            {filtered.map((it, i) => (
+              <button
+                key={it.id}
+                type="button"
+                onMouseEnter={() => setHover(i)}
+                onClick={() => { props.onSelect(it.id); setOpen(false); }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 10px',
+                  background: i === hover ? '#fff5f5' : '#fff',
+                  border: 'none',
+                  borderBottom: '1px solid #f3f4f6',
+                  cursor: 'pointer'
+                }}
+                title={it.hint}
+              >
+                <div style={{ fontSize: 13, color: '#111827' }}>{it.label}</div>
+                {it.hint ? <div style={{ fontSize: 11, color: '#6b7280' }}>{it.hint}</div> : null}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function resetSelection() { setSelUserIds([]); }
 
   // фильтры
@@ -149,57 +258,57 @@ export default function GroupsBoard(props: {
       </button>
     );
   }
- function Modal(props: {
-  open: boolean;
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-  actions?: React.ReactNode;
-}) {
-  if (!props.open) return null;
+  function Modal(props: {
+    open: boolean;
+    title: string;
+    onClose: () => void;
+    children: React.ReactNode;
+    actions?: React.ReactNode;
+  }) {
+    if (!props.open) return null;
 
-  return (
-    <div
-      onClick={props.onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-    >
+    return (
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={props.onClose}
         style={{
-          width: 420,
-          maxWidth: '94vw',
-          padding: 16,
-          background: '#fff',
-          border: '1px solid #e5e7eb',
-          borderRadius: 12,
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
         }}
       >
-        <h2 style={{ marginTop: 0 }}>{props.title}</h2>
-        {props.children}
-        {props.actions ? (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: 8,
-              marginTop: 12,
-            }}
-          >
-            {props.actions}
-          </div>
-        ) : null}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: 420,
+            maxWidth: '94vw',
+            padding: 16,
+            background: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 12,
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>{props.title}</h2>
+          {props.children}
+          {props.actions ? (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 8,
+                marginTop: 12,
+              }}
+            >
+              {props.actions}
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // ГРУППЫ
   async function onCreateGroup() {
@@ -329,7 +438,20 @@ export default function GroupsBoard(props: {
                 <Secondary onClick={() => { setGroupNameInput(''); setMCreateGroup(true); }}>Создать группу</Secondary>
               </div>
             </div>
-            <Search value={qGroup} onChange={setQGroup} placeholder="Поиск группы" />
+
+            {/* ЗАМЕНЕНО: поиск по группам -> автокомплит */}
+            <AutoComplete
+              value={qGroup}
+              onChange={setQGroup}
+              placeholder="Поиск группы"
+              items={groups.map(g => ({ id: g.id, label: g.name }))}
+              onSelect={(id) => {
+                setSelGroupId(id);
+                const g = groups.find(x => x.id === id);
+                if (g) setQGroup(g.name);
+              }}
+            />
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
               <ListBox>
                 {filteredGroups.map((g) => {
@@ -400,7 +522,20 @@ export default function GroupsBoard(props: {
                 <Secondary onClick={() => { setSubjectNameInput(''); setMCreateSubject(true); }}>Создать предмет</Secondary>
               </div>
             </div>
-            <Search value={qSubject} onChange={setQSubject} placeholder="Поиск предмета" />
+
+            {/* ЗАМЕНЕНО: поиск по предметам -> автокомплит */}
+            <AutoComplete
+              value={qSubject}
+              onChange={setQSubject}
+              placeholder="Поиск предмета"
+              items={subjects.map(s => ({ id: s.id, label: s.name, hint: s.count ? `${s.count}` : undefined }))}
+              onSelect={(id) => {
+                setSelSubjectId(id);
+                const s = subjects.find(x => x.id === id);
+                if (s) setQSubject(s.name);
+              }}
+            />
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
               <ListBox>
                 {filteredSubjects.map((s) => {

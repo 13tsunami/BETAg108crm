@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-16T15:33:39.400Z
+Generated: 2025-08-16T16:05:09.588Z
 ## UI hints
 ```json
 {
@@ -86,7 +86,10 @@ Generated: 2025-08-16T15:33:39.400Z
    │  ├─ TaskPopover.tsx
    │  ├─ UnreadBadgeClient.tsx
    │  ├─ UserForm.tsx
-   │  └─ UserMenu.tsx
+   │  ├─ UserMenu.tsx
+   │  └─ search
+   │     ├─ SearchProvider.tsx
+   │     └─ UniversalSearchInput.tsx
    ├─ lib
    │  ├─ auth.ts
    │  ├─ chatSSE.ts
@@ -97,6 +100,9 @@ Generated: 2025-08-16T15:33:39.400Z
    │  ├─ prisma.ts
    │  ├─ rbac.ts
    │  ├─ roles.ts
+   │  ├─ search
+   │  │  ├─ index.ts
+   │  │  └─ types.ts
    │  └─ serialize.ts
    ├─ middleware.ts
    ├─ next-env.d.ts
@@ -117,6 +123,8 @@ Generated: 2025-08-16T15:33:39.400Z
    │  │  ├─ 20250816_004527_require_thread_participants
    │  │  │  └─ migration.sql
    │  │  ├─ 20250816_182139_cascade_user_delete_fix
+   │  │  │  └─ migration.sql
+   │  │  ├─ 20250816_add_subjects
    │  │  │  └─ migration.sql
    │  │  ├─ init_baseline_20250811_225344
    │  │  │  └─ migration.sql
