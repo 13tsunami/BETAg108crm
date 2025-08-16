@@ -3,14 +3,15 @@ import broker, { type EventPayload } from './broker';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function sseHeaders(): HeadersInit {
   return {
     'Content-Type': 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',       // для Nginx
-    'Keep-Alive': 'timeout=120',     // для некоторых прокси
+    'X-Accel-Buffering': 'no',     // Nginx
+    'Keep-Alive': 'timeout=120',   // некоторые прокси
   };
 }
 
@@ -23,18 +24,18 @@ export function GET(req: Request) {
     start(controller) {
       const enc = new TextEncoder();
 
-      const push = (payload: EventPayload | { type: 'ping'; at: number }) => {
+      const send = (payload: unknown) => {
         controller.enqueue(enc.encode(`data: ${JSON.stringify(payload)}\n\n`));
       };
 
-      // открыть поток сразу
-      push({ type: 'ping', at: Date.now() });
+      // мгновенно «пробиваем» канал
+      send({ type: 'hello', at: Date.now() });
 
-      // подписка
-      const unsub = broker.subscribe(uid, (p) => push(p));
+      // подписка на брокера
+      const unsub = broker.subscribe(uid, (p: EventPayload) => send(p));
 
       // heartbeat
-      const hb = setInterval(() => push({ type: 'ping', at: Date.now() }), 15000);
+      const hb = setInterval(() => send({ type: 'ping', at: Date.now() }), 10000);
 
       const close = () => {
         clearInterval(hb);
@@ -42,6 +43,7 @@ export function GET(req: Request) {
         try { controller.close(); } catch {}
       };
 
+      // закрытие по аборту
       (req as any).signal?.addEventListener?.('abort', close);
     },
   });

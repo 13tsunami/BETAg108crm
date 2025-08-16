@@ -9,9 +9,10 @@ import { heartbeat } from './heartbeat/actions';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 async function unreadTotal(uid: string) {
-  noStore(); // важно: запретить кеш на уровне Next
+  noStore();
   const threads = await prisma.thread.findMany({
     where: { OR: [{ aId: uid }, { bId: uid }] },
     select: { id: true },
