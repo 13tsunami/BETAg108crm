@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-16T04:50:27.046Z
+Generated: 2025-08-16T06:55:35.203Z
 ## UI hints
 ```json
 {
@@ -17,7 +17,9 @@ Generated: 2025-08-16T04:50:27.046Z
    ├─ app
    │  ├─ (app)
    │  │  ├─ chat
+   │  │  │  ├─ ChatBoxClient.tsx
    │  │  │  ├─ actions.ts
+   │  │  │  ├─ chat.module.css
    │  │  │  ├─ live.tsx
    │  │  │  ├─ page.tsx
    │  │  │  └─ sse

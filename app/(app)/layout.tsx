@@ -1,3 +1,4 @@
+// app/(app)/layout.tsx
 import type { ReactNode } from 'react';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
@@ -5,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import Sidebar from '@/components/Sidebar';
 import Heartbeat from './heartbeat/Heartbeat';
 import { heartbeat } from './heartbeat/actions';
+import Live from '@/app/(app)/chat/live'; // ← добавили
 
 async function unreadTotal(uid: string) {
   const threads = await prisma.thread.findMany({
@@ -37,6 +39,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <main style={{ padding:12 }}>
         {children}
         <Heartbeat action={heartbeat} />
+        {uid ? <Live uid={uid} /> : null} {/* ← добавили */}
       </main>
     </div>
   );
