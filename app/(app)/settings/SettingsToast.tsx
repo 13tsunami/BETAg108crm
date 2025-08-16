@@ -3,6 +3,8 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+const INTERNAL_MARKERS = new Set(['NEXT_REDIRECT', 'NEXT_NOT_FOUND']);
+
 export default function SettingsToast() {
   const params = useSearchParams();
   const router = useRouter();
@@ -11,22 +13,23 @@ export default function SettingsToast() {
 
   useEffect(() => {
     const okParam = params.get('ok');
-    const errParam = params.get('error');
+    const errParamRaw = params.get('error');
+
     if (okParam) {
       setOk(true);
       setMsg('Успешно сохранено');
-    } else if (errParam) {
+    } else if (errParamRaw && !INTERNAL_MARKERS.has(errParamRaw)) {
       setOk(false);
+      let text = errParamRaw;
       try {
-        setMsg(`Ошибка: ${decodeURIComponent(errParam)}`);
-      } catch {
-        setMsg('Ошибка');
-      }
+        text = decodeURIComponent(errParamRaw);
+      } catch {}
+      setMsg('Ошибка: ' + text);
     } else {
       setMsg(null);
     }
 
-    if (okParam || errParam) {
+    if (okParam || errParamRaw) {
       const t = setTimeout(() => {
         router.replace('/settings');
       }, 2000);

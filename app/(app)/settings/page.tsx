@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import UserForm from '@/components/UserForm';
 import { updateSelfAction } from './actions';
 import SettingsToast from './SettingsToast';
+import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -73,7 +74,9 @@ export default async function SettingsPage() {
           />
         </div>
       </div>
-      <SettingsToast />
+      <Suspense>
+        <SettingsToast />
+      </Suspense>
     </main>
   );
 }

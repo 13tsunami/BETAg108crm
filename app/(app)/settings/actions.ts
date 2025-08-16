@@ -12,16 +12,6 @@ const s = (v: FormDataEntryValue | null) => (typeof v === 'string' ? v.trim() : 
 const b = (v: FormDataEntryValue | null) =>
   typeof v === 'string' ? (v === 'on' || v === 'true' || v === '1') : false;
 
-function done() {
-  revalidatePath('/settings');
-  redirect('/settings?ok=1');
-}
-function fail(e: unknown) {
-  const msg = e instanceof Error ? e.message : String(e ?? 'error');
-  revalidatePath('/settings');
-  redirect(`/settings?error=${encodeURIComponent(msg)}`);
-}
-
 /** Смена собственного пароля и обновление мягких полей профиля. */
 export async function updateSelfAction(fd: FormData): Promise<void> {
   const session = await auth();
@@ -45,15 +35,23 @@ export async function updateSelfAction(fd: FormData): Promise<void> {
     notifyTelegram,
   };
 
-  try {
-    if (newPassword) {
-      if (newPassword.length < 6) throw new Error('Пароль должен быть не короче 6 символов');
-      (data as any).passwordHash = await bcrypt.hash(newPassword, 10);
+  if (newPassword) {
+    if (newPassword.length < 6) {
+      // это пользовательская ошибка, покажем её в тосте
+      revalidatePath('/settings');
+      redirect('/settings?error=' + encodeURIComponent('Пароль должен быть не короче 6 символов'));
     }
-
-    await prisma.user.update({ where: { id: meId }, data });
-    done();
-  } catch (e) {
-    fail(e);
+    (data as any).passwordHash = await bcrypt.hash(newPassword, 10);
   }
+
+  try {
+    await prisma.user.update({ where: { id: meId }, data });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e ?? 'error');
+    revalidatePath('/settings');
+    redirect('/settings?error=' + encodeURIComponent(msg));
+  }
+
+  revalidatePath('/settings');
+  redirect('/settings?ok=1');
 }

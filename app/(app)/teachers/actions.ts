@@ -1,167 +1,169 @@
-// app/(app)/teachers/actions.ts
 'use server';
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@/lib/prisma';
+import { headers } from 'next/headers';
 import { auth } from '@/auth.config';
-import { normalizeRole, type Role } from '@/lib/roles';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import type { Prisma } from '@prisma/client';
+import { normalizeRole } from '@/lib/roles';
 
-/** утилиты парсинга/нормализации */
 const s = (v: FormDataEntryValue | null) => (typeof v === 'string' ? v.trim() : '');
-const toBool = (v: FormDataEntryValue | null) =>
-  typeof v === 'string' ? v === 'on' || v === 'true' || v === '1' : false;
+const b = (v: FormDataEntryValue | null) =>
+  typeof v === 'string' ? (v === 'on' || v === 'true' || v === '1') : false;
 
-const normLower = (v: string) => v.toLowerCase();
-const normPhone = (v: string) => v.replace(/\D+/g, '');
-const reqStr = (v: FormDataEntryValue | null, field: string) => {
-  const vv = s(v);
-  if (!vv) throw new Error(`Поле ${field} обязательно`);
-  return vv;
-};
-
-async function requireCanManage(): Promise<{ meId: string; role: Role | null }> {
-  const session = await auth();
-  const meId = (session?.user as any)?.id as string | undefined;
-  const role = normalizeRole((session?.user as any)?.role ?? null);
-  if (!meId) redirect('/sign-in');
-  if (!(role === 'director' || role === 'deputy_plus')) redirect('/teachers?error=нет_прав');
-  return { meId: meId!, role };
-}
-
-function done(ok: string) {
-  revalidatePath('/teachers');
-  redirect(`/teachers?ok=${encodeURIComponent(ok)}`);
-}
-function fail(e: unknown) {
-  const msg = e instanceof Error ? e.message : String(e ?? 'error');
-  revalidatePath('/teachers');
-  redirect(`/teachers?error=${encodeURIComponent(msg)}`);
-}
-function uniqueFail(e: any) {
-  if (e?.code === 'P2002') {
-    const t = Array.isArray(e?.meta?.target) ? (e.meta.target as string[]).join(', ') : 'уникальные поля';
-    return fail(`Нарушено уникальное ограничение (${t})`);
+async function returnToWithQuery(q: string): Promise<string> {
+  const h = await headers();
+  const ref = h.get('referer') || '/teachers';
+  try {
+    const u = new URL(ref);
+    u.searchParams.delete('ok');
+    u.searchParams.delete('error');
+    const sep = u.search ? '&' : '?';
+    return `${u.pathname}${u.search}${sep}${q}`;
+  } catch {
+    return `/teachers?${q}`;
   }
-  return fail(e);
 }
 
-/** CREATE: создаёт пользователя; если передан password — хэширует и сохраняет */
+/** Создание пользователя. */
 export async function createUser(fd: FormData): Promise<void> {
-  await requireCanManage();
+  const session = await auth();
+  const role = normalizeRole((session?.user as any)?.role ?? null);
+  const canManage = role === 'director' || role === 'deputy_plus';
+  if (!canManage) redirect('/');
 
-  const name = reqStr(fd.get('name'), 'name');
-
-  const usernameRaw = s(fd.get('username'));
-  const emailRaw = s(fd.get('email'));
-  const phoneRaw = s(fd.get('phone'));
-  const classroom = s(fd.get('classroom'));
-  const role = s(fd.get('role')) || 'teacher';
+  const name = s(fd.get('name'));
+  const username = s(fd.get('username')) || null;
+  const email = s(fd.get('email')) || null;
+  const phone = s(fd.get('phone')) || null;
+  const classroom = s(fd.get('classroom')) || null;
+  const roleNew = s(fd.get('role')) || 'teacher';
   const birthday = s(fd.get('birthday'));
-  const telegram = s(fd.get('telegram'));
-  const about = s(fd.get('about'));
-  const notifyEmail = toBool(fd.get('notifyEmail'));
-  const notifyTelegram = toBool(fd.get('notifyTelegram'));
-  const passwordRaw = s(fd.get('password'));
+  const telegram = s(fd.get('telegram')) || null;
+  const about = s(fd.get('about')) || null;
+  const notifyEmail = b(fd.get('notifyEmail'));
+  const notifyTelegram = b(fd.get('notifyTelegram'));
+  const password = s(fd.get('password'));
 
-  const username = usernameRaw ? normLower(usernameRaw) : '';
-  const email = emailRaw ? normLower(emailRaw) : '';
-  const phone = phoneRaw ? normPhone(phoneRaw) : '';
+  if (!name) {
+    revalidatePath('/teachers');
+    redirect(await returnToWithQuery('error=' + encodeURIComponent('Укажите ФИО')));
+  }
+
+  const data: any = {
+    name,
+    username,
+    email,
+    phone,
+    classroom,
+    role: roleNew,
+    telegram,
+    about,
+    notifyEmail,
+    notifyTelegram,
+  };
+  if (birthday) data.birthday = new Date(birthday);
+  if (password) {
+    if (password.length < 6) {
+      revalidatePath('/teachers');
+      redirect(await returnToWithQuery('error=' + encodeURIComponent('Пароль должен быть не короче 6 символов')));
+    }
+    data.passwordHash = await bcrypt.hash(password, 10);
+  }
 
   try {
-    const passwordHash = passwordRaw ? await bcrypt.hash(passwordRaw, 10) : null;
-
-    await prisma.user.create({
-      data: {
-        name,
-        username: username || null,
-        email: email || null,
-        phone: phone || null,
-        classroom: classroom || null,
-        role,
-        birthday: birthday ? new Date(birthday) : null,
-        telegram: telegram || null,
-        about: about || null,
-        notifyEmail,
-        notifyTelegram,
-        passwordHash,
-      },
-    });
-
-    done('создан пользователь');
-  } catch (e: any) {
-    return uniqueFail(e);
+    await prisma.user.create({ data });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e ?? 'error');
+    revalidatePath('/teachers');
+    redirect(await returnToWithQuery('error=' + encodeURIComponent(msg)));
   }
+
+  revalidatePath('/teachers');
+  redirect(await returnToWithQuery('ok=' + encodeURIComponent('пользователь создан')));
 }
 
-/** UPDATE: редактирует карточку; если передан newPassword — хэширует и сохраняет */
+/** Обновление пользователя. */
 export async function updateUser(fd: FormData): Promise<void> {
-  await requireCanManage();
+  const session = await auth();
+  const role = normalizeRole((session?.user as any)?.role ?? null);
+  const canManage = role === 'director' || role === 'deputy_plus';
+  if (!canManage) redirect('/');
 
-  const id = reqStr(fd.get('id'), 'id');
-  const name = reqStr(fd.get('name'), 'name');
+  const id = s(fd.get('id'));
+  if (!id) {
+    revalidatePath('/teachers');
+    redirect(await returnToWithQuery('error=' + encodeURIComponent('Не передан id пользователя')));
+  }
 
-  const usernameRaw = s(fd.get('username'));
-  const emailRaw = s(fd.get('email'));
-  const phoneRaw = s(fd.get('phone'));
-  const classroom = s(fd.get('classroom'));
-  const role = s(fd.get('role')) || 'teacher';
+  const name = s(fd.get('name')) || null;
+  const username = s(fd.get('username')) || null;
+  const email = s(fd.get('email')) || null;
+  const phone = s(fd.get('phone')) || null;
+  const classroom = s(fd.get('classroom')) || null;
+  const roleNew = s(fd.get('role')) || null;
   const birthday = s(fd.get('birthday'));
-  const telegram = s(fd.get('telegram'));
-  const about = s(fd.get('about'));
-  const notifyEmail = toBool(fd.get('notifyEmail'));
-  const notifyTelegram = toBool(fd.get('notifyTelegram'));
+  const telegram = s(fd.get('telegram')) || null;
+  const about = s(fd.get('about')) || null;
+  const notifyEmail = b(fd.get('notifyEmail'));
+  const notifyTelegram = b(fd.get('notifyTelegram'));
   const newPassword = s(fd.get('newPassword'));
 
-  const username = usernameRaw ? normLower(usernameRaw) : '';
-  const email = emailRaw ? normLower(emailRaw) : '';
-  const phone = phoneRaw ? normPhone(phoneRaw) : '';
+  const data: any = {
+    name,
+    username,
+    email,
+    phone,
+    classroom,
+    role: roleNew,
+    telegram,
+    about,
+    notifyEmail,
+    notifyTelegram,
+  };
+  if (birthday) data.birthday = new Date(birthday);
+  if (newPassword) {
+    if (newPassword.length < 6) {
+      revalidatePath('/teachers');
+      redirect(await returnToWithQuery('error=' + encodeURIComponent('Пароль должен быть не короче 6 символов')));
+    }
+    data.passwordHash = await bcrypt.hash(newPassword, 10);
+  }
 
   try {
-    const data: Prisma.UserUpdateInput = {
-      name,
-      username: username || null,
-      email: email || null,
-      phone: phone || null,
-      classroom: classroom || null,
-      role,
-      birthday: birthday ? new Date(birthday) : null,
-      telegram: telegram || null,
-      about: about || null,
-      notifyEmail,
-      notifyTelegram,
-    };
-
-    if (newPassword) {
-      if (newPassword.length < 6) throw new Error('Пароль должен быть не короче 6 символов');
-      (data as any).passwordHash = await bcrypt.hash(newPassword, 10);
-    }
-
     await prisma.user.update({ where: { id }, data });
-    done('изменения сохранены');
-  } catch (e: any) {
-    return uniqueFail(e);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e ?? 'error');
+    revalidatePath('/teachers');
+    redirect(await returnToWithQuery('error=' + encodeURIComponent(msg)));
   }
+
+  revalidatePath('/teachers');
+  redirect(await returnToWithQuery('ok=' + encodeURIComponent('изменения сохранены')));
 }
 
-/** DELETE: удаляет пользователя; каскады выполняет БД (onDelete: Cascade) */
-export async function deleteUser(formData: FormData): Promise<void> {
-  await requireCanManage();
-  const id = reqStr(formData.get('id'), 'id');
+/** Удаление пользователя. */
+export async function deleteUser(fd: FormData): Promise<void> {
+  const session = await auth();
+  const role = normalizeRole((session?.user as any)?.role ?? null);
+  const canManage = role === 'director' || role === 'deputy_plus';
+  if (!canManage) redirect('/');
+
+  const id = s(fd.get('id'));
+  if (!id) {
+    revalidatePath('/teachers');
+    redirect(await returnToWithQuery('error=' + encodeURIComponent('Не передан id пользователя')));
+  }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.user.delete({ where: { id } });
-    });
-
-    done('пользователь удалён');
+    await prisma.user.delete({ where: { id } });
   } catch (e) {
-    const msg =
-      e instanceof Error && /violates foreign key|foreign key constraint/i.test(e.message)
-        ? 'Невозможно удалить: есть связанные записи. Примените миграцию с onDelete: Cascade.'
-        : e;
-    return fail(msg as any);
+    const msg = e instanceof Error ? e.message : String(e ?? 'error');
+    revalidatePath('/teachers');
+    redirect(await returnToWithQuery('error=' + encodeURIComponent(msg)));
   }
+
+  revalidatePath('/teachers');
+  redirect(await returnToWithQuery('ok=' + encodeURIComponent('пользователь удалён')));
 }
