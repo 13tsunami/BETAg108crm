@@ -8,44 +8,42 @@ function sseHeaders(): HeadersInit {
   return {
     'Content-Type': 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache, no-transform',
-    Connection: 'keep-alive',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',       // для Nginx
+    'Keep-Alive': 'timeout=120',     // для некоторых прокси
   };
 }
 
 export function GET(req: Request) {
   const url = new URL(req.url);
-  const uid = url.searchParams.get('uid') ?? '';
-  if (!uid) return new Response('missing uid', { status: 400 });
+  const uid = url.searchParams.get('uid') || '';
+  if (!uid) return new Response('missing uid', { status: 400, headers: sseHeaders() });
 
-  const enc = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
-      const send = (p: EventPayload) => {
-        try {
-          const line = `data: ${JSON.stringify(p)}\n\n`;
-          controller.enqueue(enc.encode(line));
-        } catch {}
-      };
-      const unsub = broker.subscribe(uid, send);
+      const enc = new TextEncoder();
 
-      // «приветственный» пинг
-      send({ type: 'read', threadId: '', at: Date.now() });
+      const push = (payload: EventPayload | { type: 'ping'; at: number }) => {
+        controller.enqueue(enc.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      };
+
+      // открыть поток сразу
+      push({ type: 'ping', at: Date.now() });
+
+      // подписка
+      const unsub = broker.subscribe(uid, (p) => push(p));
 
       // heartbeat
-      const hb = setInterval(() => {
-        try { controller.enqueue(enc.encode(':hb\n\n')); } catch {}
-      }, 15000);
+      const hb = setInterval(() => push({ type: 'ping', at: Date.now() }), 15000);
 
-      const cancel = () => {
+      const close = () => {
         clearInterval(hb);
         try { unsub(); } catch {}
         try { controller.close(); } catch {}
       };
 
-      // прерывание соединения
-      (req as any).signal?.addEventListener?.('abort', cancel);
+      (req as any).signal?.addEventListener?.('abort', close);
     },
-    cancel() {},
   });
 
   return new Response(stream, { headers: sseHeaders() });

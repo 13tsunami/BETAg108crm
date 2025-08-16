@@ -6,9 +6,12 @@ import { Prisma } from '@prisma/client';
 import Sidebar from '@/components/Sidebar';
 import Heartbeat from './heartbeat/Heartbeat';
 import { heartbeat } from './heartbeat/actions';
-import Live from '@/app/(app)/chat/live'; // ← добавили
+import { unstable_noStore as noStore } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
 
 async function unreadTotal(uid: string) {
+  noStore(); // важно: запретить кеш на уровне Next
   const threads = await prisma.thread.findMany({
     where: { OR: [{ aId: uid }, { bId: uid }] },
     select: { id: true },
@@ -39,7 +42,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <main style={{ padding:12 }}>
         {children}
         <Heartbeat action={heartbeat} />
-        {uid ? <Live uid={uid} /> : null} {/* ← добавили */}
       </main>
     </div>
   );
