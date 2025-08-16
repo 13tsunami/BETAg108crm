@@ -3,9 +3,10 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL") // pooled (PgBouncer)
-  directUrl = env("DIRECT_URL") // прямое соединение для миграций
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // pooled (PgBouncer)
+  // Если у вас настроен прямой URL для миграций, можно раскомментировать:
+  // directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -27,15 +28,15 @@ model User {
   passwordHash     String?
   lastSeen         DateTime?
 
-  messages Message[] @relation("UserMessages")
-  threadsA Thread[]  @relation("ThreadA")
-  threadsB Thread[]  @relation("ThreadB")
-
-  // обратная сторона для отметок прочтения
-  readMarks ReadMark[] @relation("ReadMarkUser")
-
+  messages         Message[]      @relation("UserMessages")
+  threadsA         Thread[]       @relation("ThreadA")
+  threadsB         Thread[]       @relation("ThreadB")
+  readMarks        ReadMark[]     @relation("ReadMarkUser")
   groupMemberships GroupMember[]
   taskAssignments  TaskAssignee[]
+
+  // обратная сторона связи для MessageHide — ЭТО НОВАЯ СТРОКА
+  messageHides MessageHide[]
 }
 
 model Group {
@@ -76,13 +77,31 @@ model Message {
   authorId  String
   threadId  String
 
+  // поля под «ред.» и мягкое удаление
+  editedAt  DateTime?
+  deletedAt DateTime?
+
   author User   @relation("UserMessages", fields: [authorId], references: [id])
   thread Thread @relation(fields: [threadId], references: [id])
 
-  // обратная сторона для вложений
+  // вложения могут остаться в схеме, но мы их не используем в коде
   attachments Attachment[] @relation("MessageAttachments")
 
+  // «удалить для себя»
+  hides MessageHide[]
+
   @@index([threadId, createdAt])
+}
+
+model MessageHide {
+  messageId String
+  userId    String
+
+  message Message @relation(fields: [messageId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@id([messageId, userId])
+  @@index([userId])
 }
 
 model Task {

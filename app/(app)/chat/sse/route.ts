@@ -9,44 +9,43 @@ function sseHeaders(): HeadersInit {
     'Content-Type': 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache, no-transform',
     Connection: 'keep-alive',
-    'X-Accel-Buffering': 'no',
   };
 }
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const uid = searchParams.get('uid') ?? '';
-  if (!uid) return new Response('Missing uid', { status: 400 });
+export function GET(req: Request) {
+  const url = new URL(req.url);
+  const uid = url.searchParams.get('uid') ?? '';
+  if (!uid) return new Response('missing uid', { status: 400 });
 
-  const stream = new ReadableStream<Uint8Array>({
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
     start(controller) {
-      const enc = new TextEncoder();
-
-      const send = (payload: EventPayload) => {
-        controller.enqueue(enc.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      const send = (p: EventPayload) => {
+        try {
+          const line = `data: ${JSON.stringify(p)}\n\n`;
+          controller.enqueue(enc.encode(line));
+        } catch {}
       };
+      const unsub = broker.subscribe(uid, send);
 
-      // начальные параметры реконнекта
-      controller.enqueue(enc.encode(`retry: 3000\n\n`));
+      // «приветственный» пинг
+      send({ type: 'read', threadId: '', at: Date.now() });
 
-      // подписка на брокер
-      const unsubscribe = broker.subscribe(uid, send);
-
-      // heartbeat, чтобы соединение не засыпало
-      const heartbeat = setInterval(() => {
-        controller.enqueue(enc.encode(`: ping\n\n`)); // комментарий по SSE
+      // heartbeat
+      const hb = setInterval(() => {
+        try { controller.enqueue(enc.encode(':hb\n\n')); } catch {}
       }, 15000);
 
-      const close = () => {
-        clearInterval(heartbeat);
-        unsubscribe();
+      const cancel = () => {
+        clearInterval(hb);
+        try { unsub(); } catch {}
         try { controller.close(); } catch {}
       };
 
-      // закрыть при обрыве со стороны клиента
-      const signal = (req as any).signal as AbortSignal | undefined;
-      signal?.addEventListener('abort', close);
+      // прерывание соединения
+      (req as any).signal?.addEventListener?.('abort', cancel);
     },
+    cancel() {},
   });
 
   return new Response(stream, { headers: sseHeaders() });

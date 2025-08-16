@@ -1,10 +1,11 @@
 // app/(app)/chat/sse/broker.ts
-
 export type EventPayload =
   | { type: 'message'; threadId: string; at: number; authorId?: string }
   | { type: 'threadCreated'; threadId: string; at: number }
   | { type: 'threadDeleted'; threadId: string; at: number }
-  | { type: 'read'; threadId: string; at: number };
+  | { type: 'read'; threadId: string; at: number }
+  | { type: 'messageEdited'; threadId: string; at: number; messageId: string; by: string }
+  | { type: 'messageDeleted'; threadId: string; at: number; messageId: string; by: string; scope: 'self' | 'both' };
 
 type Subscriber = (p: EventPayload) => void;
 
@@ -21,8 +22,6 @@ class Broker {
     }
     const id = ++this.seq;
     bucket.set(id, fn);
-
-    // функция отписки
     return () => {
       try { bucket!.delete(id); } catch {}
       if (bucket && bucket.size === 0) this.subs.delete(uid);
@@ -31,32 +30,25 @@ class Broker {
 
   publish(targetUserIds: Array<string | null | undefined>, payload: EventPayload) {
     const delivered = new Set<string>();
-
     for (const id of targetUserIds) {
       if (!id || delivered.has(id)) continue;
       delivered.add(id);
-
       const bucket = this.subs.get(id);
       if (!bucket || bucket.size === 0) continue;
-
-      // защитное очищение «мусора»
       for (const [key, handler] of Array.from(bucket.entries())) {
         if (typeof handler !== 'function') bucket.delete(key);
       }
       if (bucket.size === 0) { this.subs.delete(id); continue; }
-
-      // безопасный обход: копия значений
       const handlers = Array.from(bucket.values());
       for (const handler of handlers) {
         if (typeof handler === 'function') {
-          try { handler(payload); } catch { /* не роняем цепочку */ }
+          try { handler(payload); } catch {}
         }
       }
     }
   }
 }
 
-// типобезопасный синглтон на globalThis
 type GlobalWithBroker = typeof globalThis & { __g108_broker?: Broker };
 const g = globalThis as GlobalWithBroker;
 const broker = g.__g108_broker ?? (g.__g108_broker = new Broker());

@@ -15,17 +15,13 @@ function requireSessionId(session: any): string {
   return id;
 }
 
-/**
- * Отправка сообщения + вложений (до 10 МБ/файл), апдейт lastMessage, отметка прочтения отправителя.
- * Без redirect, обновление придёт через SSE.
- */
 export async function sendMessageAction(formData: FormData): Promise<void> {
   const session = await auth();
   const me = requireSessionId(session);
 
   const threadId = toStr(formData.get('threadId'));
   const text = toStr(formData.get('text')).trim();
-  if (!threadId) return;
+  if (!threadId || !text) return;
 
   const th = await prisma.thread.findFirst({
     where: { id: threadId, OR: [{ aId: me }, { bId: me }] },
@@ -33,50 +29,12 @@ export async function sendMessageAction(formData: FormData): Promise<void> {
   });
   if (!th) return;
 
-  // Подготовим файлы (без падения типов в DOM/Node)
-  const files = (formData.getAll('files') as any[]).filter(Boolean);
-  const blobs: { name: string; mime: string; size: number; data: Buffer }[] = [];
-  for (const f of files) {
-    // проверяем по «утиным» признакам, чтобы TS не ругался
-    if (f && typeof f.arrayBuffer === 'function' && typeof f.size === 'number') {
-      if (f.size <= 10 * 1024 * 1024) {
-        const buf = Buffer.from(await f.arrayBuffer());
-        blobs.push({
-          name: typeof f.name === 'string' && f.name ? f.name : 'file',
-          mime: typeof f.type === 'string' && f.type ? f.type : 'application/octet-stream',
-          size: f.size,
-          data: buf,
-        });
-      }
-    }
-  }
-
-  if (!text && blobs.length === 0) return;
-
-  // Схлопываем в одну транзакцию
   await prisma.$transaction(async (tx) => {
-    const msg = await tx.message.create({
-      data: { authorId: me, threadId, text: text || '' },
-      select: { id: true },
-    });
-
-    if (blobs.length) {
-      await tx.attachment.createMany({
-        data: blobs.map((b) => ({
-          messageId: msg.id,
-          name: b.name,
-          mime: b.mime,
-          size: b.size,
-          data: b.data,
-        })),
-      });
-    }
-
+    await tx.message.create({ data: { authorId: me, threadId, text } });
     await tx.thread.update({
       where: { id: threadId },
-      data: { lastMessageAt: now(), lastMessageText: text || (blobs[0]?.name ?? 'вложение') },
+      data: { lastMessageAt: now(), lastMessageText: text },
     });
-
     await tx.readMark.upsert({
       where: { threadId_userId: { threadId, userId: me } },
       update: { readAt: now() },
@@ -84,11 +42,76 @@ export async function sendMessageAction(formData: FormData): Promise<void> {
     });
   });
 
-  // Событие — обеим сторонам; authorId опционален, но полезен для клиента
   broker.publish([th.aId, th.bId], { type: 'message', threadId, at: Date.now(), authorId: me });
 }
 
-/** Удаление диалога целиком (сообщения, вложения, отметки) + событие + redirect обратно в список */
+export async function editMessageAction(fd: FormData): Promise<void> {
+  const session = await auth();
+  const me = requireSessionId(session);
+  const messageId = toStr(fd.get('messageId'));
+  const newText = toStr(fd.get('text')).trim();
+  if (!messageId || !newText) return;
+
+  const msg = await prisma.message.findUnique({
+    where: { id: messageId },
+    select: { id: true, threadId: true, authorId: true, thread: { select: { aId: true, bId: true } } },
+  });
+  if (!msg || msg.authorId !== me) return;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.message.update({ where: { id: messageId }, data: { text: newText, editedAt: now() } });
+    await tx.thread.update({ where: { id: msg.threadId }, data: { lastMessageAt: now(), lastMessageText: newText } });
+  });
+
+  broker.publish([msg.thread.aId, msg.thread.bId], {
+    type: 'messageEdited',
+    threadId: msg.threadId,
+    at: Date.now(),
+    messageId,
+    by: me,
+  });
+}
+
+export async function deleteMessageAction(fd: FormData): Promise<void> {
+  const session = await auth();
+  const me = requireSessionId(session);
+  const messageId = toStr(fd.get('messageId'));
+  const scope = toStr(fd.get('scope')) === 'both' ? 'both' : 'self';
+  if (!messageId) return;
+
+  const msg = await prisma.message.findUnique({
+    where: { id: messageId },
+    select: { id: true, text: true, authorId: true, threadId: true, thread: { select: { aId: true, bId: true } } },
+  });
+  if (!msg) return;
+
+  const isParticipant = msg.thread.aId === me || msg.thread.bId === me;
+  if (!isParticipant) return;
+  const canDeleteForBoth = msg.authorId === me;
+
+  await prisma.$transaction(async (tx) => {
+    if (scope === 'self') {
+      await tx.messageHide.upsert({
+        where: { messageId_userId: { messageId, userId: me } },
+        update: {},
+        create: { messageId, userId: me },
+      });
+    } else {
+      if (!canDeleteForBoth) return;
+      await tx.message.update({ where: { id: messageId }, data: { text: '', deletedAt: now() } });
+    }
+  });
+
+  broker.publish([msg.thread.aId, msg.thread.bId], {
+    type: 'messageDeleted',
+    threadId: msg.threadId,
+    at: Date.now(),
+    messageId,
+    by: me,
+    scope: scope as 'self' | 'both',
+  });
+}
+
 export async function deleteThreadAction(formData: FormData): Promise<void> {
   const session = await auth();
   const me = requireSessionId(session);
@@ -104,7 +127,8 @@ export async function deleteThreadAction(formData: FormData): Promise<void> {
 
   await prisma.$transaction(async (tx) => {
     const ids = await tx.message.findMany({ where: { threadId }, select: { id: true } });
-    await tx.attachment.deleteMany({ where: { messageId: { in: ids.map((i) => i.id) } } });
+    await tx.messageHide.deleteMany({ where: { messageId: { in: ids.map((i) => i.id) } } });
+    await tx.attachment.deleteMany({ where: { messageId: { in: ids.map((i) => i.id) } } }); // если таблица осталась
     await tx.message.deleteMany({ where: { threadId } });
     await tx.readMark.deleteMany({ where: { threadId } });
     await tx.thread.delete({ where: { id: threadId } });
@@ -114,16 +138,17 @@ export async function deleteThreadAction(formData: FormData): Promise<void> {
   redirect('/chat');
 }
 
-/** Пометить диалог прочитанным (для меня) и уведомить собеседника */
 export async function markReadAction(formData: FormData): Promise<void> {
   const session = await auth();
   const me = requireSessionId(session);
-
   const threadId = toStr(formData.get('threadId'));
   if (!threadId) return;
 
-  const ok = await prisma.thread.count({ where: { id: threadId, OR: [{ aId: me }, { bId: me }] } });
-  if (!ok) return;
+  const th = await prisma.thread.findFirst({
+    where: { id: threadId, OR: [{ aId: me }, { bId: me }] },
+    select: { aId: true, bId: true },
+  });
+  if (!th) return;
 
   await prisma.readMark.upsert({
     where: { threadId_userId: { threadId, userId: me } },
@@ -131,6 +156,5 @@ export async function markReadAction(formData: FormData): Promise<void> {
     create: { threadId, userId: me, readAt: now() },
   });
 
-  const th = await prisma.thread.findUnique({ where: { id: threadId }, select: { aId: true, bId: true } });
-  if (th) broker.publish([th.aId, th.bId], { type: 'read', threadId, at: Date.now() });
+  broker.publish([th.aId, th.bId], { type: 'read', threadId, at: Date.now() });
 }

@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-15T18:39:13.888Z
+Generated: 2025-08-16T04:50:27.046Z
 ## UI hints
 ```json
 {
@@ -17,8 +17,12 @@ Generated: 2025-08-15T18:39:13.888Z
    ├─ app
    │  ├─ (app)
    │  │  ├─ chat
+   │  │  │  ├─ actions.ts
+   │  │  │  ├─ live.tsx
    │  │  │  ├─ page.tsx
-   │  │  │  └─ refresh.tsx
+   │  │  │  └─ sse
+   │  │  │     ├─ broker.ts
+   │  │  │     └─ route.ts
    │  │  ├─ dashboard
    │  │  │  ├─ page.module.css
    │  │  │  └─ page.tsx
@@ -79,7 +83,17 @@ Generated: 2025-08-15T18:39:13.888Z
    ├─ prisma
    │  ├─ dev.db
    │  ├─ migrations
+   │  │  ├─ 000_init
+   │  │  │  └─ migration.sql
    │  │  ├─ 20250814151727_init
+   │  │  │  └─ migration.sql
+   │  │  ├─ 20250816_002949_add_readmark_and_attachment
+   │  │  │  └─ migration.sql
+   │  │  ├─ 20250816_003914_add_readmark_and_attachment_take2
+   │  │  │  └─ migration.sql
+   │  │  ├─ 20250816_004527_require_thread_participants
+   │  │  │  └─ migration.sql
+   │  │  ├─ init_baseline_20250811_225344
    │  │  │  └─ migration.sql
    │  │  └─ migration_lock.toml
    │  ├─ schema.prisma
@@ -105,6 +119,7 @@ Generated: 2025-08-15T18:39:13.888Z
 /admin/db-status  ⟶  app/admin/db-status/page.tsx
 /api/auth/[...nextauth]  ⟶  app/api/auth/[...nextauth]/route.ts
 /chat  ⟶  app/(app)/chat/page.tsx
+/chat/sse  ⟶  app/(app)/chat/sse/route.ts
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
 /sign-in  ⟶  app/(auth)/sign-in/page.tsx
 /teachers  ⟶  app/(app)/teachers/page.tsx
