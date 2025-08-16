@@ -122,7 +122,7 @@ export async function updateUser(fd: FormData): Promise<void> {
     notifyEmail,
     notifyTelegram,
   };
-  if (birthday) data.birthday = new Date(birthday);
+ if (birthday) data.birthday = new Date(`${birthday}T00:00:00Z`);
   if (newPassword) {
     if (newPassword.length < 6) {
       revalidatePath('/teachers');

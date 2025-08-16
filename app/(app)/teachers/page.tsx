@@ -1,4 +1,3 @@
-// app/(app)/teachers/page.tsx
 import { prisma } from '@/lib/prisma';
 import { createUser, updateUser, deleteUser } from './actions';
 import AddUserModal from '@/components/AddUserModal';
@@ -17,11 +16,21 @@ export const revalidate = 0;
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000; // 5 минут
 
-function fmtDateTime(d: Date) {
-  const tt = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  const dd = d.toLocaleDateString('ru-RU');
-  return `${tt} ${dd}`;
+// Форматирование даты рождения для отображения без времени и без смещения
+function formatRuDate(date: Date): string {
+  // «Обнуляем» смещение, чтобы не съезжало на -1 день
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
+
+// Значение для <input type="date"> в формате YYYY-MM-DD без смещения по таймзоне
+function dateToInputYMD(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 const clean = (x?: string | null) => x ?? '—';
 const ruRole = (r?: string | null) =>
   r === 'director' ? 'Директор'
@@ -45,7 +54,6 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
   const canManage = role === 'director' || role === 'deputy_plus';
 
   const s = q.trim();
-
   const or: Prisma.UserWhereInput[] = s
     ? [
         { name:      { contains: s, mode: Prisma.QueryMode.insensitive } },
@@ -71,6 +79,15 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
   });
 
   const now = new Date();
+
+  // Общий «стеклянный» стиль для плиток в раскрывашках
+  const glassTile: React.CSSProperties = {
+    borderRadius: 16,
+    background: 'rgba(255,255,255,0.6)',
+    border: '1px solid rgba(229,231,235,.9)',
+    boxShadow: '0 8px 24px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.6)',
+    backdropFilter: 'blur(8px)',
+  };
 
   return (
     <section style={{ display: 'grid', gap: 12 }}>
@@ -132,7 +149,7 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                       color: online ? '#166534' : '#6b7280',
                       background: online ? '#dcfce7' : '#f3f4f6'
                     }}>
-                      {online ? 'онлайн' : 'офлайн'}{ls ? ` • ${fmtDateTime(ls)}` : ''}
+                      {online ? 'онлайн' : 'офлайн'}
                     </span>
                   </div>
 
@@ -148,7 +165,7 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                           phone: u.phone ?? '',
                           classroom: u.classroom ?? '',
                           role: (u as any).role ?? 'teacher',
-                          birthday: u.birthday ? new Date(u.birthday as any).toISOString().slice(0,10) : '',
+                          birthday: u.birthday ? dateToInputYMD(new Date(u.birthday as any)) : '',
                           telegram: u.telegram ?? '',
                           about: u.about ?? '',
                           notifyEmail: !!u.notifyEmail,
@@ -160,19 +177,23 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                   )}
                 </summary>
 
-                <div style={{ marginTop: 8, paddingLeft: 4 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-                    <Field label="логин" value={clean(u.username)} />
-                    <Field label="email" value={clean(u.email)} />
-                    <Field label="телефон" value={clean(u.phone)} />
-                    <Field label="классное руководство" value={clean(u.classroom)} />
-                    <Field label="telegram" value={clean(u.telegram)} />
-                    <Field label="дата рождения" value={u.birthday ? fmtDateTime(new Date(u.birthday as any)) : '—'} />
-                    <Field label="уведомления email" value={u.notifyEmail ? 'вкл' : 'выкл'} />
-                    <Field label="уведомления telegram" value={u.notifyTelegram ? 'вкл' : 'выкл'} />
+                <div style={{ marginTop: 8, paddingLeft: 4, display: 'grid', gap: 8 }}>
+                  <div style={{ ...glassTile, padding: 12 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                      <Field label="логин" value={clean(u.username)} />
+                      <Field label="email" value={clean(u.email)} />
+                      <Field label="телефон" value={clean(u.phone)} />
+                      <Field label="классное руководство" value={clean(u.classroom)} />
+                      <Field label="telegram" value={clean(u.telegram)} />
+                      <Field label="дата рождения" value={u.birthday ? formatRuDate(new Date(u.birthday as any)) : '—'} />
+                      <Field label="уведомления email" value={u.notifyEmail ? 'вкл' : 'выкл'} />
+                      <Field label="уведомления telegram" value={u.notifyTelegram ? 'вкл' : 'выкл'} />
+                    </div>
                   </div>
-                  <div style={{ marginTop: 8, color: '#374151' }}>
-                    {u.about ? u.about : ''}
+
+                  <div style={{ ...glassTile, padding: 12 }}>
+                    <div style={{ fontSize: 13, opacity: .6, marginBottom: 6 }}>о себе</div>
+                    <div style={{ color: '#374151' }}>{u.about ? u.about : '—'}</div>
                   </div>
                 </div>
               </details>
