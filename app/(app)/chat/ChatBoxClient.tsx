@@ -243,7 +243,7 @@ export default function ChatBoxClient({
   };
 
   return (
-    <div className={s.block} style={{ display:'grid', gridTemplateRows:'auto 1fr auto' }}>
+   <div className={s.pane}>
       {/* верхняя панель: поиск по активному чату и удаление диалога */}
       <div className={`${s.blockTop}`}>
         <div className={s.inlineSearch}>

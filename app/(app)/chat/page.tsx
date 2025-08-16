@@ -184,7 +184,7 @@ export default async function ChatPage({
   return (
     <main style={{ padding:12, fontFamily:'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial' }}>
       <div className={s.chatRoot}>
-        <aside className={`${s.threads} ${s.glass}`}>
+        <aside className={s.threads}>
           <div className={s.blockTitle}>чаты</div>
 
           <div className={s.searchBlock}>
@@ -235,22 +235,13 @@ export default async function ChatPage({
                   </Link>
 
                   {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
-
-                  <form action="/chat" method="get">
-                    <input type="hidden" name="thread" value={t.id} />
-                    <button className={s.btnDel} title="удалить диалог" formAction={`/chat?thread=${t.id}`}>
-                      <svg className={s.btnDelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M3 6h18M9 6v12m6-12v12M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14M8 6V4a2 2 0 0 1 2-2h4a2 2 0 1 1 2 2v2" strokeWidth="2" />
-                      </svg>
-                    </button>
-                  </form>
                 </div>
               );
             })}
           </div>
         </aside>
 
-        <section className={`${s.pane} ${s.glass}`} style={{ display:'grid', gridTemplateRows:'auto 1fr auto', gap:12 }}>
+        <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr auto', gap:12 }}>
           <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
             {threadId ? (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>

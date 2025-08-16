@@ -115,16 +115,21 @@
 .msgMine { justify-content: flex-end; }
 
 .msgCard {
-  max-width: 72ch;          /* фиксированная читабельная ширина как у Telegram */
+  max-width: 72ch;
   width: fit-content;
   border: 1px solid var(--glass-brd);
   border-radius: 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.04);
   padding: 8px 10px;
   color: var(--ink);
-  background: #fff;
+
+  /* стеклянный эффект */
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
   word-break: break-word;
-  overflow-wrap: anywhere;   /* длинные куски не тянут контейнер */
+  overflow-wrap: anywhere;
 }
 .msgMineBg { background: #e6ffea; }
 .msgOtherBg { background: #e4f4ff; }
