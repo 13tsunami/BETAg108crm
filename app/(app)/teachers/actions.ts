@@ -1,126 +1,153 @@
+// app/(app)/teachers/actions.ts
 'use server';
 
+import type { Session } from 'next-auth';
+import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import bcrypt from 'bcryptjs';
-import { auth } from '@/auth.config';
 
-function s(v: FormDataEntryValue | null | undefined) { return (v == null ? '' : String(v)).trim(); }
-function n(v: string) { return v ? v : null; }
-function err(msg: string) { redirect(`/teachers?error=${encodeURIComponent(msg)}`); }
+const MANAGER_ROLES = new Set(['director', 'deputy_plus'] as const);
 
-async function requireManager() {
-  const session = await auth();
-  const role = (session?.user as any)?.role as string | undefined;
-  const ok = role === 'director' || role === 'deputy_plus';
-  if (!ok) err('Нет прав');
+function toStr(fd: FormData, k: string) {
+  const v = fd.get(k);
+  return typeof v === 'string' ? v.trim() : '';
+}
+function toBool(fd: FormData, k: string) {
+  const v = fd.get(k);
+  return v === 'on' || v === 'true' || v === '1';
+}
+
+type HasRole = { role?: unknown };
+function roleFrom(session: Session | null): string | null {
+  const u = session?.user as unknown;
+  if (u && typeof u === 'object' && 'role' in (u as Record<string, unknown>)) {
+    const r = (u as HasRole).role;
+    return typeof r === 'string' ? r : null;
+  }
+  return null;
+}
+function mustManage(session: Session | null) {
+  const role = roleFrom(session);
+  if (!role || !MANAGER_ROLES.has(role as (typeof MANAGER_ROLES extends Set<infer R> ? R : never))) {
+    redirect('/');
+  }
 }
 
 export async function createUser(fd: FormData): Promise<void> {
-  try {
-    await requireManager();
-    const name = s(fd.get('name')); if (!name) err('Имя обязательно');
+  const session = await auth(); mustManage(session);
 
-    const role = s(fd.get('role')) || 'teacher';
-    const username = n(s(fd.get('username')));
-    const email = n(s(fd.get('email')));
-    const phone = n(s(fd.get('phone')));
-    const classroom = n(s(fd.get('classroom')));
-    const telegram = n(s(fd.get('telegram')));
-    const about = n(s(fd.get('about')));
-    const birthdayStr = s(fd.get('birthday'));
-    const notifyEmail = s(fd.get('notifyEmail')) === 'on';
-    const notifyTelegram = s(fd.get('notifyTelegram')) === 'on';
-    const password = s(fd.get('password'));
+  const data = {
+    name:      toStr(fd, 'name') || 'Без имени',
+    username:  toStr(fd, 'username') || null,
+    email:     toStr(fd, 'email') || null,
+    phone:     toStr(fd, 'phone') || null,
+    classroom: toStr(fd, 'classroom') || null,
+    role:      toStr(fd, 'role') || 'teacher',
+    birthday:  toStr(fd, 'birthday') ? new Date(toStr(fd, 'birthday')) : null,
+    telegram:  toStr(fd, 'telegram') || null,
+    about:     toStr(fd, 'about') || null,
+    notifyEmail: toBool(fd, 'notifyEmail'),
+    notifyTelegram: toBool(fd, 'notifyTelegram'),
+  };
 
-    await prisma.user.create({
-      data: {
-        name, role, username, email, phone, classroom, telegram, about,
-        notifyEmail, notifyTelegram,
-        birthday: birthdayStr ? new Date(birthdayStr) : null,
-        passwordHash: password ? await bcrypt.hash(password, 10) : null,
-      },
-    });
-
-    revalidatePath('/teachers');
-    redirect('/teachers?ok=создан');
-  } catch (e: any) {
-    err(e?.message || 'Не удалось создать');
-  }
+  await prisma.user.create({ data });
+  revalidatePath('/teachers');
+  redirect('/teachers?ok=пользователь создан');
 }
 
 export async function updateUser(fd: FormData): Promise<void> {
-  try {
-    await requireManager();
-    const id = s(fd.get('id')); if (!id) err('Нет ID');
+  const session = await auth(); mustManage(session);
+  const id = toStr(fd, 'id');
+  if (!id) redirect('/teachers?error=нет id');
 
-    const patch: Record<string, unknown> = {};
-    const name = s(fd.get('name')); if (name) patch.name = name;
-    const role = s(fd.get('role')); if (role) patch.role = role;
+  const data = {
+    name:      toStr(fd, 'name') || 'Без имени',
+    username:  toStr(fd, 'username') || null,
+    email:     toStr(fd, 'email') || null,
+    phone:     toStr(fd, 'phone') || null,
+    classroom: toStr(fd, 'classroom') || null,
+    role:      toStr(fd, 'role') || 'teacher',
+    birthday:  toStr(fd, 'birthday') ? new Date(toStr(fd, 'birthday')) : null,
+    telegram:  toStr(fd, 'telegram') || null,
+    about:     toStr(fd, 'about') || null,
+    notifyEmail: toBool(fd, 'notifyEmail'),
+    notifyTelegram: toBool(fd, 'notifyTelegram'),
+  };
 
-    (['username','email','phone','classroom','telegram','about'] as const).forEach((k) => {
-      const v = s(fd.get(k));
-      if (v) patch[k] = v;
-      if (v === '') patch[k] = null;
-    });
-
-    const birthday = s(fd.get('birthday'));
-    if (birthday) patch.birthday = new Date(birthday);
-    if (birthday === '') patch.birthday = null;
-
-    const ne = fd.get('notifyEmail'); if (ne != null) patch.notifyEmail = s(ne) === 'on';
-    const nt = fd.get('notifyTelegram'); if (nt != null) patch.notifyTelegram = s(nt) === 'on';
-
-    const newPassword = s(fd.get('newPassword'));
-    if (newPassword) patch.passwordHash = await bcrypt.hash(newPassword, 10);
-
-    await prisma.user.update({ where: { id }, data: patch });
-
-    revalidatePath('/teachers');
-    redirect('/teachers?ok=сохранено');
-  } catch (e: any) {
-    err(e?.message || 'Не удалось сохранить');
-  }
-}
-
-export async function deleteUser(fd: FormData): Promise<void> {
-  try {
-    await requireManager();
-    const id = s(fd.get('id')); if (!id) err('Нет ID');
-    await prisma.user.delete({ where: { id } });
-    revalidatePath('/teachers');
-    redirect('/teachers?ok=удалён');
-  } catch (e: any) {
-    err(e?.message || 'Не удалось удалить');
-  }
+  await prisma.user.update({ where: { id }, data });
+  revalidatePath('/teachers');
+  redirect('/teachers?ok=данные обновлены');
 }
 
 export async function archiveUser(fd: FormData): Promise<void> {
-  try {
-    await requireManager();
-    const id = s(fd.get('id')); if (!id) err('Нет ID');
-    await prisma.user.update({ where: { id }, data: { role: 'archived' } });
-    revalidatePath('/teachers');
-    redirect('/teachers?ok=архивирован');
-  } catch (e: any) {
-    err(e?.message || 'Не удалось архивировать');
-  }
+  const session = await auth(); mustManage(session);
+  const id = toStr(fd, 'id');
+  if (!id) redirect('/teachers?error=нет id');
+
+  await prisma.user.update({ where: { id }, data: { role: 'archived' } });
+  revalidatePath('/teachers');
+  redirect('/teachers?ok=пользователь в архиве');
 }
 
-export async function forceResetPassword(fd: FormData): Promise<void> {
-  try {
-    await requireManager();
-    const id = s(fd.get('id'));
-    const newPassword = s(fd.get('newPassword'));
-    if (!id || !newPassword) err('Нет данных для смены пароля');
-    await prisma.user.update({
-      where: { id },
-      data: { passwordHash: await bcrypt.hash(newPassword, 10) },
-    });
-    revalidatePath('/teachers');
-    redirect('/teachers?ok=пароль+сменён');
-  } catch (e: any) {
-    err(e?.message || 'Не удалось сменить пароль');
-  }
+/** Полный purge пользователя и всех связей. */
+export async function deleteUser(fd: FormData): Promise<void> {
+  const session = await auth(); mustManage(session);
+  const id = toStr(fd, 'id');
+  if (!id) redirect('/teachers?error=нет id');
+
+  const u = await prisma.user.findUnique({ where: { id }, select: { email: true } });
+
+  await prisma.$transaction(async (tx) => {
+    // next-auth
+    await tx.$executeRaw`DELETE FROM "Session" WHERE "userId" = ${id};`;
+    await tx.$executeRaw`DELETE FROM "Account" WHERE "userId" = ${id};`;
+    if (u?.email) await tx.$executeRaw`DELETE FROM "VerificationToken" WHERE "identifier" = ${u.email};`;
+
+    // чаты
+    await tx.$executeRaw`DELETE FROM "MessageHide" WHERE "userId" = ${id};`;
+    await tx.$executeRaw`
+      DELETE FROM "MessageHide" h
+      WHERE h."messageId" IN (
+        SELECT m.id FROM "Message" m
+        WHERE m."threadId" IN (SELECT t.id FROM "Thread" t WHERE t."aId" = ${id} OR t."bId" = ${id})
+      );
+    `;
+    await tx.$executeRaw`
+      DELETE FROM "ReadMark"
+      WHERE "userId" = ${id}
+         OR "threadId" IN (SELECT t.id FROM "Thread" t WHERE t."aId" = ${id} OR t."bId" = ${id});
+    `;
+    await tx.$executeRaw`
+      DELETE FROM "Message"
+      WHERE "authorId" = ${id}
+         OR "threadId" IN (SELECT t.id FROM "Thread" t WHERE t."aId" = ${id} OR t."bId" = ${id});
+    `;
+    await tx.$executeRaw`DELETE FROM "Thread" WHERE "aId" = ${id} OR "bId" = ${id};`;
+
+    // будущие сущности с типовыми user-колонками
+    await tx.$executeRawUnsafe(`
+      DO $$
+      DECLARE r record;
+      BEGIN
+        FOR r IN
+          SELECT table_name, column_name
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND column_name IN ('userId','authorId','assigneeId','createdById','updatedById','ownerId','participantId')
+        LOOP
+          EXECUTE format('DELETE FROM public.%I WHERE "%I" = $1', r.table_name, r.column_name) USING $1;
+        END LOOP;
+      END $$;
+    `, id);
+
+    // подчистить сироты
+    await tx.$executeRaw`DELETE FROM "MessageHide" h WHERE NOT EXISTS (SELECT 1 FROM "Message" m WHERE m.id = h."messageId");`;
+    await tx.$executeRaw`DELETE FROM "ReadMark" r  WHERE NOT EXISTS (SELECT 1 FROM "Thread"  t WHERE t.id = r."threadId");`;
+
+    await tx.user.delete({ where: { id } });
+  });
+
+  revalidatePath('/teachers');
+  redirect('/teachers?ok=пользователь удалён полностью');
 }

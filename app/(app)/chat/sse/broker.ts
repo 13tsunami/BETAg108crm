@@ -1,6 +1,15 @@
 // app/(app)/chat/sse/broker.ts
 export type EventPayload =
-  | { type: 'message'; threadId: string; at: number; messageId: string; authorId: string; text: string; ts: string }
+  | {
+      type: 'message';
+      threadId: string;
+      at: number;
+      messageId: string;
+      authorId: string;
+      text: string;
+      ts: string;
+      clientId?: string; // ← добавили
+    }
   | { type: 'messageEdited'; threadId: string; at: number; messageId: string; byId: string; text: string }
   | { type: 'messageDeleted'; threadId: string; at: number; messageId: string; byId: string; scope: 'self' | 'both' }
   | { type: 'read'; threadId: string; at: number }
@@ -25,7 +34,11 @@ class Broker {
     for (const uid of targets) {
       const hs = this.subs.get(uid);
       if (!hs?.size) continue;
-      for (const [, h] of hs) { try { h(payload); } catch {} }
+      for (const [, h] of hs) {
+        try {
+          h(payload);
+        } catch {}
+      }
     }
   }
 }

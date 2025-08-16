@@ -1,4 +1,4 @@
-//'use client' файл
+// app/(app)/chat/ChatBoxClient.tsx
 'use client';
 
 import { useEffect, useMemo, useRef, useState, startTransition } from 'react';
@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import { sendMessageAction, editMessageAction, deleteMessageAction, markReadAction, deleteThreadAction } from './actions';
 
 type Msg = {
-  id: string;
+  id: string;            // id из БД или temp-*
   text: string;
-  ts: string;         // ISO
+  ts: string;            // ISO
   authorId: string;
   edited?: boolean;
   deleted?: boolean;
-  pending?: boolean;  // локовый «временный»
+  pending?: boolean;
+  clientId?: string;     // ← для маппинга pending -> real
 };
 
 export default function ChatBoxClient({
@@ -29,41 +30,56 @@ export default function ChatBoxClient({
   const [modalOf, setModalOf] = useState<Msg | null>(null);
   const [editText, setEditText] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const pendingRef = useRef<string[]>([]); // temp-ids, хвост очереди
+
   const peerReadAt = useMemo(() => (peerReadAtIso ? new Date(peerReadAtIso) : null), [peerReadAtIso]);
 
+  // аккуратный мердж initial + зачистка «висящих» pending по времени/тексту
   useEffect(() => {
     setMsgs(prev => {
-      const byId = new Map(prev.map(m => [m.id, m]));
-      for (const m of initial) {
-        const old = byId.get(m.id);
-        byId.set(m.id, { ...old, ...m, pending: false });
-      }
-      return Array.from(byId.values()).sort((a,b) => a.ts.localeCompare(b.ts));
+      const official = new Map(initial.map(m => [m.id, { ...m, pending: false, clientId: undefined }]));
+      // убираем pending, если есть очень похожее «официальное» сообщение (мой автор, тот же текст, время ±5s)
+      const idxByKey = new Set(
+        initial.map(m => `${m.authorId}|${m.text}|${Math.floor(new Date(m.ts).getTime()/1000)}`)
+      );
+      const cleanedPending = prev.filter(m => {
+        if (!m.pending) return false; // не переносим «не pending»
+        const key = `${m.authorId}|${m.text}|${Math.floor(new Date(m.ts).getTime()/1000)}`;
+        const near = idxByKey.has(key);
+        return !near; // переносим только те pending, для которых нет «пары»
+      });
+      const merged = [...Array.from(official.values()), ...cleanedPending];
+      merged.sort((a,b) => a.ts.localeCompare(b.ts));
+      return merged;
     });
   }, [initial]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end' }); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' }); }, [msgs.length]);
 
-  // Глобальный API для Live: мгновенная дорисовка активного треда + антидубликаты
+  // Глобальный API — мгновенная дорисовка и точная замена по clientId
   useEffect(() => {
     const api = {
       threadId,
-      push: (p: { messageId: string; text: string; authorId: string; ts: string }) => {
+      push: (p: { messageId: string; text: string; authorId: string; ts: string; clientId?: string }) => {
         setMsgs(xs => {
-          if (xs.some(m => m.id === p.messageId)) return xs; // уже есть настоящий
+          if (xs.some(m => m.id === p.messageId)) return xs; // уже есть «настоящий»
           if (p.authorId === meId) {
-            // заменяем последний pending на настоящий
-            const idx = [...xs].map((m, i) => [i, m] as const).reverse().find(([_, m]) => m.pending)?.[0];
-            if (idx !== undefined) {
+            // 1) ищем pending по clientId
+            const byClient = p.clientId ? xs.findIndex(m => m.pending && m.clientId === p.clientId) : -1;
+            if (byClient >= 0) {
               const next = xs.slice();
-              next[idx] = { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId };
-              // убираем temp из очереди
-              pendingRef.current.pop();
+              next[byClient] = { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId };
+              return next;
+            }
+            // 2) fallback — берём самый свежий pending «мой»
+            const lastMinePending = [...xs].map((m,i)=>[i,m] as const).reverse().find(([_,m]) => m.pending && m.authorId===meId)?.[0];
+            if (lastMinePending !== undefined) {
+              const next = xs.slice();
+              next[lastMinePending] = { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId };
               return next;
             }
           }
+          // чужое сообщение — просто добавляем
           return [...xs, { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId }];
         });
       },
@@ -73,7 +89,7 @@ export default function ChatBoxClient({
       del: (p: { messageId: string; scope: 'self'|'both' }) => {
         if (p.scope === 'both') setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: '', deleted: true, pending: false } : m));
       },
-      read: (_p: any) => { /* галочки подтянутся с сервера */ },
+      read: (_p: any) => { /* галочки подтянутся с сервера позже */ },
       onThreadDeleted: (_p: { byName: string }) => {
         try { alert('Ваш чат был удалён собеседником.'); } catch {}
       },
@@ -82,12 +98,15 @@ export default function ChatBoxClient({
     return () => { if ((window as any).__chatApi?.threadId === threadId) (window as any).__chatApi = undefined; };
   }, [threadId, meId]);
 
+  // отправка
   const onSend = (formData: FormData) => {
     const text = String(formData.get('text') || '').trim();
     if (!text || !threadId) return;
-    const tempId = `temp-${Date.now()}`;
-    pendingRef.current.push(tempId);
-    setMsgs(m => [...m, { id: tempId, text, ts: new Date().toISOString(), authorId: meId, pending: true }]);
+    const clientId = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`; // nonce
+    formData.set('clientId', clientId);
+
+    const tempId = `temp-${clientId}`;
+    setMsgs(m => [...m, { id: tempId, clientId, pending: true, text, ts: new Date().toISOString(), authorId: meId }]);
     setInput('');
     startTransition(() => { void sendMessageAction(formData); });
   };
@@ -128,7 +147,6 @@ export default function ChatBoxClient({
     if (!threadId) return;
     const ok = confirm('Удалить диалог у обоих?'); if (!ok) return;
     const fd = new FormData(); fd.set('threadId', threadId);
-    // Гарантируем редирект инициатору сразу
     startTransition(() => { void deleteThreadAction(fd); });
     startTransition(() => { router.replace('/chat'); });
   };
@@ -185,6 +203,7 @@ export default function ChatBoxClient({
 
       <form action={onSend as any} className="composer" style={{ display:'flex', gap:8, padding:10, borderTop:'1px solid rgba(229,231,235,.85)' }}>
         <input type="hidden" name="threadId" value={threadId} />
+        {/* clientId сетим в onSend через formData.set(...) */}
         <input type="text" name="text" placeholder="напишите сообщение…" value={input} onChange={(e) => setInput(e.target.value)}
                disabled={!threadId}
                style={{ flex:1, height:40, padding:'8px 10px', border:'1px solid rgba(229,231,235,.9)', borderRadius:10, outline:'none', background:'#fff' }}

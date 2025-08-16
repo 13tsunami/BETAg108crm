@@ -3,30 +3,36 @@
 
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
-import broker from './sse/broker';
 import { redirect } from 'next/navigation';
+import broker from './sse/broker';
 
 const now = () => new Date();
-const toStr = (v: unknown) => (typeof v === 'string' ? v : '');
+const s = (v: unknown) => (typeof v === 'string' ? v : '');
 
 function requireUserId(session: any): string {
   const id = session?.user?.id;
-  if (typeof id !== 'string' || !id) redirect('/sign-in');
+  if (!id || typeof id !== 'string') redirect('/sign-in');
   return id;
 }
 
 async function participantsOf(threadId: string): Promise<[string, string]> {
-  const th = await prisma.thread.findUnique({ where: { id: threadId }, select: { aId: true, bId: true } });
+  const th = await prisma.thread.findUnique({
+    where: { id: threadId },
+    select: { aId: true, bId: true },
+  });
   return [th?.aId || '', th?.bId || ''] as [string, string];
 }
 
+/** Отправка сообщения. Возвращает ничего (контракт Next15), SSE отдаёт clientId для снятия «отправка…» */
 export async function sendMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
-  const threadId = toStr(fd.get('threadId')).trim();
-  const text = toStr(fd.get('text')).trim();
+  const threadId = s(fd.get('threadId')).trim();
+  const text = s(fd.get('text')).trim();
+  const clientId = s(fd.get('clientId')).trim() || undefined;
   if (!threadId || !text) return;
 
+  // проверим, что я участник
   const th = await prisma.thread.findFirst({
     where: { id: threadId, OR: [{ aId: me }, { bId: me }] },
     select: { aId: true, bId: true },
@@ -61,41 +67,45 @@ export async function sendMessageAction(fd: FormData): Promise<void> {
     authorId: created.authorId,
     text: created.text,
     ts: created.createdAt.toISOString(),
+    clientId, // ← вернём клиентский id для склейки pending
   });
 }
 
+/** Редактирование сообщения (только автор). */
 export async function editMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
-  const messageId = toStr(fd.get('messageId')).trim();
-  const text = toStr(fd.get('text')).trim();
+  const messageId = s(fd.get('messageId')).trim();
+  const text = s(fd.get('text')).trim();
   if (!messageId || !text) return;
 
-  const m = await prisma.message.findFirst({
+  const msg = await prisma.message.findFirst({
     where: { id: messageId, authorId: me },
     select: { id: true, threadId: true },
   });
-  if (!m) return;
+  if (!msg) return;
 
-  await prisma.message.update({ where: { id: m.id }, data: { text, editedAt: now() } });
-  broker.publish(await participantsOf(m.threadId), {
+  await prisma.message.update({ where: { id: messageId }, data: { text, editedAt: now() } });
+
+  broker.publish(await participantsOf(msg.threadId), {
     type: 'messageEdited',
-    threadId: m.threadId,
+    threadId: msg.threadId,
     at: Date.now(),
-    messageId: m.id,
+    messageId,
     byId: me,
     text,
-  });
+  } as any);
 }
 
+/** Удаление сообщения: scope='self' (скрыть у себя) или 'both' (обнулить текст у обоих, только автор). */
 export async function deleteMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
-  const messageId = toStr(fd.get('messageId')).trim();
-  const scope = toStr(fd.get('scope')).trim(); // 'self' | 'both'
+  const messageId = s(fd.get('messageId')).trim();
+  const scope = s(fd.get('scope')).trim(); // 'self' | 'both'
   if (!messageId || !scope) return;
 
-  const m = await prisma.message.findFirst({
+  const m = await prisma.message.findUnique({
     where: { id: messageId },
     select: { id: true, threadId: true, authorId: true },
   });
@@ -107,10 +117,10 @@ export async function deleteMessageAction(fd: FormData): Promise<void> {
       update: {},
       create: { messageId: m.id, userId: me },
     });
-  } else if (scope === 'both' && m.authorId === me) {
-    await prisma.message.update({ where: { id: m.id }, data: { text: '', deletedAt: now() } });
   } else {
-    return;
+    // both — только автор
+    if (m.authorId !== me) return;
+    await prisma.message.update({ where: { id: m.id }, data: { text: '', deletedAt: now() } });
   }
 
   broker.publish(await participantsOf(m.threadId), {
@@ -119,14 +129,15 @@ export async function deleteMessageAction(fd: FormData): Promise<void> {
     at: Date.now(),
     messageId: m.id,
     byId: me,
-    scope: scope as 'self' | 'both',
-  });
+    scope: (scope as 'self' | 'both'),
+  } as any);
 }
 
+/** Отметить тред прочитанным для текущего пользователя. */
 export async function markReadAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
-  const threadId = toStr(fd.get('threadId')).trim();
+  const threadId = s(fd.get('threadId')).trim();
   if (!threadId) return;
 
   const th = await prisma.thread.findFirst({
@@ -141,49 +152,40 @@ export async function markReadAction(fd: FormData): Promise<void> {
     create: { threadId, userId: me, readAt: now() },
   });
 
-  broker.publish([th.aId, th.bId], { type: 'read', threadId, at: Date.now() });
+  broker.publish([th.aId, th.bId], { type: 'read', threadId, at: Date.now() } as any);
 }
 
+/** Полное удаление треда у обоих. */
 export async function deleteThreadAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
-  const threadId = toStr(fd.get('threadId')).trim();
+  const threadId = s(fd.get('threadId')).trim();
   if (!threadId) return;
 
-  // проверяем доступ и участников
   const th = await prisma.thread.findFirst({
     where: { id: threadId, OR: [{ aId: me }, { bId: me }] },
     select: { id: true, aId: true, bId: true },
   });
   if (!th) return;
 
-  // каскадное удаление зависимостей + удаление треда
   await prisma.$transaction(async (tx) => {
-    const mids = await tx.message.findMany({
-      where: { threadId },
-      select: { id: true },
-    });
+    const mids = await tx.message.findMany({ where: { threadId }, select: { id: true } });
     const ids = mids.map(m => m.id);
-
-    if (ids.length) {
-      await tx.messageHide.deleteMany({ where: { messageId: { in: ids } } });
-    }
+    if (ids.length) await tx.messageHide.deleteMany({ where: { messageId: { in: ids } } });
     await tx.readMark.deleteMany({ where: { threadId } });
     await tx.message.deleteMany({ where: { threadId } });
     await tx.thread.delete({ where: { id: threadId } });
   });
 
   const byName = (session?.user as any)?.name || 'Пользователь';
-
-  // уведомляем обоих
   broker.publish([th.aId, th.bId], {
     type: 'threadDeleted',
     threadId,
     at: Date.now(),
     byId: me,
     byName,
-  });
+  } as any);
 
-  // инициатору — сразу на список, чтобы не рендерить удалённый тред
+  // инициатор — сразу на список
   redirect('/chat');
 }
