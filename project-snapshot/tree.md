@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-16T16:05:09.588Z
+Generated: 2025-08-16T17:33:45.783Z
 ## UI hints
 ```json
 {
@@ -33,6 +33,7 @@ Generated: 2025-08-16T16:05:09.588Z
    │  │  │  └─ page.tsx
    │  │  ├─ groups
    │  │  │  ├─ actions.ts
+   │  │  │  ├─ groups-search-client.tsx
    │  │  │  └─ page.tsx
    │  │  ├─ heartbeat
    │  │  │  ├─ Heartbeat.tsx
@@ -40,7 +41,8 @@ Generated: 2025-08-16T16:05:09.588Z
    │  │  ├─ inboxtasks
    │  │  │  ├─ TaskForm.tsx
    │  │  │  ├─ actions.ts
-   │  │  │  └─ page.tsx
+   │  │  │  ├─ page.tsx
+   │  │  │  └─ tasks-search-client.tsx
    │  │  ├─ layout.module.css
    │  │  ├─ layout.tsx
    │  │  ├─ settings
