@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-16T09:56:15.717Z
+Generated: 2025-08-16T12:01:37.761Z
 ## UI hints
 ```json
 {
@@ -18,6 +18,7 @@ Generated: 2025-08-16T09:56:15.717Z
    │  ├─ (app)
    │  │  ├─ chat
    │  │  │  ├─ ChatBoxClient.tsx
+   │  │  │  ├─ SearchBox.tsx
    │  │  │  ├─ actions.ts
    │  │  │  ├─ chat.module.css
    │  │  │  ├─ live.tsx
@@ -31,8 +32,16 @@ Generated: 2025-08-16T09:56:15.717Z
    │  │  ├─ heartbeat
    │  │  │  ├─ Heartbeat.tsx
    │  │  │  └─ actions.ts
+   │  │  ├─ inboxtasks
+   │  │  │  ├─ TaskForm.tsx
+   │  │  │  ├─ actions.ts
+   │  │  │  └─ page.tsx
    │  │  ├─ layout.module.css
    │  │  ├─ layout.tsx
+   │  │  ├─ settings
+   │  │  │  ├─ SettingsToast.tsx
+   │  │  │  ├─ actions.ts
+   │  │  │  └─ page.tsx
    │  │  └─ teachers
    │  │     ├─ SearchBox.tsx
    │  │     ├─ actions.ts
@@ -124,6 +133,8 @@ Generated: 2025-08-16T09:56:15.717Z
 /chat  ⟶  app/(app)/chat/page.tsx
 /chat/sse  ⟶  app/(app)/chat/sse/route.ts
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
+/inboxtasks  ⟶  app/(app)/inboxtasks/page.tsx
+/settings  ⟶  app/(app)/settings/page.tsx
 /sign-in  ⟶  app/(auth)/sign-in/page.tsx
 /teachers  ⟶  app/(app)/teachers/page.tsx
 ```

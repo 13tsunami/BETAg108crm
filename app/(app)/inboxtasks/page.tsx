@@ -1,7 +1,8 @@
-// app/inboxTasks/page.tsx
+// app/(app)/inboxtasks/page.tsx
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { headers } from 'next/headers';
 import TaskForm from './TaskForm';
 import { createTaskAction, updateTaskAction, deleteTaskAction, markDoneAction } from './actions';
 
@@ -15,7 +16,7 @@ type Task = {
   hidden?: boolean | null;
   createdById?: string | null;
   assignees?: Array<{ userId: string; status?: string; doneAt?: string | null }>;
-  assignedTo?: Array<{ type?: 'user'; id: string }>; // совместимость
+  assignedTo?: Array<{ type?: 'user'; id: string }>;
 };
 
 type SimpleUser = { id: string; name: string | null; role?: string | null; methodicalGroups?: string | null; subjects?: any };
@@ -23,6 +24,14 @@ type SimpleGroup = { id: string; name: string };
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+/** Надёжно получаем origin для server fetch (работает на Vercel/прокси) */
+async function getOrigin() {
+  const h = await headers();
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? '';
+  return `${proto}://${host}`;
+}
 
 async function requireMe() {
   const session = await auth();
@@ -32,9 +41,10 @@ async function requireMe() {
   return { meId, meName: meName ?? 'Вы' };
 }
 
-async function fetchJson<T>(url: string, fallback: T): Promise<T> {
+async function fetchJson<T>(base: string, path: string, fallback: T): Promise<T> {
+  const url = path.startsWith('http') ? path : `${base}${path}`;
   try {
-    const r = await fetch(url, { cache: 'no-store' });
+    const r = await fetch(url, { cache: 'no-store', next: { revalidate: 0 } });
     if (!r.ok) return fallback;
     const j = await r.json();
     return (j ?? fallback) as T;
@@ -43,42 +53,40 @@ async function fetchJson<T>(url: string, fallback: T): Promise<T> {
   }
 }
 
-async function getUsers(): Promise<SimpleUser[]> {
-  // как у вас на клиенте: сначала чат-пользователи, потом /api/users для обогащения
-  const chatUsers = await fetchJson<any[]>('/api/chat/users?includeSelf=1&limit=2000', []);
+async function getUsers(base: string): Promise<SimpleUser[]> {
+  // как и было: сначала чат-пользователи, потом обогащаем из /api/users
+  const chatUsers = await fetchJson<any[]>(base, '/api/chat/users?includeSelf=1&limit=2000', []);
   const byId = new Map<string, SimpleUser>();
   if (Array.isArray(chatUsers)) {
     chatUsers.forEach((u) => { if (u?.id) byId.set(u.id, { id: u.id, name: u.name ?? null }); });
   }
-  try {
-    const extras = await fetchJson<any[]>('/api/users', []);
-    if (Array.isArray(extras)) {
-      extras.forEach((e) => {
-        if (!e?.id) return;
-        const prev = byId.get(e.id) ?? { id: e.id, name: e.name ?? null };
-        byId.set(e.id, {
-          id: e.id,
-          name: prev.name ?? e.name ?? null,
-          role: e.roleSlug ?? e.role ?? null,
-          methodicalGroups: e.methodicalGroups ?? null,
-          subjects: e.subjects ?? null,
-        });
+  const extras = await fetchJson<any[]>(base, '/api/users', []);
+  if (Array.isArray(extras)) {
+    extras.forEach((e) => {
+      if (!e?.id) return;
+      const prev = byId.get(e.id) ?? { id: e.id, name: e.name ?? null };
+      byId.set(e.id, {
+        id: e.id,
+        name: prev.name ?? e.name ?? null,
+        role: e.roleSlug ?? e.role ?? null,
+        methodicalGroups: e.methodicalGroups ?? null,
+        subjects: e.subjects ?? null,
       });
-    }
-  } catch {}
+    });
+  }
   return Array.from(byId.values());
 }
 
-async function getGroups(): Promise<SimpleGroup[]> {
-  const first = await fetchJson<SimpleGroup[]>('/api/groups', []);
+async function getGroups(base: string): Promise<SimpleGroup[]> {
+  const first = await fetchJson<SimpleGroup[]>(base, '/api/groups', []);
   if (Array.isArray(first) && first.length) return first;
-  const second = await fetchJson<SimpleGroup[]>('/api/chat/groups', []);
+  const second = await fetchJson<SimpleGroup[]>(base, '/api/chat/groups', []);
   if (Array.isArray(second) && second.length) return second;
-  return await fetchJson<SimpleGroup[]>('/api/user-groups', []);
+  return await fetchJson<SimpleGroup[]>(base, '/api/user-groups', []);
 }
 
-async function getTasks(): Promise<Task[]> {
-  return await fetchJson<Task[]>('/api/tasks', []);
+async function getTasks(base: string): Promise<Task[]> {
+  return await fetchJson<Task[]>(base, '/api/tasks', []);
 }
 
 export default async function InboxTasksPage({
@@ -88,8 +96,13 @@ export default async function InboxTasksPage({
 }) {
   await searchParams; // контракт Next 15
   const { meId } = await requireMe();
+  const base = await getOrigin();
 
-  const [users, groups, tasks] = await Promise.all([getUsers(), getGroups(), getTasks()]);
+  const [users, groups, tasks] = await Promise.all([
+    getUsers(base),
+    getGroups(base),
+    getTasks(base),
+  ]);
 
   return (
     <main style={{ padding: 16, fontFamily: '"Times New Roman", serif', fontSize: 12 }}>
@@ -100,7 +113,6 @@ export default async function InboxTasksPage({
             <TaskForm
               users={users}
               groups={groups}
-              // server action — через проп, чтобы клиент не импортировал 'use server'
               createAction={createTaskAction}
             />
           </Suspense>
@@ -248,7 +260,6 @@ function TasksList({
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                     {byMe && (
                       <>
-                        {/* UPDATE через server action */}
                         <form action={updateAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
                           <input type="hidden" name="id" value={t.id} />
                           <input name="title" defaultValue={t.title} placeholder="Название" style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }} />
@@ -265,7 +276,6 @@ function TasksList({
                           </button>
                         </form>
 
-                        {/* DELETE */}
                         <form action={deleteAction}>
                           <input type="hidden" name="id" value={t.id} />
                           <button
