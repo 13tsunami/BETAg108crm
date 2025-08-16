@@ -53,16 +53,15 @@ export async function sendMessageAction(fd: FormData): Promise<void> {
     return m;
   });
 
-  const payload = {
-    type: 'message' as const,
+  broker.publish([th.aId, th.bId], {
+    type: 'message',
     threadId,
     at: Date.now(),
     messageId: created.id,
     authorId: created.authorId,
     text: created.text,
     ts: created.createdAt.toISOString(),
-  };
-  broker.publish([th.aId, th.bId], payload);
+  });
 }
 
 export async function editMessageAction(fd: FormData): Promise<void> {
@@ -79,16 +78,14 @@ export async function editMessageAction(fd: FormData): Promise<void> {
   if (!m) return;
 
   await prisma.message.update({ where: { id: m.id }, data: { text, editedAt: now() } });
-
-  const payload = {
-    type: 'messageEdited' as const,
+  broker.publish(await participantsOf(m.threadId), {
+    type: 'messageEdited',
     threadId: m.threadId,
     at: Date.now(),
     messageId: m.id,
     byId: me,
     text,
-  };
-  broker.publish(await participantsOf(m.threadId), payload);
+  });
 }
 
 export async function deleteMessageAction(fd: FormData): Promise<void> {
@@ -113,18 +110,17 @@ export async function deleteMessageAction(fd: FormData): Promise<void> {
   } else if (scope === 'both' && m.authorId === me) {
     await prisma.message.update({ where: { id: m.id }, data: { text: '', deletedAt: now() } });
   } else {
-    return; // запрещаем удалять «для обоих» чужое сообщение
+    return;
   }
 
-  const payload = {
-    type: 'messageDeleted' as const,
+  broker.publish(await participantsOf(m.threadId), {
+    type: 'messageDeleted',
     threadId: m.threadId,
     at: Date.now(),
     messageId: m.id,
     byId: me,
     scope: scope as 'self' | 'both',
-  };
-  broker.publish(await participantsOf(m.threadId), payload);
+  });
 }
 
 export async function markReadAction(fd: FormData): Promise<void> {
@@ -154,18 +150,32 @@ export async function deleteThreadAction(fd: FormData): Promise<void> {
   const threadId = toStr(fd.get('threadId')).trim();
   if (!threadId) return;
 
+  // проверяем доступ и участников
   const th = await prisma.thread.findFirst({
     where: { id: threadId, OR: [{ aId: me }, { bId: me }] },
     select: { id: true, aId: true, bId: true },
   });
   if (!th) return;
 
+  // каскадное удаление зависимостей + удаление треда
   await prisma.$transaction(async (tx) => {
-    await tx.message.updateMany({ where: { threadId }, data: { deletedAt: now() } });
+    const mids = await tx.message.findMany({
+      where: { threadId },
+      select: { id: true },
+    });
+    const ids = mids.map(m => m.id);
+
+    if (ids.length) {
+      await tx.messageHide.deleteMany({ where: { messageId: { in: ids } } });
+    }
+    await tx.readMark.deleteMany({ where: { threadId } });
+    await tx.message.deleteMany({ where: { threadId } });
     await tx.thread.delete({ where: { id: threadId } });
   });
 
   const byName = (session?.user as any)?.name || 'Пользователь';
+
+  // уведомляем обоих
   broker.publish([th.aId, th.bId], {
     type: 'threadDeleted',
     threadId,
@@ -173,4 +183,7 @@ export async function deleteThreadAction(fd: FormData): Promise<void> {
     byId: me,
     byName,
   });
+
+  // инициатору — сразу на список, чтобы не рендерить удалённый тред
+  redirect('/chat');
 }
