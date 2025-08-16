@@ -8,6 +8,7 @@ import {
   createSubject, renameSubject, deleteSubject,
   addUsersToSubject, removeUserFromSubject, fetchSubjectMembers,
 } from '@/app/(app)/groups/actions';
+import UrlSearchBox from '@/app/(app)/groups/groups-search-client';
 
 type SimpleUser = { id: string; name: string | null; role?: string | null };
 type Group = { id: string; name: string };
@@ -24,186 +25,35 @@ export default function GroupsBoard(props: {
 
   const [tab, setTab] = React.useState<'groups' | 'subjects'>('groups');
 
-  // пользователи
+  // пользователи/группы/предметы: берём как пришли с сервера (уже отфильтрованы URL-параметрами)
   const [users] = React.useState<SimpleUser[]>(props.initialUsers);
-  const [qUser, setQUser] = React.useState<string>('');
-
-  // группы
   const [groups, setGroups] = React.useState<Group[]>(props.initialGroups);
+  const [subjects, setSubjects] = React.useState<Subject[]>(props.initialSubjects);
+
+  // выборы
+  const [selUserIds, setSelUserIds] = React.useState<string[]>([]);
   const [selGroupId, setSelGroupId] = React.useState<string | null>(null);
+  const [selSubjectId, setSelSubjectId] = React.useState<string | null>(null);
+
   const [groupMembers, setGroupMembers] = React.useState<{ userId: string; name: string | null }[]>([]);
-  const [qGroup, setQGroup] = React.useState<string>('');
+  const [subjectMembers, setSubjectMembers] = React.useState<{ userId: string; name: string | null }[]>([]);
+
+  // поля модалок (без изменений)
   const [groupNameInput, setGroupNameInput] = React.useState<string>('');
   const [mCreateGroup, setMCreateGroup] = React.useState<boolean>(false);
   const [mRenameGroup, setMRenameGroup] = React.useState<boolean>(false);
   const [mDeleteGroup, setMDeleteGroup] = React.useState<boolean>(false);
 
-  // предметы
-  const [subjects, setSubjects] = React.useState<Subject[]>(props.initialSubjects);
-  const [selSubjectId, setSelSubjectId] = React.useState<string | null>(null);
-  const [subjectMembers, setSubjectMembers] = React.useState<{ userId: string; name: string | null }[]>([]);
-  const [qSubject, setQSubject] = React.useState<string>('');
   const [subjectNameInput, setSubjectNameInput] = React.useState<string>('');
   const [mCreateSubject, setMCreateSubject] = React.useState<boolean>(false);
   const [mRenameSubject, setMRenameSubject] = React.useState<boolean>(false);
   const [mDeleteSubject, setMDeleteSubject] = React.useState<boolean>(false);
 
-  // выбор пользователей
-  const [selUserIds, setSelUserIds] = React.useState<string[]>([]);
   function toggleUser(id: string) {
     setSelUserIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  // универсальный автокомплит
-  function AutoComplete(props: {
-    value: string;
-    onChange: (s: string) => void;
-    items: { id: string; label: string; hint?: string }[];
-    placeholder: string;
-    onSelect: (id: string) => void;
-  }) {
-    const [open, setOpen] = React.useState(false);
-    const [hover, setHover] = React.useState(-1);
-    const boxRef = React.useRef<HTMLDivElement | null>(null);
-
-    const norm = (s: string) => s.trim().toLowerCase();
-    const q = norm(props.value);
-    const filtered = React.useMemo(() => {
-      if (!q) return props.items.slice(0, 20);
-      const starts: typeof props.items = [];
-      const contains: typeof props.items = [];
-      for (const it of props.items) {
-        const hay = (it.label + ' ' + (it.hint ?? '')).toLowerCase();
-        if (hay.startsWith(q)) starts.push(it);
-        else if (hay.includes(q)) contains.push(it);
-        if (starts.length + contains.length >= 50) break;
-      }
-      return [...starts, ...contains];
-    }, [q, props.items]);
-
-    React.useEffect(() => {
-      function onDoc(e: MouseEvent) {
-        if (!boxRef.current) return;
-        if (!boxRef.current.contains(e.target as Node)) setOpen(false);
-      }
-      document.addEventListener('mousedown', onDoc);
-      return () => document.removeEventListener('mousedown', onDoc);
-    }, []);
-
-    function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
-      if (!open && (e.key === 'ArrowDown' || e.key === 'Enter')) {
-        setOpen(true);
-        return;
-      }
-      if (!open) return;
-      if (e.key === 'ArrowDown') { e.preventDefault(); setHover((h) => Math.min(h + 1, filtered.length - 1)); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); setHover((h) => Math.max(h - 1, 0)); }
-      else if (e.key === 'Enter') {
-        e.preventDefault();
-        const it = filtered[hover] ?? filtered[0];
-        if (it) { props.onSelect(it.id); setOpen(false); }
-      } else if (e.key === 'Escape') {
-        setOpen(false);
-      }
-    }
-
-    return (
-      <div ref={boxRef} style={{ position: 'relative', marginTop: 8 }}>
-        <input
-          value={props.value}
-          onChange={(e) => { props.onChange(e.target.value); setOpen(true); setHover(-1); }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={handleKey}
-          placeholder={props.placeholder}
-          style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10, background: '#fff' }}
-        />
-        {open && filtered.length > 0 && (
-          <div
-            onMouseDown={(e) => e.preventDefault()} // не даём меню забирать фокус у инпута
-            style={{
-              position: 'absolute',
-              zIndex: 1000,
-              top: '100%',
-              left: 0,
-              right: 0,
-              marginTop: 6,
-              background: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: 10,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-              maxHeight: 300,
-              overflow: 'auto'
-            }}
-          >
-            {filtered.map((it, i) => (
-              <button
-                key={it.id}
-                type="button"
-                tabIndex={-1}
-                onMouseEnter={() => setHover(i)}
-                onMouseDown={(e) => { e.preventDefault(); props.onSelect(it.id); setOpen(false); }} // выбор без смены фокуса
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 10px',
-                  background: i === hover ? '#fff5f5' : '#fff',
-                  border: 'none',
-                  borderBottom: '1px solid #f3f4f6',
-                  cursor: 'pointer'
-                }}
-                title={it.hint}
-              >
-                <div style={{ fontSize: 13, color: '#111827' }}>{it.label}</div>
-                {it.hint ? <div style={{ fontSize: 11, color: '#6b7280' }}>{it.hint}</div> : null}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  function resetSelection() { setSelUserIds([]); }
-
-  // фильтры
-  const filteredUsers = React.useMemo<SimpleUser[]>(() => {
-    const s = qUser.trim().toLowerCase();
-    return s ? users.filter((u) => (u.name || '').toLowerCase().includes(s)) : users;
-  }, [users, qUser]);
-
-  const filteredGroups = React.useMemo<Group[]>(() => {
-    const s = qGroup.trim().toLowerCase();
-    return s ? groups.filter((g) => g.name.toLowerCase().includes(s)) : groups;
-  }, [groups, qGroup]);
-
-  const filteredSubjects = React.useMemo<Subject[]>(() => {
-    const s = qSubject.trim().toLowerCase();
-    return s ? subjects.filter((x) => x.name.toLowerCase().includes(s)) : subjects;
-  }, [subjects, qSubject]);
-
-  // загрузка составов
-  React.useEffect(() => {
-    let live = true;
-    (async () => {
-      if (!selGroupId) { setGroupMembers([]); return; }
-      const rows = await fetchGroupMembers(selGroupId);
-      if (live) setGroupMembers(rows);
-    })();
-    return () => { live = false; };
-  }, [selGroupId]);
-
-  React.useEffect(() => {
-    let live = true;
-    (async () => {
-      if (!selSubjectId) { setSubjectMembers([]); return; }
-      const rows = await fetchSubjectMembers(selSubjectId);
-      if (live) setSubjectMembers(rows);
-    })();
-    return () => { live = false; };
-  }, [selSubjectId]);
-
-  // UI helpers
+  // UI helpers (как у вас)
   const BRAND = '#8d2828';
   function Primary(props: React.PropsWithChildren<{ onClick?: () => void; disabled?: boolean; danger?: boolean }>) {
     return (
@@ -238,13 +88,6 @@ export default function GroupsBoard(props: {
   function Card(props: React.PropsWithChildren<{ style?: React.CSSProperties }>) {
     return <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, ...props.style }}>{props.children}</div>;
   }
-  function Search({ value, onChange, placeholder }: { value: string; onChange: (s: string) => void; placeholder: string }) {
-    return (
-      <div style={{ marginTop: 8 }}>
-        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }} />
-      </div>
-    );
-  }
   function ListBox({ children, innerHeight = 460 }: { children: React.ReactNode; innerHeight?: number }) {
     return <div style={{ marginTop: 8, height: innerHeight, overflow: 'auto', border: '1px solid #f3f4f6', borderRadius: 10 }}>{children}</div>;
   }
@@ -268,10 +111,9 @@ export default function GroupsBoard(props: {
     actions?: React.ReactNode;
   }) {
     if (!props.open) return null;
-
     return (
       <div
-        onMouseDown={props.onClose} // закрываем по mousedown на оверлее
+        onClick={props.onClose} // было onMouseDown — из-за этого пропадал фокус в инпутах
         style={{
           position: 'fixed',
           inset: 0,
@@ -283,7 +125,7 @@ export default function GroupsBoard(props: {
         }}
       >
         <div
-          onMouseDown={(e) => e.stopPropagation()} // клики внутри модалки не закрывают и не отбирают фокус
+          onMouseDown={(e) => e.stopPropagation()} // клики внутри не закрывают и не воруют фокус
           style={{
             width: 420,
             maxWidth: '94vw',
@@ -296,14 +138,7 @@ export default function GroupsBoard(props: {
           <h2 style={{ marginTop: 0 }}>{props.title}</h2>
           {props.children}
           {props.actions ? (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: 8,
-                marginTop: 12,
-              }}
-            >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
               {props.actions}
             </div>
           ) : null}
@@ -312,7 +147,7 @@ export default function GroupsBoard(props: {
     );
   }
 
-  // ГРУППЫ
+  // ГРУППЫ: действия (как у вас)
   async function onCreateGroup() {
     const name = groupNameInput.trim(); if (!name) return;
     await createGroup(name);
@@ -353,7 +188,7 @@ export default function GroupsBoard(props: {
     router.refresh();
   }
 
-  // ПРЕДМЕТЫ
+  // ПРЕДМЕТЫ: действия (как у вас)
   async function onCreateSubject() {
     const name = subjectNameInput.trim(); if (!name) return;
     await createSubject(name);
@@ -394,15 +229,45 @@ export default function GroupsBoard(props: {
     router.refresh();
   }
 
+  // загрузка составов при выборе
+  React.useEffect(() => {
+    let live = true;
+    (async () => {
+      if (!selGroupId) { setGroupMembers([]); return; }
+      const rows = await fetchGroupMembers(selGroupId);
+      if (live) setGroupMembers(rows);
+    })();
+    return () => { live = false; };
+  }, [selGroupId]);
+
+  React.useEffect(() => {
+    let live = true;
+    (async () => {
+      if (!selSubjectId) { setSubjectMembers([]); return; }
+      const rows = await fetchSubjectMembers(selSubjectId);
+      if (live) setSubjectMembers(rows);
+    })();
+    return () => { live = false; };
+  }, [selSubjectId]);
+
+  function resetSelection() { setSelUserIds([]); }
+
   return (
     <section style={{ fontFamily: '"Times New Roman", serif', fontSize: 12 }}>
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 8, marginBottom: 12, display: 'flex', gap: 8 }}>
-        <button type="button" onClick={() => setTab('groups')}
-                style={{ padding: '6px 10px', borderRadius: 10, border: tab === 'groups' ? '1px solid #e5e7eb' : '1px solid transparent', background: tab === 'groups' ? '#f9fafb' : 'transparent', fontWeight: 800 }}>
+        <button
+          type="button"
+          onClick={() => setTab('groups')}
+          style={{ padding: '6px 10px', borderRadius: 10, border: tab === 'groups' ? '1px solid #e5e7eb' : '1px solid transparent', background: tab === 'groups' ? '#f9fafb' : 'transparent', fontWeight: 800 }}
+        >
           Группы
         </button>
-        <button type="button" onClick={() => setTab('subjects')} disabled={!subjectsEnabled}
-                style={{ padding: '6px 10px', borderRadius: 10, border: tab === 'subjects' ? '1px solid #e5e7eb' : '1px solid transparent', background: subjectsEnabled ? (tab === 'subjects' ? '#f9fafb' : 'transparent') : '#fafafa', color: subjectsEnabled ? undefined : '#9ca3af', fontWeight: 800 }}>
+        <button
+          type="button"
+          onClick={() => setTab('subjects')}
+          disabled={!subjectsEnabled}
+          style={{ padding: '6px 10px', borderRadius: 10, border: tab === 'subjects' ? '1px solid #e5e7eb' : '1px solid transparent', background: subjectsEnabled ? (tab === 'subjects' ? '#f9fafb' : 'transparent') : '#fafafa', color: subjectsEnabled ? undefined : '#9ca3af', fontWeight: 800 }}
+        >
           Предметы
         </button>
       </div>
@@ -412,11 +277,11 @@ export default function GroupsBoard(props: {
           <Card style={{ padding: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontWeight: 800, fontSize: 18 }}>Пользователи</div>
-              <div style={{ color: '#6b7280' }}>{filteredUsers.length}</div>
+              <div style={{ color: '#6b7280' }}>{users.length}</div>
             </div>
-            <Search value={qUser} onChange={setQUser} placeholder="Поиск ФИО" />
+            <UrlSearchBox paramKey="qu" placeholder="Поиск ФИО" />
             <ListBox>
-              {filteredUsers.map((u) => {
+              {users.map((u) => {
                 const active = selUserIds.includes(u.id);
                 return (
                   <RowButton key={u.id} active={active} onClick={() => toggleUser(u.id)} title={u.role || undefined}>
@@ -440,21 +305,11 @@ export default function GroupsBoard(props: {
               </div>
             </div>
 
-            <AutoComplete
-              value={qGroup}
-              onChange={setQGroup}
-              placeholder="Поиск группы"
-              items={groups.map(g => ({ id: g.id, label: g.name }))}
-              onSelect={(id) => {
-                setSelGroupId(id);
-                const g = groups.find(x => x.id === id);
-                if (g) setQGroup(g.name);
-              }}
-            />
+            <UrlSearchBox paramKey="qg" placeholder="Поиск группы" />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
               <ListBox>
-                {filteredGroups.map((g) => {
+                {groups.map((g) => {
                   const active = selGroupId === g.id;
                   return (
                     <RowButton key={g.id} active={active} onClick={() => setSelGroupId(g.id)} title={g.id}>
@@ -495,11 +350,11 @@ export default function GroupsBoard(props: {
           <Card style={{ padding: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontWeight: 800, fontSize: 18 }}>Пользователи</div>
-              <div style={{ color: '#6b7280' }}>{filteredUsers.length}</div>
+              <div style={{ color: '#6b7280' }}>{users.length}</div>
             </div>
-            <Search value={qUser} onChange={setQUser} placeholder="Поиск ФИО" />
+            <UrlSearchBox paramKey="qu" placeholder="Поиск ФИО" />
             <ListBox>
-              {filteredUsers.map((u) => {
+              {users.map((u) => {
                 const active = selUserIds.includes(u.id);
                 return (
                   <RowButton key={u.id} active={active} onClick={() => toggleUser(u.id)} title={u.role || undefined}>
@@ -523,21 +378,11 @@ export default function GroupsBoard(props: {
               </div>
             </div>
 
-            <AutoComplete
-              value={qSubject}
-              onChange={setQSubject}
-              placeholder="Поиск предмета"
-              items={subjects.map(s => ({ id: s.id, label: s.name, hint: s.count ? `${s.count}` : undefined }))}
-              onSelect={(id) => {
-                setSelSubjectId(id);
-                const s = subjects.find(x => x.id === id);
-                if (s) setQSubject(s.name);
-              }}
-            />
+            <UrlSearchBox paramKey="qs" placeholder="Поиск предмета" />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
               <ListBox>
-                {filteredSubjects.map((s) => {
+                {subjects.map((s) => {
                   const active = selSubjectId === s.id;
                   return (
                     <RowButton key={s.id} active={active} onClick={() => setSelSubjectId(s.id)} title={`${s.count} чел.`}>
@@ -577,8 +422,12 @@ export default function GroupsBoard(props: {
       )}
 
       {/* Модалки групп */}
-      <Modal open={mCreateGroup} title="Создать группу" onClose={() => setMCreateGroup(false)}
-             actions={<><Secondary onClick={() => setMCreateGroup(false)}>Отмена</Secondary><Primary onClick={onCreateGroup}>Создать</Primary></>}>
+      <Modal
+        open={mCreateGroup}
+        title="Создать группу"
+        onClose={() => setMCreateGroup(false)}
+        actions={<><Secondary onClick={() => setMCreateGroup(false)}>Отмена</Secondary><Primary onClick={onCreateGroup}>Создать</Primary></>}
+      >
         <input
           value={groupNameInput}
           onChange={(e) => setGroupNameInput(e.target.value)}
@@ -587,8 +436,12 @@ export default function GroupsBoard(props: {
         />
       </Modal>
 
-      <Modal open={mRenameGroup} title="Переименовать группу" onClose={() => setMRenameGroup(false)}
-             actions={<><Secondary onClick={() => setMRenameGroup(false)}>Отмена</Secondary><Primary onClick={onRenameGroup}>Сохранить</Primary></>}>
+      <Modal
+        open={mRenameGroup}
+        title="Переименовать группу"
+        onClose={() => setMRenameGroup(false)}
+        actions={<><Secondary onClick={() => setMRenameGroup(false)}>Отмена</Secondary><Primary onClick={onRenameGroup}>Сохранить</Primary></>}
+      >
         <input
           value={groupNameInput}
           onChange={(e) => setGroupNameInput(e.target.value)}
@@ -597,14 +450,22 @@ export default function GroupsBoard(props: {
         />
       </Modal>
 
-      <Modal open={mDeleteGroup} title="Удалить группу" onClose={() => setMDeleteGroup(false)}
-             actions={<><Secondary onClick={() => setMDeleteGroup(false)}>Отмена</Secondary><Primary danger onClick={onDeleteGroup}>Удалить</Primary></>}>
+      <Modal
+        open={mDeleteGroup}
+        title="Удалить группу"
+        onClose={() => setMDeleteGroup(false)}
+        actions={<><Secondary onClick={() => setMDeleteGroup(false)}>Отмена</Secondary><Primary danger onClick={onDeleteGroup}>Удалить</Primary></>}
+      >
         <div style={{ color: '#6b7280' }}>Группа будет удалена. Участники остаются в БД.</div>
       </Modal>
 
       {/* Модалки предметов */}
-      <Modal open={mCreateSubject} title="Создать предмет" onClose={() => setMCreateSubject(false)}
-             actions={<><Secondary onClick={() => setMCreateSubject(false)}>Отмена</Secondary><Primary onClick={onCreateSubject}>Создать</Primary></>}>
+      <Modal
+        open={mCreateSubject}
+        title="Создать предмет"
+        onClose={() => setMCreateSubject(false)}
+        actions={<><Secondary onClick={() => setMCreateSubject(false)}>Отмена</Secondary><Primary onClick={onCreateSubject}>Создать</Primary></>}
+      >
         <input
           value={subjectNameInput}
           onChange={(e) => setSubjectNameInput(e.target.value)}
@@ -613,8 +474,12 @@ export default function GroupsBoard(props: {
         />
       </Modal>
 
-      <Modal open={mRenameSubject} title="Переименовать предмет" onClose={() => setMRenameSubject(false)}
-             actions={<><Secondary onClick={() => setMRenameSubject(false)}>Отмена</Secondary><Primary onClick={onRenameSubject}>Сохранить</Primary></>}>
+      <Modal
+        open={mRenameSubject}
+        title="Переименовать предмет"
+        onClose={() => setMRenameSubject(false)}
+        actions={<><Secondary onClick={() => setMRenameSubject(false)}>Отмена</Secondary><Primary onClick={onRenameSubject}>Сохранить</Primary></>}
+      >
         <input
           value={subjectNameInput}
           onChange={(e) => setSubjectNameInput(e.target.value)}
@@ -623,8 +488,12 @@ export default function GroupsBoard(props: {
         />
       </Modal>
 
-      <Modal open={mDeleteSubject} title="Удалить предмет" onClose={() => setMDeleteSubject(false)}
-             actions={<><Secondary onClick={() => setMDeleteSubject(false)}>Отмена</Secondary><Primary danger onClick={onDeleteSubject}>Удалить</Primary></>}>
+      <Modal
+        open={mDeleteSubject}
+        title="Удалить предмет"
+        onClose={() => setMDeleteSubject(false)}
+        actions={<><Secondary onClick={() => setMDeleteSubject(false)}>Отмена</Secondary><Primary danger onClick={onDeleteSubject}>Удалить</Primary></>}
+      >
         <div style={{ color: '#6b7280' }}>Предмет и привязки будут удалены.</div>
       </Modal>
     </section>
