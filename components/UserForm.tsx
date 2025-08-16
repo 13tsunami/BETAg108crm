@@ -20,28 +20,34 @@ export type UserFormInitials = {
   notifyEmail?: boolean; notifyTelegram?: boolean;
 };
 
+type Lockable =
+  | 'name' | 'username' | 'classroom' | 'role' | 'birthday';
+
 export default function UserForm({
-  action, mode, initialId, initialValues,
+  action, mode, initialId, initialValues, disabledFields,
 }: {
   action: (fd: FormData) => Promise<void>;
   mode: 'create' | 'edit';
   initialId?: string;
   initialValues?: UserFormInitials;
+  disabledFields?: Partial<Record<Lockable, boolean>>;
 }) {
+  const lock = (k: Lockable) => !!disabledFields?.[k];
+
   return (
     <form action={action}>
       {mode === 'edit' && <input type="hidden" name="id" defaultValue={initialId} />}
 
       <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
-        <Field label="ФИО"><input name="name" defaultValue={initialValues?.name} style={inp} required /></Field>
-        <Field label="Логин"><input name="username" defaultValue={initialValues?.username} style={inp} /></Field>
+        <Field label="ФИО"><input name="name" defaultValue={initialValues?.name} style={inp} required disabled={lock('name')} /></Field>
+        <Field label="Логин"><input name="username" defaultValue={initialValues?.username} style={inp} disabled={lock('username')} /></Field>
 
         <Field label="E-mail"><input name="email" type="email" defaultValue={initialValues?.email} style={inp} /></Field>
         <Field label="Телефон"><input name="phone" defaultValue={initialValues?.phone} style={inp} /></Field>
 
-        <Field label="Классное руководство"><input name="classroom" defaultValue={initialValues?.classroom} style={inp} /></Field>
+        <Field label="Классное руководство"><input name="classroom" defaultValue={initialValues?.classroom} style={inp} disabled={lock('classroom')} /></Field>
         <Field label="Роль">
-          <select name="role" defaultValue={initialValues?.role ?? 'teacher'} style={inp}>
+          <select name="role" defaultValue={initialValues?.role ?? 'teacher'} style={inp} disabled={lock('role')}>
             <option value="director">Директор</option>
             <option value="deputy_plus">Заместитель +</option>
             <option value="deputy">Заместитель</option>
@@ -50,7 +56,7 @@ export default function UserForm({
           </select>
         </Field>
 
-        <Field label="Дата рождения"><input name="birthday" type="date" defaultValue={initialValues?.birthday} style={inp} /></Field>
+        <Field label="Дата рождения"><input name="birthday" type="date" defaultValue={initialValues?.birthday} style={inp} disabled={lock('birthday')} /></Field>
         <Field label="Telegram"><input name="telegram" defaultValue={initialValues?.telegram} style={inp} /></Field>
 
         <div style={{ gridColumn: '1 / -1' }}>
