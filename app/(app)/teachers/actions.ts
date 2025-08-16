@@ -1,138 +1,137 @@
-// app/(app)/teachers/actions.ts
 'use server';
 
-import type { Session } from 'next-auth';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { Prisma } from '@prisma/client';
 
-const MANAGER_ROLES = new Set(['director', 'deputy_plus'] as const);
+function now() { return new Date(); }
+function s(v: FormDataEntryValue | null): string { return typeof v === 'string' ? v.trim() : ''; }
 
-const s = (fd: FormData, k: string) => {
-  const v = fd.get(k);
-  return typeof v === 'string' ? v.trim() : '';
-};
-const b = (fd: FormData, k: string) => {
-  const v = fd.get(k);
-  return v === 'on' || v === 'true' || v === '1';
-};
-
-type HasRole = { role?: unknown };
-function roleFrom(session: Session | null): string | null {
-  const u = session?.user as unknown;
-  if (u && typeof u === 'object' && 'role' in (u as Record<string, unknown>)) {
-    const r = (u as HasRole).role;
-    return typeof r === 'string' ? r : null;
-  }
-  return null;
-}
-function mustManage(session: Session | null) {
-  const role = roleFrom(session);
-  if (!role || !MANAGER_ROLES.has(role as any)) redirect('/');
+async function requireManager() {
+  const session = await auth();
+  const role = (session?.user as any)?.role as string | undefined;
+  if (role !== 'director' && role !== 'deputy_plus') redirect('/teachers?error=нет_прав');
+  return true;
 }
 
+/** Создание */
 export async function createUser(fd: FormData): Promise<void> {
-  const session = await auth(); mustManage(session);
-  const data = {
-    name: s(fd, 'name') || 'Без имени',
-    username: s(fd, 'username') || null,
-    email: s(fd, 'email') || null,
-    phone: s(fd, 'phone') || null,
-    classroom: s(fd, 'classroom') || null,
-    role: s(fd, 'role') || 'teacher',
-    birthday: s(fd, 'birthday') ? new Date(s(fd, 'birthday')) : null,
-    telegram: s(fd, 'telegram') || null,
-    about: s(fd, 'about') || null,
-    notifyEmail: b(fd, 'notifyEmail'),
-    notifyTelegram: b(fd, 'notifyTelegram'),
-  };
-  await prisma.user.create({ data });
-  revalidatePath('/teachers');
-  redirect('/teachers?ok=пользователь создан');
-}
+  await requireManager();
 
-export async function updateUser(fd: FormData): Promise<void> {
-  const session = await auth(); mustManage(session);
-  const id = s(fd, 'id'); if (!id) redirect('/teachers?error=нет id');
-  const data = {
-    name: s(fd, 'name') || 'Без имени',
-    username: s(fd, 'username') || null,
-    email: s(fd, 'email') || null,
-    phone: s(fd, 'phone') || null,
-    classroom: s(fd, 'classroom') || null,
-    role: s(fd, 'role') || 'teacher',
-    birthday: s(fd, 'birthday') ? new Date(s(fd, 'birthday')) : null,
-    telegram: s(fd, 'telegram') || null,
-    about: s(fd, 'about') || null,
-    notifyEmail: b(fd, 'notifyEmail'),
-    notifyTelegram: b(fd, 'notifyTelegram'),
-  };
-  await prisma.user.update({ where: { id }, data });
-  revalidatePath('/teachers');
-  redirect('/teachers?ok=данные обновлены');
-}
+  const name = s(fd.get('name'));
+  const username = s(fd.get('username'));
+  const email = s(fd.get('email'));
+  const phone = s(fd.get('phone'));
+  const classroom = s(fd.get('classroom'));
+  const role = s(fd.get('role')) || 'teacher';
+  const birthday = s(fd.get('birthday'));
+  const telegram = s(fd.get('telegram'));
+  const about = s(fd.get('about'));
+  const notifyEmail = s(fd.get('notifyEmail')) === 'on';
+  const notifyTelegram = s(fd.get('notifyTelegram')) === 'on';
 
-/** Полный purge пользователя и всех связей. Без 500 — всегда редирект с результатом. */
-export async function deleteUser(fd: FormData): Promise<void> {
-  const session = await auth(); mustManage(session);
-  const id = s(fd, 'id'); if (!id) redirect('/teachers?error=нет id');
+  if (!name) redirect('/teachers?error=не_указано_имя');
 
   try {
-    const u = await prisma.user.findUnique({ where: { id }, select: { email: true } });
-
-    await prisma.$transaction(async (tx) => {
-      // next-auth
-      await tx.$executeRaw`DELETE FROM "Session" WHERE "userId" = ${id};`;
-      await tx.$executeRaw`DELETE FROM "Account" WHERE "userId" = ${id};`;
-      if (u?.email) await tx.$executeRaw`DELETE FROM "VerificationToken" WHERE "identifier" = ${u.email};`;
-
-      // чаты
-      await tx.$executeRaw`DELETE FROM "MessageHide" WHERE "userId" = ${id};`;
-      await tx.$executeRaw`
-        DELETE FROM "MessageHide" h
-        WHERE h."messageId" IN (
-          SELECT m.id FROM "Message" m
-          WHERE m."threadId" IN (SELECT t.id FROM "Thread" t WHERE t."aId" = ${id} OR t."bId" = ${id})
-        );`;
-      await tx.$executeRaw`
-        DELETE FROM "ReadMark"
-        WHERE "userId" = ${id}
-           OR "threadId" IN (SELECT t.id FROM "Thread" t WHERE t."aId" = ${id} OR t."bId" = ${id});`;
-      await tx.$executeRaw`
-        DELETE FROM "Message"
-        WHERE "authorId" = ${id}
-           OR "threadId" IN (SELECT t.id FROM "Thread" t WHERE t."aId" = ${id} OR t."bId" = ${id});`;
-      await tx.$executeRaw`DELETE FROM "Thread" WHERE "aId" = ${id} OR "bId" = ${id};`;
-
-      // будущие сущности с типовыми user-колонками
-      await tx.$executeRawUnsafe(`
-        DO $$
-        DECLARE r record;
-        BEGIN
-          FOR r IN
-            SELECT table_name, column_name
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-              AND column_name IN ('userId','authorId','assigneeId','createdById','updatedById','ownerId','participantId')
-          LOOP
-            EXECUTE format('DELETE FROM public.%I WHERE "%I" = $1', r.table_name, r.column_name) USING $1;
-          END LOOP;
-        END $$;
-      `, id);
-
-      // подчистить сироты
-      await tx.$executeRaw`DELETE FROM "MessageHide" h WHERE NOT EXISTS (SELECT 1 FROM "Message" m WHERE m.id = h."messageId");`;
-      await tx.$executeRaw`DELETE FROM "ReadMark" r  WHERE NOT EXISTS (SELECT 1 FROM "Thread"  t WHERE t.id = r."threadId");`;
-
-      await tx.user.delete({ where: { id } });
+    await prisma.user.create({
+      data: {
+        name, username: username || null, email: email || null, phone: phone || null,
+        classroom: classroom || null, role, birthday: birthday ? new Date(birthday) : null,
+        telegram: telegram || null, about: about || null,
+        notifyEmail, notifyTelegram, lastSeen: now(),
+      },
     });
+    redirect('/teachers?ok=создано');
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'unknown';
+    redirect(`/teachers?error=${encodeURIComponent(msg)}`);
+  }
+}
 
-    revalidatePath('/teachers');
-    redirect('/teachers?ok=пользователь удалён полностью');
-  } catch (_e) {
-    // не даём 500 — всегда мягкий редирект с ошибкой
-    revalidatePath('/teachers');
-    redirect('/teachers?error=purge_failed');
+/** Обновление */
+export async function updateUser(fd: FormData): Promise<void> {
+  await requireManager();
+
+  const id = s(fd.get('id'));
+  const name = s(fd.get('name'));
+  const username = s(fd.get('username'));
+  const email = s(fd.get('email'));
+  const phone = s(fd.get('phone'));
+  const classroom = s(fd.get('classroom'));
+  const role = s(fd.get('role')) || 'teacher';
+  const birthday = s(fd.get('birthday'));
+  const telegram = s(fd.get('telegram'));
+  const about = s(fd.get('about'));
+  const notifyEmail = s(fd.get('notifyEmail')) === 'on';
+  const notifyTelegram = s(fd.get('notifyTelegram')) === 'on';
+
+  if (!id) redirect('/teachers?error=нет_id');
+  if (!name) redirect('/teachers?error=не_указано_имя');
+
+  try {
+    await prisma.user.update({
+      where: { id },
+      data: {
+        name, username: username || null, email: email || null, phone: phone || null,
+        classroom: classroom || null, role, birthday: birthday ? new Date(birthday) : null,
+        telegram: telegram || null, about: about || null,
+        notifyEmail, notifyTelegram,
+      },
+    });
+    redirect('/teachers?ok=обновлено');
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'unknown';
+    redirect(`/teachers?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+/**
+ * Удаление.
+ * 1) Пытаемся физически удалить.
+ * 2) Если БД блокирует внешними ключами (Prisma P2003) — переводим в archived и зачищаем ПД.
+ *    Это гарантирует, что в интерфейсе «исчезнет», а связность данных не сломаем.
+ */
+export async function deleteUser(fd: FormData): Promise<void> {
+  await requireManager();
+  const id = s(fd.get('id'));
+  if (!id) redirect('/teachers?error=нет_id');
+
+  try {
+    await prisma.user.delete({ where: { id } });
+    redirect('/teachers?ok=удалено');
+  } catch (e: any) {
+    const isFK =
+      e && typeof e === 'object' &&
+      'code' in e && (e as any).code === 'P2003';
+
+    if (!isFK) {
+      const msg = e instanceof Error ? e.message : 'unknown';
+      redirect(`/teachers?error=${encodeURIComponent(msg)}`);
+      return;
+    }
+
+    // Мягкое удаление: архив + анонимизация
+    try {
+      await prisma.user.update({
+        where: { id },
+        data: {
+          role: 'archived',
+          name: 'Удалённый пользователь',
+          username: null,
+          email: null,
+          phone: null,
+          classroom: null,
+          telegram: null,
+          about: null,
+          notifyEmail: false,
+          notifyTelegram: false,
+        },
+      });
+      redirect('/teachers?ok=перемещён_в_архив');
+    } catch (e2) {
+      const msg = e2 instanceof Error ? e2.message : 'unknown';
+      redirect(`/teachers?error=${encodeURIComponent(msg)}`);
+    }
   }
 }

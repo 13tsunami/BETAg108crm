@@ -108,7 +108,10 @@ export default async function ChatPage({
   const q        = get('q').trim();
   const start    = get('start').trim();
 
-  if (start) { await ensureThread(meId, start); return null as any; }
+  if (start) {
+    // redirect сработает и оборвёт рендер, никакого return null
+    return ensureThread(meId, start);
+  }
 
   let active:
     | { id: string; aId: string; bId: string; a: { id: string; name: string | null }; b: { id: string; name: string | null } }
