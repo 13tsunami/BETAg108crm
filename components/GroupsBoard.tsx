@@ -54,7 +54,7 @@ export default function GroupsBoard(props: {
     setSelUserIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  // НОВОЕ: универсальный автокомплит в стиле проекта
+  // универсальный автокомплит
   function AutoComplete(props: {
     value: string;
     onChange: (s: string) => void;
@@ -119,6 +119,7 @@ export default function GroupsBoard(props: {
         />
         {open && filtered.length > 0 && (
           <div
+            onMouseDown={(e) => e.preventDefault()} // не даём меню забирать фокус у инпута
             style={{
               position: 'absolute',
               zIndex: 1000,
@@ -138,8 +139,9 @@ export default function GroupsBoard(props: {
               <button
                 key={it.id}
                 type="button"
+                tabIndex={-1}
                 onMouseEnter={() => setHover(i)}
-                onClick={() => { props.onSelect(it.id); setOpen(false); }}
+                onMouseDown={(e) => { e.preventDefault(); props.onSelect(it.id); setOpen(false); }} // выбор без смены фокуса
                 style={{
                   display: 'block',
                   width: '100%',
@@ -269,7 +271,7 @@ export default function GroupsBoard(props: {
 
     return (
       <div
-        onClick={props.onClose}
+        onMouseDown={props.onClose} // закрываем по mousedown на оверлее
         style={{
           position: 'fixed',
           inset: 0,
@@ -281,7 +283,7 @@ export default function GroupsBoard(props: {
         }}
       >
         <div
-          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()} // клики внутри модалки не закрывают и не отбирают фокус
           style={{
             width: 420,
             maxWidth: '94vw',
@@ -357,7 +359,6 @@ export default function GroupsBoard(props: {
     await createSubject(name);
     setMCreateSubject(false);
     setSubjectNameInput('');
-    // оптимистично: запросим свежий список
     router.refresh();
   }
   async function onRenameSubject() {
@@ -439,7 +440,6 @@ export default function GroupsBoard(props: {
               </div>
             </div>
 
-            {/* ЗАМЕНЕНО: поиск по группам -> автокомплит */}
             <AutoComplete
               value={qGroup}
               onChange={setQGroup}
@@ -523,7 +523,6 @@ export default function GroupsBoard(props: {
               </div>
             </div>
 
-            {/* ЗАМЕНЕНО: поиск по предметам -> автокомплит */}
             <AutoComplete
               value={qSubject}
               onChange={setQSubject}
@@ -580,14 +579,22 @@ export default function GroupsBoard(props: {
       {/* Модалки групп */}
       <Modal open={mCreateGroup} title="Создать группу" onClose={() => setMCreateGroup(false)}
              actions={<><Secondary onClick={() => setMCreateGroup(false)}>Отмена</Secondary><Primary onClick={onCreateGroup}>Создать</Primary></>}>
-        <input value={groupNameInput} onChange={(e) => setGroupNameInput(e.target.value)} placeholder="Название группы"
-               style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }} />
+        <input
+          value={groupNameInput}
+          onChange={(e) => setGroupNameInput(e.target.value)}
+          placeholder="Название группы"
+          style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }}
+        />
       </Modal>
 
       <Modal open={mRenameGroup} title="Переименовать группу" onClose={() => setMRenameGroup(false)}
              actions={<><Secondary onClick={() => setMRenameGroup(false)}>Отмена</Secondary><Primary onClick={onRenameGroup}>Сохранить</Primary></>}>
-        <input value={groupNameInput} onChange={(e) => setGroupNameInput(e.target.value)} placeholder="Новое название"
-               style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }} />
+        <input
+          value={groupNameInput}
+          onChange={(e) => setGroupNameInput(e.target.value)}
+          placeholder="Новое название"
+          style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }}
+        />
       </Modal>
 
       <Modal open={mDeleteGroup} title="Удалить группу" onClose={() => setMDeleteGroup(false)}
@@ -598,14 +605,22 @@ export default function GroupsBoard(props: {
       {/* Модалки предметов */}
       <Modal open={mCreateSubject} title="Создать предмет" onClose={() => setMCreateSubject(false)}
              actions={<><Secondary onClick={() => setMCreateSubject(false)}>Отмена</Secondary><Primary onClick={onCreateSubject}>Создать</Primary></>}>
-        <input value={subjectNameInput} onChange={(e) => setSubjectNameInput(e.target.value)} placeholder="Название предмета"
-               style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }} />
+        <input
+          value={subjectNameInput}
+          onChange={(e) => setSubjectNameInput(e.target.value)}
+          placeholder="Название предмета"
+          style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }}
+        />
       </Modal>
 
       <Modal open={mRenameSubject} title="Переименовать предмет" onClose={() => setMRenameSubject(false)}
              actions={<><Secondary onClick={() => setMRenameSubject(false)}>Отмена</Secondary><Primary onClick={onRenameSubject}>Сохранить</Primary></>}>
-        <input value={subjectNameInput} onChange={(e) => setSubjectNameInput(e.target.value)} placeholder="Новое название"
-               style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }} />
+        <input
+          value={subjectNameInput}
+          onChange={(e) => setSubjectNameInput(e.target.value)}
+          placeholder="Новое название"
+          style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }}
+        />
       </Modal>
 
       <Modal open={mDeleteSubject} title="Удалить предмет" onClose={() => setMDeleteSubject(false)}
