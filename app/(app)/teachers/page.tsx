@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { createUser, updateUser, deleteUser, archiveUser } from './actions';
+import { createUser, updateUser, deleteUser } from './actions';
 import AddUserModal from '@/components/AddUserModal';
 import EditUserModal from '@/components/EditUserModal';
 import SearchBox from './SearchBox';
@@ -233,12 +233,7 @@ const error = errorRaw && !/^NEXT_REDIRECT/.test(errorRaw) ? errorRaw : undefine
                         notifyTelegram: !!u.notifyTelegram,
                       }}
                     />
-                    {!isArchived && (
-                      <form action={archiveUser} style={{ display: 'inline-block' }}>
-                        <input type="hidden" name="id" value={u.id} />
-                        <button style={btnGhost}>в архив</button>
-                      </form>
-                    )}
+
                     <form action={deleteUser} style={{ display: 'inline-block' }}>
                       <input type="hidden" name="id" value={u.id} />
                       <button style={btnDanger}>удалить</button>
