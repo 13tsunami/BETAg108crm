@@ -1,11 +1,11 @@
 // app/(app)/chat/sse/broker.ts
 export type EventPayload =
-  | { type: 'message'; threadId: string; at: number; authorId?: string }
-  | { type: 'threadCreated'; threadId: string; at: number }
-  | { type: 'threadDeleted'; threadId: string; at: number }
+  | { type: 'message'; threadId: string; at: number; messageId: string; authorId: string; text: string; ts: string }
+  | { type: 'messageEdited'; threadId: string; at: number; messageId: string; byId: string; text: string }
+  | { type: 'messageDeleted'; threadId: string; at: number; messageId: string; byId: string; scope: 'self' | 'both' }
   | { type: 'read'; threadId: string; at: number }
-  | { type: 'messageEdited'; threadId: string; at: number; messageId: string; by: string }
-  | { type: 'messageDeleted'; threadId: string; at: number; messageId: string; by: string; scope: 'self' | 'both' };
+  | { type: 'threadCreated'; threadId: string; at: number }
+  | { type: 'threadDeleted'; threadId: string; at: number; byId: string; byName: string };
 
 type Subscriber = (p: EventPayload) => void;
 
@@ -14,43 +14,23 @@ class Broker {
   private seq = 0;
 
   subscribe(uid: string, fn: Subscriber) {
-    if (typeof fn !== 'function') return () => {};
-    let bucket = this.subs.get(uid);
-    if (!bucket) {
-      bucket = new Map<number, Subscriber>();
-      this.subs.set(uid, bucket);
-    }
+    if (!this.subs.has(uid)) this.subs.set(uid, new Map());
     const id = ++this.seq;
-    bucket.set(id, fn);
-    return () => {
-      try { bucket!.delete(id); } catch {}
-      if (bucket && bucket.size === 0) this.subs.delete(uid);
-    };
+    this.subs.get(uid)!.set(id, fn);
+    return () => this.subs.get(uid)?.delete(id);
   }
 
-  publish(targetUserIds: Array<string | null | undefined>, payload: EventPayload) {
-    const delivered = new Set<string>();
-    for (const id of targetUserIds) {
-      if (!id || delivered.has(id)) continue;
-      delivered.add(id);
-      const bucket = this.subs.get(id);
-      if (!bucket || bucket.size === 0) continue;
-      for (const [key, handler] of Array.from(bucket.entries())) {
-        if (typeof handler !== 'function') bucket.delete(key);
-      }
-      if (bucket.size === 0) { this.subs.delete(id); continue; }
-      const handlers = Array.from(bucket.values());
-      for (const handler of handlers) {
-        if (typeof handler === 'function') {
-          try { handler(payload); } catch {}
-        }
-      }
+  publish(uids: string[] | string, payload: EventPayload) {
+    const targets = Array.isArray(uids) ? uids : [uids];
+    for (const uid of targets) {
+      const hs = this.subs.get(uid);
+      if (!hs?.size) continue;
+      for (const [, h] of hs) { try { h(payload); } catch {} }
     }
   }
 }
 
-type GlobalWithBroker = typeof globalThis & { __g108_broker?: Broker };
-const g = globalThis as GlobalWithBroker;
+type G = typeof globalThis & { __g108_broker?: Broker };
+const g = globalThis as G;
 const broker = g.__g108_broker ?? (g.__g108_broker = new Broker());
-
 export default broker;

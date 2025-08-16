@@ -1,8 +1,8 @@
+// app/(app)/chat/ChatBoxClient.tsx
 'use client';
 
 import { useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import { sendMessageAction, editMessageAction, deleteMessageAction, markReadAction, deleteThreadAction } from './actions';
-import s from './chat.module.css';
 
 type Msg = {
   id: string;
@@ -28,12 +28,51 @@ export default function ChatBoxClient({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const peerReadAt = useMemo(() => (peerReadAtIso ? new Date(peerReadAtIso) : null), [peerReadAtIso]);
 
-  // обновлять локальный список, если сервер прислал новый initial
   useEffect(() => { setMsgs(initial); }, [initial]);
 
-  // автоскролл при входе и при новых сообщениях
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end' }); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' }); }, [msgs.length]);
+
+  // МГНОВЕННЫЕ обновления из Live (без ожидания router.refresh)
+  useEffect(() => {
+    const onNew = (e: Event) => {
+      const p = (e as CustomEvent).detail as { messageId: string; text: string; authorId: string; ts: string; threadId: string };
+      if (!threadId || p.threadId !== threadId) return;
+      setMsgs(xs => {
+        // не дублируем, если уже есть (после refresh)
+        if (xs.some(m => m.id === p.messageId)) return xs;
+        return [...xs, { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId }];
+      });
+    };
+    const onEdit = (e: Event) => {
+      const p = (e as CustomEvent).detail as { messageId: string; text: string; threadId: string };
+      if (!threadId || p.threadId !== threadId) return;
+      setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: p.text, edited: true } : m));
+    };
+    const onDel = (e: Event) => {
+      const p = (e as CustomEvent).detail as { messageId: string; threadId: string; scope: 'self'|'both' };
+      if (!threadId || p.threadId !== threadId) return;
+      if (p.scope === 'both') {
+        setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: '', deleted: true } : m));
+      } else {
+        // «для себя» уже локально мы убираем сразу после вызова action
+      }
+    };
+    const onRead = () => {
+      // галочки обновятся после серверной подгрузки; здесь ничего не делаем
+    };
+
+    window.addEventListener('chat:message', onNew as any);
+    window.addEventListener('chat:messageEdited', onEdit as any);
+    window.addEventListener('chat:messageDeleted', onDel as any);
+    window.addEventListener('chat:read', onRead as any);
+    return () => {
+      window.removeEventListener('chat:message', onNew as any);
+      window.removeEventListener('chat:messageEdited', onEdit as any);
+      window.removeEventListener('chat:messageDeleted', onDel as any);
+      window.removeEventListener('chat:read', onRead as any);
+    };
+  }, [threadId]);
 
   const onSend = (formData: FormData) => {
     const text = String(formData.get('text') || '').trim();
@@ -41,7 +80,6 @@ export default function ChatBoxClient({
     const temp: Msg = { id: `temp-${Date.now()}`, text, ts: new Date().toISOString(), authorId: meId };
     setMsgs(m => [...m, temp]);
     setInput('');
-    // server action — без fetch
     startTransition(() => { void sendMessageAction(formData); });
   };
 

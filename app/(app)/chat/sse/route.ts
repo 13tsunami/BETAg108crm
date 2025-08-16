@@ -24,9 +24,9 @@ export function GET(req: Request) {
     start(controller) {
       const enc = new TextEncoder();
 
-      // 1) антибуферизация: «раздуваем» первый чанк >2 КБ, чтобы прокси начал стримить немедленно
+      // анти-буферизация: первый чанк >2 КБ + мгновенный retry
       controller.enqueue(enc.encode(`:${' '.repeat(2048)}\n`));
-      controller.enqueue(enc.encode(`retry: 0\n`)); // без задержки на реконнект
+      controller.enqueue(enc.encode(`retry: 0\n`));
 
       const send = (payload: unknown) => {
         controller.enqueue(enc.encode(`data: ${JSON.stringify(payload)}\n\n`));
@@ -35,10 +35,10 @@ export function GET(req: Request) {
       // «пробой» канала
       send({ type: 'hello', at: Date.now() });
 
-      // подписка
+      // подписка на пользователя
       const unsub = broker.subscribe(uid, (p: EventPayload) => send(p));
 
-      // частый heartbeat — помогает некоторым CDN не «засыпать»
+      // heartbeat — не даём каналу уснуть
       const hb = setInterval(() => send({ type: 'ping', at: Date.now() }), 5000);
 
       const close = () => {

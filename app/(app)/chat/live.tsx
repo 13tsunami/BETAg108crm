@@ -1,6 +1,20 @@
+// app/(app)/chat/live.tsx
 'use client';
 import { useEffect, useRef, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
+
+type P =
+  | { type: 'message'; threadId: string; at: number; messageId: string; authorId: string; text: string; ts: string }
+  | { type: 'messageEdited'; threadId: string; at: number; messageId: string; byId: string; text: string }
+  | { type: 'messageDeleted'; threadId: string; at: number; messageId: string; byId: string; scope: 'self' | 'both' }
+  | { type: 'read'; threadId: string; at: number }
+  | { type: 'threadCreated'; threadId: string; at: number }
+  | { type: 'threadDeleted'; threadId: string; at: number; byId: string; byName: string }
+  | { type?: string; [k: string]: any };
+
+function emit(name: string, detail: any) {
+  try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch {}
+}
 
 export default function Live({ uid, activeThreadId }: { uid: string; activeThreadId?: string }) {
   const router = useRouter();
@@ -11,9 +25,9 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
     if (!uid) return;
     let stop = false;
 
-    const doRefresh = (minGap: number) => {
+    const softRefresh = (gap: number) => {
       const now = Date.now();
-      if (now - last.current > minGap) {
+      if (now - last.current > gap) {
         last.current = now;
         startTransition(() => router.refresh());
       }
@@ -27,32 +41,54 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
       esRef.current = es;
 
       es.onmessage = (e) => {
-        let gap = 800;
-        try {
-          const data = JSON.parse(e.data || '{}') as { type?: string; threadId?: string };
-          if (data?.type === 'message' && data.threadId && data.threadId === activeThreadId) {
-            gap = 0; // активный диалог — обновляем мгновенно
-          } else if (
-            data?.type === 'threadCreated' ||
-            data?.type === 'threadDeleted' ||
-            data?.type === 'read'
-          ) {
-            gap = 200;
+        let p: P;
+        try { p = JSON.parse(e.data || '{}'); } catch { softRefresh(500); return; }
+
+        // мгновенная дорисовка для активного диалога
+        if (p.type === 'message' && p.threadId === activeThreadId) {
+          emit('chat:message', p);
+          softRefresh(400);
+          return;
+        }
+        if (p.type === 'messageEdited' && p.threadId === activeThreadId) {
+          emit('chat:messageEdited', p);
+          softRefresh(400);
+          return;
+        }
+        if (p.type === 'messageDeleted' && p.threadId === activeThreadId) {
+          emit('chat:messageDeleted', p);
+          softRefresh(400);
+          return;
+        }
+        if (p.type === 'read' && p.threadId === activeThreadId) {
+          emit('chat:read', p);
+          softRefresh(600);
+          return;
+        }
+
+        // удаление треда — если он открыт у пользователя
+        if (p.type === 'threadDeleted') {
+          if (activeThreadId && p.threadId === activeThreadId) {
+            // максимально просто: уводим на список и показываем alert
+            startTransition(() => router.replace('/chat'));
+            try { alert(`Ваш чат с «${p.byName}» был удалён.`); } catch {}
           }
-        } catch { gap = 400; }
-        doRefresh(gap);
+          softRefresh(200);
+          return;
+        }
+
+        // прочие случаи — обновляем счётчики/списки
+        softRefresh(300);
       };
 
       es.onerror = () => {
         try { es.close(); } catch {}
-        if (!stop) setTimeout(connect, 1000);
+        if (!stop) setTimeout(connect, 800);
       };
     };
 
     connect();
-
-    // мгновенно подтягиваем при возвращении фокуса
-    const onVis = () => { if (document.visibilityState === 'visible') doRefresh(0); };
+    const onVis = () => { if (document.visibilityState === 'visible') softRefresh(0); };
     document.addEventListener('visibilitychange', onVis);
 
     return () => {
