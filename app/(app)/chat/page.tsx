@@ -3,6 +3,7 @@ import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import Live from './live';
 import ChatBoxClient from './ChatBoxClient';
 import s from './chat.module.css';
@@ -109,7 +110,10 @@ export default async function ChatPage({
 
   if (start) { await ensureThread(meId, start); return null as any; }
 
-  let active: { id: string; aId: string; bId: string; a: { id: string; name: string | null }; b: { id: string; name: string | null } } | null = null;
+  let active:
+    | { id: string; aId: string; bId: string; a: { id: string; name: string | null }; b: { id: string; name: string | null } }
+    | null = null;
+
   if (threadId) {
     active = await prisma.thread.findFirst({
       where: { id: threadId, OR: [{ aId: meId }, { bId: meId }] },
@@ -171,14 +175,80 @@ export default async function ChatPage({
         }))?.readAt ?? null
       : null;
 
-  const unreadTotal = threads.reduce((s, t) => s + t.unreadCount, 0);
-
   return (
     <main style={{ padding:12, fontFamily:'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial' }}>
       <div className={s.chatRoot}>
-        {/* ЛЕВАЯ КОЛОНКА — список диалогов + поиск (как у тебя) */}
+        {/* ЛЕВАЯ КОЛОНКА */}
+        <aside className={`${s.threads} ${s.glass}`}>
+          <div className={s.blockTitle}>чаты</div>
 
-        {/* ПРАВАЯ ПАНЕЛЬ — лента + композер */}
+          {/* Поиск собеседника */}
+          <div className={s.searchBlock}>
+            <form className={s.searchRow} action="/chat" method="get">
+              <input className={s.searchInput} name="q" defaultValue={q} placeholder="поиск: ФИО, e-mail, телефон" />
+            </form>
+
+            {!!q && (
+              <div className={s.dd}>
+                {users.length === 0 && <div className={s.ddItem} style={{ color:'#6b7280' }}>ничего не найдено</div>}
+                {users.map(u => (
+                  <form key={u.id} action="/chat" method="get">
+                    <input type="hidden" name="start" value={u.id} />
+                    <button className={s.ddItem} type="submit" title={u.email ?? ''}>
+                      {u.name || u.email || u.id}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Список диалогов */}
+          <div className={s.block} style={{ paddingTop:16 }}>
+            {threads.length === 0 && <div style={{ color:'#6b7280' }}>диалогов пока нет</div>}
+
+            {threads.map(t => {
+              const activeCls = t.id === threadId ? s.threadActive : '';
+              const unreadCls = t.unreadCount > 0 ? s.threadUnread : '';
+              const initials = (t.peerName || '—').trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+
+              return (
+                <div key={t.id} className={s.threadWrap}>
+                  <Link className={`${s.thread} ${activeCls} ${unreadCls}`} href={`/chat?thread=${t.id}`}>
+                    <div className={s.threadTop}>
+                      <div className={s.peer}>
+                        <div className={s.avatar}>{initials || '•'}</div>
+                        <div className={s.threadName}>{t.peerName}</div>
+                      </div>
+                      <div className={s.threadDate}>
+                        {t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}
+                      </div>
+                    </div>
+                    {t.lastMessageText ? (
+                      <div className={`${s.threadLast} ${/* если последнее моё — вправо */ ''}`}>
+                        {t.lastMessageText}
+                      </div>
+                    ) : null}
+                  </Link>
+
+                  {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
+
+                  {/* Кнопка удаления диалога — навигация в правой панели обрабатывает redirect */}
+                  <form action="/chat" method="get">
+                    <input type="hidden" name="thread" value={t.id} />
+                    <button className={s.btnDel} title="удалить диалог" formAction={`/chat?thread=${t.id}`}>
+                      <svg className={s.btnDelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M3 6h18M9 6v12m6-12v12M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" strokeWidth="2" />
+                      </svg>
+                    </button>
+                  </form>
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* ПРАВАЯ ПАНЕЛЬ */}
         <section className={`${s.pane} ${s.glass}`} style={{ display:'grid', gridTemplateRows:'auto 1fr auto', gap:12 }}>
           <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
             {threadId ? (

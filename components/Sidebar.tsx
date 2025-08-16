@@ -141,11 +141,11 @@ export default function Sidebar({ unreadChats = 0 }: { unreadChats?: number }) {
               <Tile href="/dashboard"              label="Главное"     active={pathname === '/dashboard'} />
               <Tile href="/teachers"               label="Педагоги"    active={pathname === '/teachers'} />
               <Tile href="/chat"                   label="Чаты"        active={pathname === '/chat'} unread={pathname === '/chat' ? 0 : unread} />
-              <Tile href="/inboxTasks"             label="Задачи"      active={pathname === '/inboxTasks'} />
+              <Tile href="/inboxtasks"             label="Задачи"      active={pathname === '/inboxtasks'} />
               <Tile href="/calendar"               label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"               label="Расписание"  active={pathname === '/schedule'} />
               {/* новые плитки, видны всем */}
-              <Tile href="/inboxTasks/archive"     label="Архив задач" active={pathname === '/inboxTasks/archive'} />
+              <Tile href="/inboxtasks/archive"     label="Архив задач" active={pathname === '/inboxtasks/archive'} />
               <Tile href="/discussions"            label="Обсуждения"  active={pathname === '/discussions'} />
             </div>
 
