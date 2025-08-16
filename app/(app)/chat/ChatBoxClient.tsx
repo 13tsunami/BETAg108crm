@@ -51,13 +51,14 @@ export default function ChatBoxClient({
   const scrollBoxRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [showToBottom, setShowToBottom] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const peerReadAt = useMemo(
     () => (peerReadAtIso ? new Date(peerReadAtIso) : null),
     [peerReadAtIso]
   );
 
-  // server -> client merge с фаззи-де-дупом для temp
+  // ---------- merge server->client с надёжной анти-дедуп логикой ----------
   useEffect(() => {
     setMsgs(prev => {
       const official = [...initial];
@@ -75,8 +76,7 @@ export default function ChatBoxClient({
         const arr = officialByKey.get(key);
         if (!arr || !arr.length) return false;
         const t = new Date(m.ts).getTime();
-        // окно ±30 сек
-        const i = lowerBound(arr, t - 30_000);
+        const i = lowerBound(arr, t - 30_000); // окно ±30с
         return i < arr.length && Math.abs(arr[i] - t) <= 30_000;
       };
 
@@ -87,12 +87,11 @@ export default function ChatBoxClient({
     });
   }, [initial]);
 
-  // автоскролл вниз при первой отрисовке
+  // ---------- автоскролл ----------
   useLayoutEffect(() => { bottomRef.current?.scrollIntoView({ block:'end' }); }, []);
-  // плавная прокрутка при появлении новых сообщений
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' }); }, [msgs.length]);
 
-  // индикатор «к низу»
+  // «к низу» FAB
   useEffect(() => {
     const box = scrollBoxRef.current;
     if (!box) return;
@@ -105,7 +104,7 @@ export default function ChatBoxClient({
     return () => box.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Глобальный API для Live: никогда не добавляем второй пузырь для моих событий
+  // ---------- API для Live ----------
   useEffect(() => {
     const api: ChatApi = {
       threadId,
@@ -152,25 +151,40 @@ export default function ChatBoxClient({
     return () => { if (window.__chatApi?.threadId === threadId) window.__chatApi = undefined; };
   }, [threadId, meId]);
 
-  // отправка — сразу «финальный» пузырь; id заменится по SSE
-  const onSend = (formData: FormData) => {
-    const text = String(formData.get('text') || '').trim();
+  // ---------- отправка ----------
+  const doSend = () => {
+    const text = input.trim();
     if (!text || !threadId) return;
+
+    const fd = new FormData();
+    fd.set('threadId', threadId);
+    fd.set('text', text);
+
     const clientId = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`;
-    formData.set('clientId', clientId);
+    fd.set('clientId', clientId);
 
     const nowIso = new Date().toISOString();
     setMsgs(m => [...m, { id: `temp-${clientId}`, text, ts: nowIso, authorId: meId, temp: { clientId } }]);
     setInput('');
-    startTransition(() => { void sendMessageAction(formData); });
+    startTransition(() => { void sendMessageAction(fd); });
   };
 
+  const onSend = (formData: FormData) => {
+    // путь submit'а из формы (кнопка)
+    const val = String(formData.get('text') || '').trim();
+    if (!val) return;
+    setInput(val);
+    doSend();
+  };
+
+  // отметка «прочитано»
   const onMarkRead = () => {
     if (!threadId) return;
     const fd = new FormData(); fd.set('threadId', threadId);
     startTransition(() => { void markReadAction(fd); });
   };
 
+  // edit / delete
   const openEdit = (m: Msg) => { setModalOf(m); setEditText(m.text); };
   const submitEdit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,8 +220,29 @@ export default function ChatBoxClient({
 
   const scrollToBottom = () => bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' });
 
+  // ---------- helpers для дат и времени ----------
+  const dayKey = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  };
+  const dayLabel = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const yest = new Date(); yest.setDate(now.getDate() - 1);
+    const same = (a: Date, b: Date) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+    if (same(d, now)) return 'Сегодня';
+    if (same(d, yest)) return 'Вчера';
+    const M = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    return `${String(d.getDate()).padStart(2,'0')} ${M[d.getMonth()]} ${d.getFullYear()}`;
+  };
+  const fmtTime = (iso: string) => {
+    const d = new Date(iso);
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  };
+
   return (
     <div className={s.block} style={{ display:'grid', gridTemplateRows:'auto 1fr auto' }}>
+      {/* верхняя панель */}
       <div className={s.blockTop} style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
         <button onClick={onMarkRead} className={s.btn} disabled={!threadId}>отметить прочитанным</button>
         <button onClick={onDeleteThread} className={s.btnDel} disabled={!threadId}>
@@ -215,44 +250,68 @@ export default function ChatBoxClient({
         </button>
       </div>
 
+      {/* сообщения */}
       <div ref={scrollBoxRef} className={s.paneBody}>
-        {msgs.map((m) => {
-          const mine = m.authorId === meId;
-          const createdAt = new Date(m.ts);
-          const read = mine && peerReadAt ? peerReadAt >= createdAt : false;
-          const isDeleted = !!m.deleted && m.text === '';
+        {/* разделители дней + сообщения */}
+        {(() => {
+          const items: React.ReactNode[] = [];
 
-          return (
-            <div key={m.id} className={`${s.msgRow} ${mine ? s.msgMine : ''}`}>
-              <div className={`${s.msgCard} ${mine ? s.msgTailMine : s.msgTailOther}`}>
-                <div className={`${s.msgHead} ${s.msgBubbleHead}`}>
-                  <span className={s.msgAuthor} style={{ fontWeight:800 }}>
-                    {mine ? (meName || 'Вы') : (peerName || 'Собеседник')}
-                  </span>
-                  <span className={s.msgMeta} style={{ marginLeft:6 }}>{fmt(createdAt)}</span>
-                  {mine ? (
-                    <span className={s.msgMeta} title={read ? 'прочитано' : 'доставлено'} style={{ display:'inline-flex', gap:4, marginLeft:'auto' }}>
-                      <i aria-hidden style={{ width:12, height:12, display:'inline-block', borderBottom:'2px solid #9ca3af', borderLeft:'2px solid #9ca3af', transform:'rotate(-45deg)', borderRadius:1 }} />
-                      <i aria-hidden style={{ width:12, height:12, display:'inline-block', borderBottom:`2px solid ${read ? '#8d2828' : '#9ca3af'}`, borderLeft:`2px solid ${read ? '#8d2828' : '#9ca3af'}`, transform:'rotate(-45deg)', borderRadius:1, opacity: read ? 1 : .35 }} />
-                    </span>
-                  ) : null}
-                </div>
+          let prevDay: string | null = null;
 
-                <div className={s.msgText} onClick={() => setModalOf(m)} style={{ opacity: isDeleted ? .7 : 1 }}>
-                  {isDeleted ? 'сообщение удалено' : m.text}
-                  {m.edited && !isDeleted ? ' · ред.' : ''}
+          for (const m of msgs) {
+            const mine = m.authorId === meId;
+            const createdAt = new Date(m.ts);
+            const isDeleted = !!m.deleted && m.text === '';
+            const curDay = dayKey(m.ts);
+            if (curDay !== prevDay) {
+              items.push(
+                <div key={`day-${curDay}`} className={s.daySep}><span>{dayLabel(m.ts)}</span></div>
+              );
+              prevDay = curDay;
+            }
+
+            items.push(
+              <div key={m.id} className={`${s.msgRow} ${mine ? s.msgMine : ''}`}>
+                <div className={`${s.msgCard} ${mine ? s.msgMineBg : s.msgOtherBg}`}>
+                  {/* фиксированная шапка: у меня справа, у собеседника слева */}
+                  <div className={`${s.msgHead} ${mine ? s.headMine : s.headOther}`}>
+                    {mine ? (
+                      <>
+                        <span className={s.msgMeta}>{fmtTime(m.ts)}</span>
+                        <span className={s.msgAuthor}>{meName || 'Вы'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className={s.msgAuthor}>{peerName || 'Собеседник'}</span>
+                        <span className={s.msgMeta}>{fmtTime(m.ts)}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className={s.msgText} onClick={() => setModalOf(m)} style={{ opacity: isDeleted ? .7 : 1 }}>
+                    {isDeleted ? 'сообщение удалено' : m.text}
+                    {m.edited && !isDeleted ? ' · ред.' : ''}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          }
+          return items;
+        })()}
+
         <div ref={bottomRef} />
         {showToBottom ? (
           <button type="button" className={s.toBottom} aria-label="вниз" onClick={scrollToBottom}>↓</button>
         ) : null}
       </div>
 
-      <form action={onSend as any} className={s.composer} style={{ display:'flex', alignItems:'center', gap:8 }}>
+      {/* композер */}
+      <form
+        ref={formRef}
+        action={onSend as any}
+        className={s.composer}
+        style={{ display:'flex', alignItems:'center', gap:8 }}
+      >
         <input type="hidden" name="threadId" value={threadId} />
         <textarea
           name="text"
@@ -260,6 +319,12 @@ export default function ChatBoxClient({
           placeholder="напишите сообщение…"
           value={input}
           onChange={(e)=>setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              doSend(); // ENTER — отправка
+            }
+          }}
           rows={2}
           disabled={!threadId}
         />
@@ -268,6 +333,7 @@ export default function ChatBoxClient({
         </button>
       </form>
 
+      {/* модалка */}
       {modalOf ? (
         <div className={s.modal} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.25)', display:'grid', placeItems:'center' }}>
           <div className={s.modalCard} style={{ width:'min(520px,92vw)', background:'#fff', border:'1px solid var(--line)', borderRadius:12, padding:12 }}>
@@ -301,11 +367,6 @@ export default function ChatBoxClient({
       ) : null}
     </div>
   );
-}
-
-function fmt(d: Date) {
-  const M = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-  return `${String(d.getDate()).padStart(2,'0')} ${M[d.getMonth()]} ${d.getFullYear()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
 function lowerBound(a: number[], x: number) {

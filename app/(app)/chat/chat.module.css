@@ -1,5 +1,4 @@
 .chatRoot {
-  /* локально-скоупленные переменные темы для чатов */
   --brand: #8d2828;
   --glass-bg: rgba(255,255,255,0.55);
   --glass-brd: rgba(229,231,235,0.8);
@@ -21,106 +20,53 @@
   border-radius: 12px;
 }
 
-.threads {
-  border-right: 0;
-  font-size: 13px;
-  padding: 12px;
-}
-
+/* левая колонка */
+.threads { border-right: 0; font-size: 13px; padding: 12px; }
 .block { padding: 12px; }
 .block + .block { margin-top: 12px; }
-
-.blockTitle {
-  font-weight: 800;
-  margin-bottom: 8px;
-  position: relative;
-  color: var(--ink);
-}
-.blockTitle::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: -6px;
-  height: 2px;
-  background: var(--brand);
-  opacity: .12;
-  border-radius: 2px;
-}
+.blockTitle { font-weight: 800; margin-bottom: 8px; position: relative; color: var(--ink); }
+.blockTitle::after { content:""; position:absolute; left:0; right:0; bottom:-6px; height:2px; background:var(--brand); opacity:.12; border-radius:2px; }
 
 .searchBlock { position: relative; z-index: 20; }
-
 .searchRow { position: relative; margin-top: 10px; }
-.searchInput {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  outline: none;
-  background: #fff;
-}
+.searchInput { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; outline: none; background: #fff; }
 
-.dd {
-  position: absolute; left: 0; right: 0; top: calc(100% + 6px);
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 12px 16px rgba(0,0,0,.08), 0 4px 6px rgba(0,0,0,.06);
-  z-index: 2000;
-  max-height: 260px;
-  overflow: auto;
-}
-.ddItem {
-  width: 100%;
-  text-align: left;
-  padding: 8px 10px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.ddItem:hover { background: #f9fafb; }
+.dd { position:absolute; left:0; right:0; top:calc(100% + 6px); background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 16px rgba(0,0,0,.08), 0 4px 6px rgba(0,0,0,.06); z-index:2000; max-height:260px; overflow:auto; }
+.ddItem { width:100%; text-align:left; padding:8px 10px; border:0; background:transparent; cursor:pointer; }
+.ddItem:hover { background:#f9fafb; }
 
-.threadWrap { position: relative; }
+.threadWrap { position:relative; }
 .thread {
-  width: 100%;
-  text-align: left;
-  padding: 14px 72px 14px 12px;
-  min-height: 76px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: #fff;
-  position: relative;
-  cursor: pointer;
+  width:100%;
+  text-align:left;
+  padding:14px 72px 14px 12px;
+  min-height:76px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#fff;
+  position:relative;
+  cursor:pointer;
   transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
 }
 .thread + .thread { margin-top: 8px; }
 .thread:hover { transform: translateY(-1px); border-color: #c7e3ff; }
 .threadActive { background: #eef6ff; border-color: #c7e3ff; }
 .threadUnread { background: #fff7ed; border-color: #fde68a; }
-.threadUnread::before {
-  content:"";
-  position:absolute; left:-1px; top:-1px; bottom:-1px; width:4px;
-  background:#ef9b28;
-  border-top-left-radius:12px; border-bottom-left-radius:12px;
-}
+.threadUnread::before { content:""; position:absolute; left:-1px; top:-1px; bottom:-1px; width:4px; background:#ef9b28; border-top-left-radius:12px; border-bottom-left-radius:12px; }
 
-.threadTop { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom: 6px; }
+.threadTop { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
 .peer { display:flex; align-items:center; gap:8px; min-width: 0; }
-.avatar {
-  width:32px; height:32px; border-radius:50%;
-  display:grid; place-items:center; font-weight:800; color:#fff; font-size:12px;
-  background: radial-gradient(120% 120% at 0% 0%, #c34a4a 0%, var(--brand) 60%, #5a1818 100%);
-  box-shadow: 0 2px 6px rgba(0,0,0,.12);
-  flex-shrink: 0;
-}
+.avatar { width:32px; height:32px; border-radius:50%; display:grid; place-items:center; font-weight:800; color:#fff; font-size:12px; background: radial-gradient(120% 120% at 0% 0%, #c34a4a 0%, var(--brand) 60%, #5a1818 100%); box-shadow:0 2px 6px rgba(0,0,0,.12); flex-shrink: 0; }
 .threadName { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .threadDate { color: var(--muted); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
 
-/* здесь добавлен стандартный line-clamp */
+/* ПОКАЗ последнего сообщения в списке диалогов */
 .threadLast {
   color:#374151;
   overflow:hidden;
   display:-webkit-box;
-  line-clamp: 2;           /* стандарт */
-  -webkit-line-clamp: 2;   /* fallback для старых WebKit */
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   word-break: normal;
   overflow-wrap: break-word;
@@ -129,136 +75,78 @@
 }
 .threadLastMine { text-align: right; }
 
-.badge {
-  position:absolute; right: 44px; top: 8px;
-  font-size: 11px; background: var(--brand); color:#fff;
-  padding: 0 7px; line-height: 20px; min-width: 22px; text-align:center;
-  border-radius:9999px; box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight: 800;
-}
-
-.btnDel {
-  position:absolute; right: 8px; top: 8px;
-  width: 26px; height: 26px; border-radius: 8px;
-  border: 1px solid var(--line); background: rgba(255,255,255,0.85);
-  display:inline-flex; align-items:center; justify-content:center;
-  cursor:pointer; color: var(--muted);
-  opacity: 0; transition: opacity 120ms ease, background 120ms ease;
-}
-.threadWrap:hover .btnDel,
-.btnDel:focus-visible { opacity: 1; }
+.badge { position:absolute; right:44px; top:8px; font-size:11px; background:var(--brand); color:#fff; padding:0 7px; line-height:20px; min-width:22px; text-align:center; border-radius:9999px; box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:800; }
+.btnDel { position:absolute; right:8px; top:8px; width:26px; height:26px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.85); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color: var(--muted); opacity:0; transition: opacity 120ms ease, background 120ms ease; }
+.threadWrap:hover .btnDel, .btnDel:focus-visible { opacity: 1; }
 .btnDel:hover { background:#fff; }
 .btnDelIcon { width:14px; height:14px; }
 
-.pane {
-  padding: 12px;
-  display:grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 12px;
-}
+/* правая панель */
+.pane { padding: 12px; display:grid; grid-template-rows: auto 1fr auto; gap: 12px; }
 
-.paneHeader {
-  padding: 10px 12px;
-  min-height: 56px;
-  display:grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items:center;
-  gap: 8px;
-}
-.paneTitle { grid-column: 2 / 3; text-align:center; font-weight:700; color: var(--ink); }
-.paneTyping { justify-self:end; grid-column: 3 / 4; color: var(--muted); font-size:12px; }
-
-.paneSearch { justify-self:end; grid-column: 3 / 4; width:220px; display:flex; gap:6px; }
-.paneSearch input {
-  width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:8px; outline:none; background:#fff;
-}
-.paneSearch small { display:inline-block; min-width:42px; text-align:center; color: var(--muted); line-height:24px; }
-
-/* ФИКСИРОВАННОЕ ОКНО СООБЩЕНИЙ: прокрутка только внутри панели */
+/* фиксированная область сообщений с прокруткой */
 .paneBody {
-  padding: 10px 12px;
-  overflow: auto;
-  height: 62vh;            /* фиксированная высота области сообщений */
   position: relative;
-  overscroll-behavior: contain;  /* чтобы не «пробивало» страницу при инерции */
-  -webkit-overflow-scrolling: touch;
-  background: #fff;
+  overflow: auto;
+  padding: 8px 8px 24px;
   border: 1px solid var(--line);
   border-radius: 12px;
+  background: #fff;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-.toBottom {
-  position: sticky; bottom: 10px; margin-left: auto;
-  width:36px; height:36px; border-radius:12px; border:1px solid rgba(229,231,235,.9);
-  background:rgba(255,255,255,.85); backdrop-filter:saturate(180%) blur(8px);
-  display:grid; place-items:center; cursor:pointer; box-shadow:0 6px 14px rgba(0,0,0,.12);
-}
+/* верх панели (кнопки действия) */
+.blockTop .btn { border: 1px solid var(--line); background:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; }
+.blockTop .btn:hover { background:#fafafa; }
 
-.paneFooter { padding: 10px 12px; display:flex; gap:8px; align-items:flex-start; }
-
-/* КОМПОЗЕР — класс, который использует клиентский компонент */
-.composer {
-  border:1px solid var(--line);
-  border-radius:12px;
-  background:#fff;
-  padding:8px;
-  display:flex;
-  gap:8px;
-  align-items:flex-start;
-}
-
-.textarea {
-  flex:1; height:64px; resize:vertical; padding:10px 12px;
-  border:1px solid var(--line); border-radius:10px; outline:none; background:#fff;
-}
-
-.sendBtn {
-  padding: 0 16px; border-radius: 10px; border: 1px solid var(--brand);
-  background: var(--brand); color:#fff;
-  transition: transform .08s ease, box-shadow .08s ease, filter .08s ease;
-  height: 64px;
-}
-.sendBtn:hover { box-shadow: 0 3px 10px rgba(0,0,0,.18); transform: translateY(-1px); filter: blur(0.2px) saturate(105%); }
-.sendBtn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
-.sendBtn:disabled { opacity:.6; cursor: default; filter:none; box-shadow:none; transform:none; }
-
-/* Универсальная кнопка (совпадает со стилем в верхней панели) */
-.btn {
-  border: 1px solid var(--line);
-  background:#fff;
-  padding:6px 10px;
-  border-radius:8px;
-  cursor:pointer;
-}
-.btn:hover { background:#fafafa; }
-
-.msgRow { display:flex; margin-bottom:10px; animation: msgIn 120ms ease; }
-@keyframes msgIn { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform: translateY(0);} }
+/* пузырьки сообщений */
+.msgRow { display:flex; margin: 6px 0; }
 .msgMine { justify-content: flex-end; }
 
+/* цвета пузырей по роли */
 .msgCard {
-  max-width: 72%;
-  background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px 10px; display:flex; flex-direction:column;
+  max-width: min(720px, 88%);
+  border: 1px solid var(--glass-brd);
+  border-radius: 14px;
   box-shadow: 0 2px 6px rgba(0,0,0,.04);
+  padding: 8px 10px;
+  color: var(--ink);
+  background: #fff;
 }
-.msgHead { display:flex; align-items:baseline; gap:6px; font-weight:700; }
-.msgMeta { color: var(--muted); font-weight:400; }
-.msgText { margin-top:6px; white-space: pre-wrap; word-break: break-word; }
-.msgSep { border-top:1px solid var(--line); margin-top:8px; }
+.msgMineBg { background: #e6ffea; }    /* бледно-зелёный — моё */
+.msgOtherBg { background: #e4f4ff; }   /* бледно-синий — собеседник */
 
-/* Цветовое различение пузырей — оставляем как есть */
-.msgTailOther .msgCard { background: rgba(169, 231, 255, 1); }
-.msgTailMine .msgCard { background: #e6ffea; }
+/* фиксированная шапка: у меня справа, у собеседника слева */
+.msgHead { display:flex; align-items:baseline; gap:6px; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.headMine { justify-content: flex-end; text-align: right; }
+.headOther { justify-content: flex-start; text-align: left; }
 
-.msgBubbleHead { position: relative; }
-.msgTailOther .msgBubbleHead::before {
-  content:""; position:absolute; left:-6px; top:10px; width:10px; height:10px;
-  background: inherit; border-left:1px solid var(--line); border-top:1px solid var(--line); transform:rotate(45deg);
+.msgAuthor { color: var(--ink); font-weight: 800; }
+.msgMeta { color: var(--muted); }
+.msgText { white-space: pre-wrap; word-break: break-word; }
+
+/* композер */
+.composer { border:1px solid var(--line); border-radius:12px; background:#fff; padding:8px; }
+.textarea { width: 100%; border: 0; outline: none; resize: none; font: inherit; background: transparent; }
+.sendBtn { border: 1px solid var(--line); background: #fff; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+.sendBtn:hover { background: #fafafa; }
+
+/* кнопка «вниз» */
+.toBottom {
+  position: sticky;
+  left: 100%;
+  bottom: 6px;
+  transform: translateX(-100%);
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
-.msgTailMine .msgBubbleHead::before {
-  content:""; position:absolute; right:-6px; top:10px; width:10px; height:10px;
-  background: inherit; border-right:1px solid var(--line); border-top:1px solid var(--line); transform:rotate(45deg);
-}
 
+/* разделители дней */
 .daySep { position: sticky; top: 0; z-index: 5; display:flex; justify-content:center; margin: 6px 0; }
 .daySep span {
   padding:2px 10px; border-radius:9999px;
@@ -266,7 +154,4 @@
   backdrop-filter:saturate(180%) blur(8px); font-size:12px; color:#374151;
 }
 
-.hl { background: #fef08a; padding: 0 2px; border-radius: 3px; }
-
-/* подпись автора — для ясности, где чьё сообщение */
-.msgAuthor { color: var(--ink); }
+/* модалка (как было) */
