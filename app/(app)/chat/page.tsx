@@ -1,4 +1,3 @@
-// app/(app)/chat/page.tsx
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
@@ -6,6 +5,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Live from './live';
 import ChatBoxClient from './ChatBoxClient';
+import SearchBox from './SearchBox';
 import s from './chat.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -182,11 +182,11 @@ export default async function ChatPage({
         <aside className={`${s.threads} ${s.glass}`}>
           <div className={s.blockTitle}>чаты</div>
 
-          {/* Поиск собеседника */}
+          {/* Поиск собеседника — автосабмит без Enter */}
           <div className={s.searchBlock}>
-            <form className={s.searchRow} action="/chat" method="get">
-              <input className={s.searchInput} name="q" defaultValue={q} placeholder="поиск: ФИО, e-mail, телефон" />
-            </form>
+            <div className={s.searchRow}>
+              <SearchBox initialQuery={q} />
+            </div>
 
             {!!q && (
               <div className={s.dd}>
@@ -225,7 +225,7 @@ export default async function ChatPage({
                       </div>
                     </div>
                     {t.lastMessageText ? (
-                      <div className={`${s.threadLast} ${/* если последнее моё — вправо */ ''}`}>
+                      <div className={`${s.threadLast}`}>
                         {t.lastMessageText}
                       </div>
                     ) : null}
@@ -233,7 +233,6 @@ export default async function ChatPage({
 
                   {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
 
-                  {/* Кнопка удаления диалога — навигация в правой панели обрабатывает redirect */}
                   <form action="/chat" method="get">
                     <input type="hidden" name="thread" value={t.id} />
                     <button className={s.btnDel} title="удалить диалог" formAction={`/chat?thread=${t.id}`}>

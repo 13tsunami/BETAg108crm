@@ -7,7 +7,6 @@ import {
   sendMessageAction,
   editMessageAction,
   deleteMessageAction,
-  markReadAction,
   deleteThreadAction,
 } from './actions';
 
@@ -53,12 +52,33 @@ export default function ChatBoxClient({
   const [showToBottom, setShowToBottom] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
 
+  /* поиск по активному чату */
+  const [q, setQ] = useState('');
+  const msgRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [currentHit, setCurrentHit] = useState<number>(-1);
+  const hits = useMemo(() => {
+    if (!q.trim()) return [];
+    const needle = q.trim().toLowerCase();
+    return msgs
+      .map((m, i) => ({ m, i }))
+      .filter(({ m }) => !m.deleted && (m.text || '').toLowerCase().includes(needle))
+      .map(({ i }) => i);
+  }, [q, msgs]);
+  const focusHit = (index: number) => {
+    if (index < 0 || index >= hits.length) return;
+    const msg = msgs[hits[index]];
+    const el = msgRefs.current.get(msg.id);
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setCurrentHit(index);
+    }
+  };
+
   const peerReadAt = useMemo(
     () => (peerReadAtIso ? new Date(peerReadAtIso) : null),
     [peerReadAtIso]
   );
 
-  // ---------- merge server->client с надёжной анти-дедуп логикой ----------
   useEffect(() => {
     setMsgs(prev => {
       const official = [...initial];
@@ -76,7 +96,7 @@ export default function ChatBoxClient({
         const arr = officialByKey.get(key);
         if (!arr || !arr.length) return false;
         const t = new Date(m.ts).getTime();
-        const i = lowerBound(arr, t - 30_000); // окно ±30с
+        const i = lowerBound(arr, t - 30_000);
         return i < arr.length && Math.abs(arr[i] - t) <= 30_000;
       };
 
@@ -87,11 +107,10 @@ export default function ChatBoxClient({
     });
   }, [initial]);
 
-  // ---------- автоскролл ----------
+  /* автоскролл к концу при монтировании и новых сообщениях */
   useLayoutEffect(() => { bottomRef.current?.scrollIntoView({ block:'end' }); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' }); }, [msgs.length]);
 
-  // «к низу» FAB
   useEffect(() => {
     const box = scrollBoxRef.current;
     if (!box) return;
@@ -104,16 +123,14 @@ export default function ChatBoxClient({
     return () => box.removeEventListener('scroll', onScroll);
   }, []);
 
-  // ---------- API для Live ----------
   useEffect(() => {
     const api: ChatApi = {
       threadId,
       push: (p) => {
         setMsgs(xs => {
-          if (xs.some(m => m.id === p.messageId)) return xs; // уже есть
+          if (xs.some(m => m.id === p.messageId)) return xs;
 
           if (p.authorId === meId) {
-            // 1) точное попадание по clientId
             if (p.clientId) {
               const i = xs.findIndex(m => m.temp?.clientId === p.clientId);
               if (i >= 0) {
@@ -122,14 +139,12 @@ export default function ChatBoxClient({
                 return next;
               }
             }
-            // 2) последний мой temp — заменяем его
             const j = [...xs].map((m,i)=>[i,m] as const).reverse().find(([_,m]) => m.authorId===meId && m.temp)?.[0];
             if (j !== undefined) {
               const next = xs.slice();
               next[j] = { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId };
               return next;
             }
-            // 3) уже есть «почти такой же» real — ничего не добавляем
             const tReal = new Date(p.ts).getTime();
             const existsSame = xs.some(m =>
               m.authorId===meId && !m.temp && m.text===p.text &&
@@ -137,8 +152,6 @@ export default function ChatBoxClient({
             );
             if (existsSame) return xs;
           }
-
-          // чужое сообщение — дописываем
           return [...xs, { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId }];
         });
       },
@@ -151,7 +164,6 @@ export default function ChatBoxClient({
     return () => { if (window.__chatApi?.threadId === threadId) window.__chatApi = undefined; };
   }, [threadId, meId]);
 
-  // ---------- отправка ----------
   const doSend = () => {
     const text = input.trim();
     if (!text || !threadId) return;
@@ -170,21 +182,12 @@ export default function ChatBoxClient({
   };
 
   const onSend = (formData: FormData) => {
-    // путь submit'а из формы (кнопка)
     const val = String(formData.get('text') || '').trim();
     if (!val) return;
     setInput(val);
     doSend();
   };
 
-  // отметка «прочитано»
-  const onMarkRead = () => {
-    if (!threadId) return;
-    const fd = new FormData(); fd.set('threadId', threadId);
-    startTransition(() => { void markReadAction(fd); });
-  };
-
-  // edit / delete
   const openEdit = (m: Msg) => { setModalOf(m); setEditText(m.text); };
   const submitEdit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,7 +223,6 @@ export default function ChatBoxClient({
 
   const scrollToBottom = () => bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' });
 
-  // ---------- helpers для дат и времени ----------
   const dayKey = (iso: string) => {
     const d = new Date(iso);
     return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -242,25 +244,55 @@ export default function ChatBoxClient({
 
   return (
     <div className={s.block} style={{ display:'grid', gridTemplateRows:'auto 1fr auto' }}>
-      {/* верхняя панель */}
-      <div className={s.blockTop} style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
-        <button onClick={onMarkRead} className={s.btn} disabled={!threadId}>отметить прочитанным</button>
-        <button onClick={onDeleteThread} className={s.btnDel} disabled={!threadId}>
-          <span className={s.btnDelIcon} aria-hidden /> удалить диалог
-        </button>
+      {/* верхняя панель: поиск по активному чату и удаление диалога */}
+      <div className={`${s.blockTop}`}>
+        <div className={s.inlineSearch}>
+          <input
+            className={s.inlineSearchInput}
+            placeholder="поиск по диалогу…"
+            value={q}
+            onChange={(e)=>{ setQ(e.target.value); setCurrentHit(-1); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (currentHit === -1) focusHit(0); else focusHit((currentHit + 1) % Math.max(hits.length, 1));
+              }
+            }}
+            disabled={!threadId}
+          />
+          <button
+            type="button"
+            className={s.inlineSearchBtn}
+            onClick={() => focusHit(Math.max(currentHit - 1, 0))}
+            disabled={!threadId || hits.length === 0}
+            title="предыдущее совпадение"
+          >↑</button>
+          <button
+            type="button"
+            className={s.inlineSearchBtn}
+            onClick={() => focusHit(currentHit === -1 ? 0 : Math.min(currentHit + 1, hits.length - 1))}
+            disabled={!threadId || hits.length === 0}
+            title="следующее совпадение"
+          >↓</button>
+        </div>
+
+        <div className={s.blockTopRight}>
+          <button onClick={onDeleteThread} className={s.btnDel} disabled={!threadId} title="удалить диалог">
+            <span className={s.btnDelIcon} aria-hidden />
+            удалить диалог
+          </button>
+        </div>
       </div>
 
       {/* сообщения */}
       <div ref={scrollBoxRef} className={s.paneBody}>
-        {/* разделители дней + сообщения */}
         {(() => {
           const items: React.ReactNode[] = [];
-
           let prevDay: string | null = null;
 
-          for (const m of msgs) {
+          for (let idx = 0; idx < msgs.length; idx++) {
+            const m = msgs[idx];
             const mine = m.authorId === meId;
-            const createdAt = new Date(m.ts);
             const isDeleted = !!m.deleted && m.text === '';
             const curDay = dayKey(m.ts);
             if (curDay !== prevDay) {
@@ -270,10 +302,16 @@ export default function ChatBoxClient({
               prevDay = curDay;
             }
 
+            const refCb = (el: HTMLDivElement | null) => {
+              if (!el) { msgRefs.current.delete(m.id); return; }
+              msgRefs.current.set(m.id, el);
+            };
+
+            const isMatch = q.trim().length > 0 && !isDeleted && (m.text || '').toLowerCase().includes(q.trim().toLowerCase());
+
             items.push(
               <div key={m.id} className={`${s.msgRow} ${mine ? s.msgMine : ''}`}>
-                <div className={`${s.msgCard} ${mine ? s.msgMineBg : s.msgOtherBg}`}>
-                  {/* фиксированная шапка: у меня справа, у собеседника слева */}
+                <div ref={refCb} className={`${s.msgCard} ${mine ? s.msgMineBg : s.msgOtherBg} ${isMatch ? s.match : ''}`}>
                   <div className={`${s.msgHead} ${mine ? s.headMine : s.headOther}`}>
                     {mine ? (
                       <>
@@ -287,7 +325,6 @@ export default function ChatBoxClient({
                       </>
                     )}
                   </div>
-
                   <div className={s.msgText} onClick={() => setModalOf(m)} style={{ opacity: isDeleted ? .7 : 1 }}>
                     {isDeleted ? 'сообщение удалено' : m.text}
                     {m.edited && !isDeleted ? ' · ред.' : ''}
@@ -322,7 +359,7 @@ export default function ChatBoxClient({
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              doSend(); // ENTER — отправка
+              doSend();
             }
           }}
           rows={2}
@@ -333,7 +370,6 @@ export default function ChatBoxClient({
         </button>
       </form>
 
-      {/* модалка */}
       {modalOf ? (
         <div className={s.modal} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.25)', display:'grid', placeItems:'center' }}>
           <div className={s.modalCard} style={{ width:'min(520px,92vw)', background:'#fff', border:'1px solid var(--line)', borderRadius:12, padding:12 }}>
