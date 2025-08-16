@@ -1,28 +1,34 @@
+// app/(app)/teachers/actions.ts
 'use server';
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth.config';
+import { normalizeRole, type Role } from '@/lib/roles';
 import bcrypt from 'bcryptjs';
 import type { Prisma } from '@prisma/client';
 
-const str = (v: FormDataEntryValue | null) => (typeof v === 'string' ? v.trim() : '');
+/** утилиты парсинга/нормализации */
+const s = (v: FormDataEntryValue | null) => (typeof v === 'string' ? v.trim() : '');
 const toBool = (v: FormDataEntryValue | null) =>
-  typeof v === 'string' ? (v === 'on' || v === 'true' || v === '1') : false;
+  typeof v === 'string' ? v === 'on' || v === 'true' || v === '1' : false;
 
-// нормализация телефона: только цифры, пустое → null
-const normPhone = (v: string) => {
-  const digits = v.replace(/\D+/g, '');
-  return digits.length ? digits : '';
-};
-// e-mail/логин приводим к нижнему регистру, пустое → ''
 const normLower = (v: string) => v.toLowerCase();
+const normPhone = (v: string) => v.replace(/\D+/g, '');
+const reqStr = (v: FormDataEntryValue | null, field: string) => {
+  const vv = s(v);
+  if (!vv) throw new Error(`Поле ${field} обязательно`);
+  return vv;
+};
 
-async function requireManager() {
+async function requireCanManage(): Promise<{ meId: string; role: Role | null }> {
   const session = await auth();
-  const role = (session?.user as any)?.role as string | undefined;
-  if (role !== 'director' && role !== 'deputy_plus') redirect('/teachers?error=нет_прав');
+  const meId = (session?.user as any)?.id as string | undefined;
+  const role = normalizeRole((session?.user as any)?.role ?? null);
+  if (!meId) redirect('/sign-in');
+  if (!(role === 'director' || role === 'deputy_plus')) redirect('/teachers?error=нет_прав');
+  return { meId: meId!, role };
 }
 
 function done(ok: string) {
@@ -36,38 +42,36 @@ function fail(e: unknown) {
 }
 function uniqueFail(e: any) {
   if (e?.code === 'P2002') {
-    const t = Array.isArray(e?.meta?.target) ? e.meta.target as string[] : [];
-    const field = t[0] ?? 'поле';
-    return fail(`Нарушено уникальное ограничение: ${field}`);
+    const t = Array.isArray(e?.meta?.target) ? (e.meta.target as string[]).join(', ') : 'уникальные поля';
+    return fail(`Нарушено уникальное ограничение (${t})`);
   }
   return fail(e);
 }
 
-/** CREATE */
+/** CREATE: создаёт пользователя; если передан password — хэширует и сохраняет */
 export async function createUser(fd: FormData): Promise<void> {
-  await requireManager();
+  await requireCanManage();
 
-  const name = str(fd.get('name'));
-  if (!name) redirect('/teachers?error=не_указано_имя');
+  const name = reqStr(fd.get('name'), 'name');
 
-  const rawUsername = str(fd.get('username'));
-  const rawEmail = str(fd.get('email'));
-  const rawPhone = str(fd.get('phone'));
-  const classroom = str(fd.get('classroom')) || '';
-  const role = str(fd.get('role')) || 'teacher';
-  const birthday = str(fd.get('birthday'));
-  const telegram = str(fd.get('telegram')) || '';
-  const about = str(fd.get('about')) || '';
+  const usernameRaw = s(fd.get('username'));
+  const emailRaw = s(fd.get('email'));
+  const phoneRaw = s(fd.get('phone'));
+  const classroom = s(fd.get('classroom'));
+  const role = s(fd.get('role')) || 'teacher';
+  const birthday = s(fd.get('birthday'));
+  const telegram = s(fd.get('telegram'));
+  const about = s(fd.get('about'));
   const notifyEmail = toBool(fd.get('notifyEmail'));
   const notifyTelegram = toBool(fd.get('notifyTelegram'));
-  const rawPassword = str(fd.get('password'));
+  const passwordRaw = s(fd.get('password'));
 
-  const username = rawUsername ? normLower(rawUsername) : '';
-  const email = rawEmail ? normLower(rawEmail) : '';
-  const phone = rawPhone ? normPhone(rawPhone) : '';
+  const username = usernameRaw ? normLower(usernameRaw) : '';
+  const email = emailRaw ? normLower(emailRaw) : '';
+  const phone = phoneRaw ? normPhone(phoneRaw) : '';
 
   try {
-    const passwordHash = rawPassword ? await bcrypt.hash(rawPassword, 10) : null;
+    const passwordHash = passwordRaw ? await bcrypt.hash(passwordRaw, 10) : null;
 
     await prisma.user.create({
       data: {
@@ -92,31 +96,28 @@ export async function createUser(fd: FormData): Promise<void> {
   }
 }
 
-/** UPDATE */
+/** UPDATE: редактирует карточку; если передан newPassword — хэширует и сохраняет */
 export async function updateUser(fd: FormData): Promise<void> {
-  await requireManager();
+  await requireCanManage();
 
-  const id = str(fd.get('id'));
-  if (!id) redirect('/teachers?error=нет_id');
+  const id = reqStr(fd.get('id'), 'id');
+  const name = reqStr(fd.get('name'), 'name');
 
-  const name = str(fd.get('name'));
-  if (!name) redirect('/teachers?error=не_указано_имя');
-
-  const rawUsername = str(fd.get('username'));
-  const rawEmail = str(fd.get('email'));
-  const rawPhone = str(fd.get('phone'));
-  const classroom = str(fd.get('classroom')) || '';
-  const role = str(fd.get('role')) || 'teacher';
-  const birthday = str(fd.get('birthday'));
-  const telegram = str(fd.get('telegram')) || '';
-  const about = str(fd.get('about')) || '';
+  const usernameRaw = s(fd.get('username'));
+  const emailRaw = s(fd.get('email'));
+  const phoneRaw = s(fd.get('phone'));
+  const classroom = s(fd.get('classroom'));
+  const role = s(fd.get('role')) || 'teacher';
+  const birthday = s(fd.get('birthday'));
+  const telegram = s(fd.get('telegram'));
+  const about = s(fd.get('about'));
   const notifyEmail = toBool(fd.get('notifyEmail'));
   const notifyTelegram = toBool(fd.get('notifyTelegram'));
-  const newPassword = str(fd.get('newPassword'));
+  const newPassword = s(fd.get('newPassword'));
 
-  const username = rawUsername ? normLower(rawUsername) : '';
-  const email = rawEmail ? normLower(rawEmail) : '';
-  const phone = rawPhone ? normPhone(rawPhone) : '';
+  const username = usernameRaw ? normLower(usernameRaw) : '';
+  const email = emailRaw ? normLower(emailRaw) : '';
+  const phone = phoneRaw ? normPhone(phoneRaw) : '';
 
   try {
     const data: Prisma.UserUpdateInput = {
@@ -145,27 +146,22 @@ export async function updateUser(fd: FormData): Promise<void> {
   }
 }
 
-/** DELETE */
-export async function deleteUser(fd: FormData): Promise<void> {
-  await requireManager();
-
-  const id = str(fd.get('id'));
-  if (!id) redirect('/teachers?error=нет_id');
+/** DELETE: удаляет пользователя; каскады выполняет БД (onDelete: Cascade) */
+export async function deleteUser(formData: FormData): Promise<void> {
+  await requireCanManage();
+  const id = reqStr(formData.get('id'), 'id');
 
   try {
     await prisma.$transaction(async (tx) => {
-      try { await (tx as any).message.deleteMany({ where: { authorId: id } }); } catch {}
-      try { await (tx as any).thread.deleteMany({ where: { OR: [{ aId: id }, { bId: id }] } }); } catch {}
-      try { await (tx as any).readMark.deleteMany({ where: { userId: id } }); } catch {}
-      try { await (tx as any).task.deleteMany({ where: { authorId: id } }); } catch {}
-      try { await (tx as any).taskAssignee.deleteMany({ where: { userId: id } }); } catch {}
-      try { await (tx as any).groupMember.deleteMany({ where: { userId: id } }); } catch {}
-
       await tx.user.delete({ where: { id } });
     });
 
     done('пользователь удалён');
   } catch (e) {
-    fail(e);
+    const msg =
+      e instanceof Error && /violates foreign key|foreign key constraint/i.test(e.message)
+        ? 'Невозможно удалить: есть связанные записи. Примените миграцию с onDelete: Cascade.'
+        : e;
+    return fail(msg as any);
   }
 }

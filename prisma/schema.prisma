@@ -49,8 +49,8 @@ model GroupMember {
   id      String @id @default(uuid())
   userId  String
   groupId String
-  user    User   @relation(fields: [userId], references: [id])
-  group   Group  @relation(fields: [groupId], references: [id])
+  user    User   @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 model Thread {
@@ -61,8 +61,8 @@ model Thread {
   lastMessageText String?
   title           String    @default("")
 
-  a User @relation("ThreadA", fields: [aId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  b User @relation("ThreadB", fields: [bId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  a User @relation("ThreadA", fields: [aId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  b User @relation("ThreadB", fields: [bId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   messages  Message[]
   readMarks ReadMark[] @relation("ReadMarkThread")
@@ -77,18 +77,14 @@ model Message {
   authorId  String
   threadId  String
 
-  // поля под «ред.» и мягкое удаление
   editedAt  DateTime?
   deletedAt DateTime?
 
-  author User   @relation("UserMessages", fields: [authorId], references: [id])
-  thread Thread @relation(fields: [threadId], references: [id])
+  author User   @relation("UserMessages", fields: [authorId], references: [id], onDelete: Cascade)
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
-  // вложения могут остаться в схеме, но мы их не используем в коде
   attachments Attachment[] @relation("MessageAttachments")
-
-  // «удалить для себя»
-  hides MessageHide[]
+  hides       MessageHide[]
 
   @@index([threadId, createdAt])
 }
@@ -97,8 +93,8 @@ model MessageHide {
   messageId String
   userId    String
 
-  message Message @relation(fields: [messageId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId],    references: [id], onDelete: Cascade)
 
   @@id([messageId, userId])
   @@index([userId])
@@ -119,8 +115,8 @@ model TaskAssignee {
   id     String @id @default(uuid())
   taskId String
   userId String
-  task   Task   @relation(fields: [taskId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Tag {
@@ -142,8 +138,8 @@ model ReadMark {
   userId   String
   readAt   DateTime
 
-  thread Thread @relation("ReadMarkThread", fields: [threadId], references: [id])
-  user   User   @relation("ReadMarkUser", fields: [userId], references: [id])
+  thread Thread @relation("ReadMarkThread", fields: [threadId], references: [id], onDelete: Cascade)
+  user   User   @relation("ReadMarkUser",   fields: [userId],   references: [id], onDelete: Cascade)
 
   @@id([threadId, userId])
   @@index([userId])
@@ -157,7 +153,7 @@ model Attachment {
   size      Int
   data      Bytes
 
-  message Message @relation("MessageAttachments", fields: [messageId], references: [id])
+  message Message @relation("MessageAttachments", fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
 }
