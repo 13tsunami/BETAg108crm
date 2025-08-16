@@ -173,12 +173,19 @@
 }
 .paneSearch small { display:inline-block; min-width:42px; text-align:center; color: var(--muted); line-height:24px; }
 
+/* ФИКСИРОВАННОЕ ОКНО СООБЩЕНИЙ: прокрутка только внутри панели */
 .paneBody {
   padding: 10px 12px;
   overflow: auto;
-  height: 62vh;
+  height: 62vh;            /* фиксированная высота области сообщений */
   position: relative;
+  overscroll-behavior: contain;  /* чтобы не «пробивало» страницу при инерции */
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
+
 .toBottom {
   position: sticky; bottom: 10px; margin-left: auto;
   width:36px; height:36px; border-radius:12px; border:1px solid rgba(229,231,235,.9);
@@ -187,6 +194,17 @@
 }
 
 .paneFooter { padding: 10px 12px; display:flex; gap:8px; align-items:flex-start; }
+
+/* КОМПОЗЕР — класс, который использует клиентский компонент */
+.composer {
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  padding:8px;
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+}
 
 .textarea {
   flex:1; height:64px; resize:vertical; padding:10px 12px;
@@ -203,6 +221,16 @@
 .sendBtn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 .sendBtn:disabled { opacity:.6; cursor: default; filter:none; box-shadow:none; transform:none; }
 
+/* Универсальная кнопка (совпадает со стилем в верхней панели) */
+.btn {
+  border: 1px solid var(--line);
+  background:#fff;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+}
+.btn:hover { background:#fafafa; }
+
 .msgRow { display:flex; margin-bottom:10px; animation: msgIn 120ms ease; }
 @keyframes msgIn { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform: translateY(0);} }
 .msgMine { justify-content: flex-end; }
@@ -217,6 +245,7 @@
 .msgText { margin-top:6px; white-space: pre-wrap; word-break: break-word; }
 .msgSep { border-top:1px solid var(--line); margin-top:8px; }
 
+/* Цветовое различение пузырей — оставляем как есть */
 .msgTailOther .msgCard { background: rgba(169, 231, 255, 1); }
 .msgTailMine .msgCard { background: #e6ffea; }
 
@@ -238,3 +267,6 @@
 }
 
 .hl { background: #fef08a; padding: 0 2px; border-radius: 3px; }
+
+/* подпись автора — для ясности, где чьё сообщение */
+.msgAuthor { color: var(--ink); }

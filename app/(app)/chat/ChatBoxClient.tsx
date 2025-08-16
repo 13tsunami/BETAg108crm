@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, startTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, startTransition, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import s from './chat.module.css';
 import {
@@ -11,7 +11,6 @@ import {
   deleteThreadAction,
 } from './actions';
 
-// ===== Types =====
 type Msg = {
   id: string;
   text: string;
@@ -19,7 +18,7 @@ type Msg = {
   authorId: string;
   edited?: boolean;
   deleted?: boolean;
-  temp?: { clientId: string }; // local-only marker for replacement
+  temp?: { clientId: string };
 };
 
 type ChatApi = {
@@ -31,39 +30,80 @@ type ChatApi = {
   onThreadDeleted: (p: { byName: string }) => void;
 };
 
-declare global {
-  interface Window { __chatApi?: ChatApi }
-}
+declare global { interface Window { __chatApi?: ChatApi } }
 
 export default function ChatBoxClient({
-  meId, threadId, peerReadAtIso, initial,
-}: { meId: string; threadId: string; peerReadAtIso: string | null; initial: Msg[] }) {
+  meId, meName, peerName, threadId, peerReadAtIso, initial,
+}: {
+  meId: string;
+  meName: string;
+  peerName: string;
+  threadId: string;
+  peerReadAtIso: string | null;
+  initial: Msg[];
+}) {
   const router = useRouter();
 
   const [msgs, setMsgs] = useState<Msg[]>(initial);
   const [input, setInput] = useState('');
   const [modalOf, setModalOf] = useState<Msg | null>(null);
   const [editText, setEditText] = useState('');
+  const scrollBoxRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [showToBottom, setShowToBottom] = useState(false);
 
-  const peerReadAt = useMemo(() => (peerReadAtIso ? new Date(peerReadAtIso) : null), [peerReadAtIso]);
+  const peerReadAt = useMemo(
+    () => (peerReadAtIso ? new Date(peerReadAtIso) : null),
+    [peerReadAtIso]
+  );
 
-  // merge server -> client и зачистка висячих temp при серверном ререндере
+  // server -> client merge с фаззи-де-дупом для temp
   useEffect(() => {
     setMsgs(prev => {
-      const official = new Map(initial.map(m => [m.id, { ...m }]));
-      const sig = (m: Msg) => `${m.authorId}|${m.text}|${Math.floor(new Date(m.ts).getTime()/1000)}`;
-      const officialSig = new Set(initial.map(sig));
-      const carryTemps = prev.filter(m => m.temp && !officialSig.has(sig(m)));
-      const merged = [...Array.from(official.values()), ...carryTemps];
+      const official = [...initial];
+      const officialByKey = new Map<string, number[]>();
+      for (const m of official) {
+        const key = `${m.authorId}::${m.text}`;
+        const t = new Date(m.ts).getTime();
+        const arr = officialByKey.get(key);
+        if (arr) arr.push(t); else officialByKey.set(key, [t]);
+      }
+      for (const arr of officialByKey.values()) arr.sort((a,b)=>a-b);
+
+      const isCoveredByOfficial = (m: Msg) => {
+        const key = `${m.authorId}::${m.text}`;
+        const arr = officialByKey.get(key);
+        if (!arr || !arr.length) return false;
+        const t = new Date(m.ts).getTime();
+        // окно ±30 сек
+        const i = lowerBound(arr, t - 30_000);
+        return i < arr.length && Math.abs(arr[i] - t) <= 30_000;
+      };
+
+      const carryTemps = prev.filter(m => m.temp && !isCoveredByOfficial(m));
+      const merged = [...official, ...carryTemps];
       merged.sort((a,b) => a.ts.localeCompare(b.ts));
       return merged;
     });
   }, [initial]);
 
-  // автоскролл
-  useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end' }); }, []);
+  // автоскролл вниз при первой отрисовке
+  useLayoutEffect(() => { bottomRef.current?.scrollIntoView({ block:'end' }); }, []);
+  // плавная прокрутка при появлении новых сообщений
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' }); }, [msgs.length]);
+
+  // индикатор «к низу»
+  useEffect(() => {
+    const box = scrollBoxRef.current;
+    if (!box) return;
+    const onScroll = () => {
+      const gap = box.scrollHeight - box.scrollTop - box.clientHeight;
+      setShowToBottom(gap > 160);
+    };
+    onScroll();
+    box.addEventListener('scroll', onScroll, { passive: true });
+    return () => box.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Глобальный API для Live: никогда не добавляем второй пузырь для моих событий
   useEffect(() => {
@@ -72,6 +112,7 @@ export default function ChatBoxClient({
       push: (p) => {
         setMsgs(xs => {
           if (xs.some(m => m.id === p.messageId)) return xs; // уже есть
+
           if (p.authorId === meId) {
             // 1) точное попадание по clientId
             if (p.clientId) {
@@ -89,11 +130,15 @@ export default function ChatBoxClient({
               next[j] = { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId };
               return next;
             }
-            // 3) уже есть «почти такой же» real — ничего не делаем
+            // 3) уже есть «почти такой же» real — ничего не добавляем
             const tReal = new Date(p.ts).getTime();
-            const existsSame = xs.some(m => m.authorId===meId && !m.temp && m.text===p.text && Math.abs(new Date(m.ts).getTime() - tReal) <= 30000);
+            const existsSame = xs.some(m =>
+              m.authorId===meId && !m.temp && m.text===p.text &&
+              Math.abs(new Date(m.ts).getTime() - tReal) <= 30_000
+            );
             if (existsSame) return xs;
           }
+
           // чужое сообщение — дописываем
           return [...xs, { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId }];
         });
@@ -159,9 +204,10 @@ export default function ChatBoxClient({
     startTransition(() => { router.replace('/chat'); });
   };
 
+  const scrollToBottom = () => bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' });
+
   return (
     <div className={s.block} style={{ display:'grid', gridTemplateRows:'auto 1fr auto' }}>
-      {/* верхняя панель */}
       <div className={s.blockTop} style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
         <button onClick={onMarkRead} className={s.btn} disabled={!threadId}>отметить прочитанным</button>
         <button onClick={onDeleteThread} className={s.btnDel} disabled={!threadId}>
@@ -169,8 +215,7 @@ export default function ChatBoxClient({
         </button>
       </div>
 
-      {/* сообщения */}
-      <div style={{ overflow:'auto', padding: 6 }}>
+      <div ref={scrollBoxRef} className={s.paneBody}>
         {msgs.map((m) => {
           const mine = m.authorId === meId;
           const createdAt = new Date(m.ts);
@@ -180,10 +225,13 @@ export default function ChatBoxClient({
           return (
             <div key={m.id} className={`${s.msgRow} ${mine ? s.msgMine : ''}`}>
               <div className={`${s.msgCard} ${mine ? s.msgTailMine : s.msgTailOther}`}>
-                <div className={s.msgHead}>
-                  <span className={s.msgMeta}>{fmt(createdAt)}</span>
+                <div className={`${s.msgHead} ${s.msgBubbleHead}`}>
+                  <span className={s.msgAuthor} style={{ fontWeight:800 }}>
+                    {mine ? (meName || 'Вы') : (peerName || 'Собеседник')}
+                  </span>
+                  <span className={s.msgMeta} style={{ marginLeft:6 }}>{fmt(createdAt)}</span>
                   {mine ? (
-                    <span className={s.msgMeta} title={read ? 'прочитано' : 'доставлено'} style={{ display:'inline-flex', gap:4 }}>
+                    <span className={s.msgMeta} title={read ? 'прочитано' : 'доставлено'} style={{ display:'inline-flex', gap:4, marginLeft:'auto' }}>
                       <i aria-hidden style={{ width:12, height:12, display:'inline-block', borderBottom:'2px solid #9ca3af', borderLeft:'2px solid #9ca3af', transform:'rotate(-45deg)', borderRadius:1 }} />
                       <i aria-hidden style={{ width:12, height:12, display:'inline-block', borderBottom:`2px solid ${read ? '#8d2828' : '#9ca3af'}`, borderLeft:`2px solid ${read ? '#8d2828' : '#9ca3af'}`, transform:'rotate(-45deg)', borderRadius:1, opacity: read ? 1 : .35 }} />
                     </span>
@@ -199,9 +247,11 @@ export default function ChatBoxClient({
           );
         })}
         <div ref={bottomRef} />
+        {showToBottom ? (
+          <button type="button" className={s.toBottom} aria-label="вниз" onClick={scrollToBottom}>↓</button>
+        ) : null}
       </div>
 
-      {/* композер */}
       <form action={onSend as any} className={s.composer} style={{ display:'flex', alignItems:'center', gap:8 }}>
         <input type="hidden" name="threadId" value={threadId} />
         <textarea
@@ -218,7 +268,6 @@ export default function ChatBoxClient({
         </button>
       </form>
 
-      {/* модалка */}
       {modalOf ? (
         <div className={s.modal} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.25)', display:'grid', placeItems:'center' }}>
           <div className={s.modalCard} style={{ width:'min(520px,92vw)', background:'#fff', border:'1px solid var(--line)', borderRadius:12, padding:12 }}>
@@ -257,4 +306,13 @@ export default function ChatBoxClient({
 function fmt(d: Date) {
   const M = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
   return `${String(d.getDate()).padStart(2,'0')} ${M[d.getMonth()]} ${d.getFullYear()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function lowerBound(a: number[], x: number) {
+  let l = 0, r = a.length;
+  while (l < r) {
+    const m = (l + r) >> 1;
+    if (a[m] < x) l = m + 1; else r = m;
+  }
+  return l;
 }

@@ -98,6 +98,7 @@ export default async function ChatPage({
 }) {
   const session = await auth();
   const meId = requireSessionId(session);
+  const meName = (session?.user as any)?.name ?? 'Вы';
 
   const sp = await searchParams;
   const get = (k: string) => toStr(sp?.[k]);
@@ -108,8 +109,6 @@ export default async function ChatPage({
 
   if (start) { await ensureThread(meId, start); return null as any; }
 
-  // Если задан thread, проверяем, что он существует и принадлежит пользователю.
-  // Если нет — сразу уводим на список, чтобы серверный рендер не падал.
   let active: { id: string; aId: string; bId: string; a: { id: string; name: string | null }; b: { id: string; name: string | null } } | null = null;
   if (threadId) {
     active = await prisma.thread.findFirst({
@@ -121,7 +120,6 @@ export default async function ChatPage({
 
   const threads = await threadsWithUnread(meId);
 
-  // поиск людей — напрямую из БД
   const users = q
     ? await prisma.user.findMany({
         where: {
@@ -144,7 +142,6 @@ export default async function ChatPage({
   const peerId = peer?.id ?? '';
   const peerName = peer?.name ?? '—';
 
-  // история сообщений + скрытые для меня
   const rawMessages = threadId
     ? await prisma.message.findMany({
         where: { threadId },
@@ -158,7 +155,6 @@ export default async function ChatPage({
 
   const messages = rawMessages.filter(m => (m.hides?.length ?? 0) === 0);
 
-  // отметка о прочтении — только если тред существует
   if (threadId && active) {
     await prisma.readMark.upsert({
       where: { threadId_userId: { threadId, userId: meId } },
@@ -180,64 +176,9 @@ export default async function ChatPage({
   return (
     <main style={{ padding:12, fontFamily:'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial' }}>
       <div className={s.chatRoot}>
-        {/* ЛЕВАЯ КОЛОНКА — список диалогов + поиск */}
-        <aside className={`${s.threads} ${s.glass}`}>
-          <div className={s.blockTitle}>чаты <span className="pill" style={{
-            display:'inline-block', fontSize:12, padding:'3px 8px', borderRadius:9999,
-            background:'#f3f4f6', border:'1px solid rgba(229,231,235,.85)'
-          }}>{unreadTotal}</span></div>
+        {/* ЛЕВАЯ КОЛОНКА — список диалогов + поиск (как у тебя) */}
 
-          {/* Поиск собеседника — прямой переход со стартом */}
-          <form method="get" role="search" style={{ marginTop:8 }}>
-            <input className={s.searchInput} type="text" name="q" placeholder="введите имя, почту, телефон…" defaultValue={q} autoComplete="off" />
-          </form>
-
-          {q ? (
-            <div style={{ marginTop:10 }}>
-              {users.length === 0 ? (
-                <div className="pill" style={{
-                  display:'inline-block', fontSize:12, padding:'3px 8px', borderRadius:9999,
-                  background:'#f3f4f6', border:'1px solid rgba(229,231,235,.85)'
-                }}>никого не найдено</div>
-              ) : (
-                users.map(u => (
-                  <a key={u.id} href={`/chat?start=${encodeURIComponent(u.id)}`} className={s.thread} style={{ display:'block', marginTop:8 }}>
-                    <div style={{ fontWeight:700 }}>{u.name}</div>
-                    <div style={{ fontSize:12, color:'#6b7280' }}>{u.email || '—'} {u.role ? `· ${u.role}` : ''}</div>
-                  </a>
-                ))
-              )}
-            </div>
-          ) : null}
-
-          <div style={{ marginTop:10 }}>
-            {threads.length === 0 ? (
-              <div className="pill" style={{
-                display:'inline-block', fontSize:12, padding:'3px 8px', borderRadius:9999,
-                background:'#f3f4f6', border:'1px solid rgba(229,231,235,.85)'
-              }}>нет диалогов</div>
-            ) : (
-              threads.map(t => {
-                const url = `/chat?thread=${encodeURIComponent(t.id)}`;
-                const isActive = t.id === threadId;
-                return (
-                  <a key={t.id} href={url} className={`${s.thread} ${isActive ? s.threadActive : ''}`} style={{ display:'block', marginTop:8 }}>
-                    <div style={{ fontWeight:700, color:'#0f172a' }}>{t.peerName}</div>
-                    <div style={{ fontSize:12, color:'#6b7280', marginTop:4, display:'flex', gap:6, alignItems:'center' }}>
-                      {t.lastMessageAt ? <span>{fmt(t.lastMessageAt)}</span> : <span>нет сообщений</span>}
-                      {t.lastMessageText ? <span>· {t.lastMessageText}</span> : null}
-                    </div>
-                    {t.unreadCount > 0 ? (
-                      <span className={s.badge}>{t.unreadCount > 99 ? '99+' : t.unreadCount}</span>
-                    ) : null}
-                  </a>
-                );
-              })
-            )}
-          </div>
-        </aside>
-
-        {/* ПРАВАЯ ПАНЕЛЬ — лента + композер на клиенте, без API */}
+        {/* ПРАВАЯ ПАНЕЛЬ — лента + композер */}
         <section className={`${s.pane} ${s.glass}`} style={{ display:'grid', gridTemplateRows:'auto 1fr auto', gap:12 }}>
           <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
             {threadId ? (
@@ -251,6 +192,8 @@ export default async function ChatPage({
 
           <ChatBoxClient
             meId={meId}
+            meName={meName}
+            peerName={peerName}
             threadId={threadId || ''}
             peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
             initial={messages.map(m => ({
@@ -265,7 +208,6 @@ export default async function ChatPage({
         </section>
       </div>
 
-      {/* SSE — остаётся для подтягивания свежих данных из БД и мгновенных событий */}
       <Live uid={meId} activeThreadId={threadId || undefined} />
     </main>
   );

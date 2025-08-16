@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-16T06:55:35.203Z
+Generated: 2025-08-16T09:34:12.258Z
 ## UI hints
 ```json
 {
@@ -64,6 +64,7 @@ Generated: 2025-08-16T06:55:35.203Z
    │  ├─ Modal.tsx
    │  ├─ Providers.tsx
    │  ├─ Sidebar.tsx
+   │  ├─ UnreadBadgeClient.tsx
    │  ├─ UserForm.tsx
    │  └─ UserMenu.tsx
    ├─ lib
