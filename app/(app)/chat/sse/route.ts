@@ -10,8 +10,8 @@ function sseHeaders(): HeadersInit {
     'Content-Type': 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',     // Nginx
-    'Keep-Alive': 'timeout=120',   // некоторые прокси
+    'X-Accel-Buffering': 'no',
+    'Keep-Alive': 'timeout=120',
   };
 }
 
@@ -24,18 +24,22 @@ export function GET(req: Request) {
     start(controller) {
       const enc = new TextEncoder();
 
+      // 1) антибуферизация: «раздуваем» первый чанк >2 КБ, чтобы прокси начал стримить немедленно
+      controller.enqueue(enc.encode(`:${' '.repeat(2048)}\n`));
+      controller.enqueue(enc.encode(`retry: 0\n`)); // без задержки на реконнект
+
       const send = (payload: unknown) => {
         controller.enqueue(enc.encode(`data: ${JSON.stringify(payload)}\n\n`));
       };
 
-      // мгновенно «пробиваем» канал
+      // «пробой» канала
       send({ type: 'hello', at: Date.now() });
 
-      // подписка на брокера
+      // подписка
       const unsub = broker.subscribe(uid, (p: EventPayload) => send(p));
 
-      // heartbeat
-      const hb = setInterval(() => send({ type: 'ping', at: Date.now() }), 10000);
+      // частый heartbeat — помогает некоторым CDN не «засыпать»
+      const hb = setInterval(() => send({ type: 'ping', at: Date.now() }), 5000);
 
       const close = () => {
         clearInterval(hb);
@@ -43,7 +47,6 @@ export function GET(req: Request) {
         try { controller.close(); } catch {}
       };
 
-      // закрытие по аборту
       (req as any).signal?.addEventListener?.('abort', close);
     },
   });

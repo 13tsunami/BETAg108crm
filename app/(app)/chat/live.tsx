@@ -23,35 +23,43 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
       if (stop) return;
       try { esRef.current?.close(); } catch {}
       const url = `/chat/sse?uid=${encodeURIComponent(uid)}&t=${Date.now()}`;
-      const es = new EventSource(url, { withCredentials: false });
+      const es = new EventSource(url);
       esRef.current = es;
 
       es.onmessage = (e) => {
+        let gap = 800;
         try {
           const data = JSON.parse(e.data || '{}') as { type?: string; threadId?: string };
-          if (
+          if (data?.type === 'message' && data.threadId && data.threadId === activeThreadId) {
+            gap = 0; // активный диалог — обновляем мгновенно
+          } else if (
             data?.type === 'threadCreated' ||
             data?.type === 'threadDeleted' ||
-            (data?.type === 'message' && data?.threadId && data.threadId === activeThreadId) ||
-            (data?.type === 'read'    && data?.threadId && data.threadId === activeThreadId)
+            data?.type === 'read'
           ) {
-            doRefresh(200);
-          } else {
-            doRefresh(800);
+            gap = 200;
           }
-        } catch {
-          doRefresh(1200);
-        }
+        } catch { gap = 400; }
+        doRefresh(gap);
       };
 
       es.onerror = () => {
         try { es.close(); } catch {}
-        if (!stop) setTimeout(connect, 1200);
+        if (!stop) setTimeout(connect, 1000);
       };
     };
 
     connect();
-    return () => { stop = true; try { esRef.current?.close(); } catch {} };
+
+    // мгновенно подтягиваем при возвращении фокуса
+    const onVis = () => { if (document.visibilityState === 'visible') doRefresh(0); };
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      stop = true;
+      try { esRef.current?.close(); } catch {}
+    };
   }, [router, uid, activeThreadId]);
 
   return null;
