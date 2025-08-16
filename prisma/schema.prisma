@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-provider = "postgresql"
-url = env("DATABASE_URL")
-directUrl = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -27,12 +27,13 @@ model User {
   passwordHash     String?
   lastSeen         DateTime?
 
-  messages         Message[]      @relation("UserMessages")
-  threadsA         Thread[]       @relation("ThreadA")
-  threadsB         Thread[]       @relation("ThreadB")
-  readMarks        ReadMark[]     @relation("ReadMarkUser")
-  groupMemberships GroupMember[]
-  taskAssignments  TaskAssignee[]
+  messages           Message[]       @relation("UserMessages")
+  threadsA           Thread[]        @relation("ThreadA")
+  threadsB           Thread[]        @relation("ThreadB")
+  readMarks          ReadMark[]      @relation("ReadMarkUser")
+  groupMemberships   GroupMember[]
+  taskAssignments    TaskAssignee[]
+  subjectMemberships SubjectMember[]
 
   // обратная сторона связи для MessageHide — ЭТО НОВАЯ СТРОКА
   messageHides MessageHide[]
@@ -48,8 +49,10 @@ model GroupMember {
   id      String @id @default(uuid())
   userId  String
   groupId String
-  user    User   @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId]) // НОВОЕ: защита от дублей и ключ для upsert
 }
 
 model Thread {
@@ -82,7 +85,7 @@ model Message {
   author User   @relation("UserMessages", fields: [authorId], references: [id], onDelete: Cascade)
   thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
-  attachments Attachment[] @relation("MessageAttachments")
+  attachments Attachment[]  @relation("MessageAttachments")
   hides       MessageHide[]
 
   @@index([threadId, createdAt])
@@ -93,7 +96,7 @@ model MessageHide {
   userId    String
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId],    references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([messageId, userId])
   @@index([userId])
@@ -138,7 +141,7 @@ model ReadMark {
   readAt   DateTime
 
   thread Thread @relation("ReadMarkThread", fields: [threadId], references: [id], onDelete: Cascade)
-  user   User   @relation("ReadMarkUser",   fields: [userId],   references: [id], onDelete: Cascade)
+  user   User   @relation("ReadMarkUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([threadId, userId])
   @@index([userId])
@@ -155,4 +158,21 @@ model Attachment {
   message Message @relation("MessageAttachments", fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
+}
+
+// НОВОЕ: нормализованные предметы и их состав
+model Subject {
+  id      String          @id @default(uuid())
+  name    String          @unique
+  members SubjectMember[]
+}
+
+model SubjectMember {
+  id        String  @id @default(uuid())
+  userId    String
+  subjectId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subjectId]) // ключ для upsert
 }

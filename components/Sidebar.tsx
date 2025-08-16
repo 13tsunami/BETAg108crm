@@ -129,7 +129,7 @@ export default function Sidebar({ unreadChats = 0 }: { unreadChats?: number }) {
                 <div className="grid">
                   <Tile href="/admin"           label="Админ-панель" active={pathname === '/admin'} />
                   <Tile href="/admin/db-status" label="Статус БД"    active={pathname === '/admin/db-status'} />
-                  <Tile href="/admin/groups"    label="Кафедры"      active={pathname === '/admin/groups'} />
+                 <Tile href="/groups" label="Кафедры" active={pathname === '/groups'} />
                   <Tile href="/admin/cleanup"   label="Очистка базы" active={pathname === '/admin/cleanup'} />
                 </div>
               </>
