@@ -12,10 +12,6 @@ type P =
   | { type: 'threadDeleted'; threadId: string; at: number; byId: string; byName: string }
   | { type?: string; [k: string]: any };
 
-function emit(name: string, detail: any) {
-  try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch {}
-}
-
 export default function Live({ uid, activeThreadId }: { uid: string; activeThreadId?: string }) {
   const router = useRouter();
   const esRef = useRef<EventSource | null>(null);
@@ -36,49 +32,35 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
     const connect = () => {
       if (stop) return;
       try { esRef.current?.close(); } catch {}
-      const url = `/chat/sse?uid=${encodeURIComponent(uid)}&t=${Date.now()}`;
-      const es = new EventSource(url);
+      const es = new EventSource(`/chat/sse?uid=${encodeURIComponent(uid)}&t=${Date.now()}`);
       esRef.current = es;
 
       es.onmessage = (e) => {
         let p: P;
         try { p = JSON.parse(e.data || '{}'); } catch { softRefresh(500); return; }
 
-        // мгновенная дорисовка для активного диалога
-        if (p.type === 'message' && p.threadId === activeThreadId) {
-          emit('chat:message', p);
-          softRefresh(400);
-          return;
-        }
-        if (p.type === 'messageEdited' && p.threadId === activeThreadId) {
-          emit('chat:messageEdited', p);
-          softRefresh(400);
-          return;
-        }
-        if (p.type === 'messageDeleted' && p.threadId === activeThreadId) {
-          emit('chat:messageDeleted', p);
-          softRefresh(400);
-          return;
-        }
-        if (p.type === 'read' && p.threadId === activeThreadId) {
-          emit('chat:read', p);
-          softRefresh(600);
-          return;
-        }
-
-        // удаление треда — если он открыт у пользователя
-        if (p.type === 'threadDeleted') {
-          if (activeThreadId && p.threadId === activeThreadId) {
-            // максимально просто: уводим на список и показываем alert
-            startTransition(() => router.replace('/chat'));
-            try { alert(`Ваш чат с «${p.byName}» был удалён.`); } catch {}
+        // если открыт этот тред — отдаём напрямую клиенту и НЕ делаем refresh
+        if (activeThreadId && p.threadId === activeThreadId) {
+          const api = (window as any).__chatApi;
+          if (api && api.threadId === activeThreadId) {
+            if (p.type === 'message')           { try { api.push(p); } catch {} return; }
+            if (p.type === 'messageEdited')     { try { api.edit(p); } catch {} return; }
+            if (p.type === 'messageDeleted')    { try { api.del(p); }  catch {} return; }
+            if (p.type === 'read')              { try { api.read?.(p);} catch {} return; }
+            if (p.type === 'threadDeleted')     {
+              try { api.onThreadDeleted?.(p); } catch {}
+              startTransition(() => router.replace('/chat'));
+              return;
+            }
           }
-          softRefresh(200);
-          return;
         }
 
-        // прочие случаи — обновляем счётчики/списки
-        softRefresh(300);
+        // не тот тред или окно закрыто — мягко обновляем счётчики/списки
+        if (p.type === 'threadDeleted' || p.type === 'threadCreated') { softRefresh(150); return; }
+        if (p.type === 'message' || p.type === 'messageEdited' || p.type === 'messageDeleted' || p.type === 'read') {
+          softRefresh(300); return;
+        }
+        softRefresh(600);
       };
 
       es.onerror = () => {

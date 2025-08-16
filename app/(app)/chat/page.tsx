@@ -8,6 +8,7 @@ import ChatBoxClient from './ChatBoxClient';
 import s from './chat.module.css';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type Row = {
   id: string;
@@ -93,12 +94,12 @@ async function ensureThread(me: string, otherIdRaw: string) {
 export default async function ChatPage({
   searchParams,
 }: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await auth();
   const meId = requireSessionId(session);
 
-  const sp = searchParams ? await searchParams : undefined;
+  const sp = await searchParams;
   const get = (k: string) => toStr(sp?.[k]);
 
   const threadId = get('thread');
@@ -106,6 +107,17 @@ export default async function ChatPage({
   const start    = get('start').trim();
 
   if (start) { await ensureThread(meId, start); return null as any; }
+
+  // Если задан thread, проверяем, что он существует и принадлежит пользователю.
+  // Если нет — сразу уводим на список, чтобы серверный рендер не падал.
+  let active: { id: string; aId: string; bId: string; a: { id: string; name: string | null }; b: { id: string; name: string | null } } | null = null;
+  if (threadId) {
+    active = await prisma.thread.findFirst({
+      where: { id: threadId, OR: [{ aId: meId }, { bId: meId }] },
+      include: { a:{ select:{ id:true, name:true } }, b:{ select:{ id:true, name:true } } },
+    });
+    if (!active) redirect('/chat');
+  }
 
   const threads = await threadsWithUnread(meId);
 
@@ -128,13 +140,6 @@ export default async function ChatPage({
       })
     : [];
 
-  const active = threadId
-    ? await prisma.thread.findFirst({
-        where: { id: threadId, OR: [{ aId: meId }, { bId: meId }] },
-        include: { a:{ select:{ id:true, name:true } }, b:{ select:{ id:true, name:true } } },
-      })
-    : null;
-
   const peer = active ? (active.aId === meId ? active.b : active.a) : null;
   const peerId = peer?.id ?? '';
   const peerName = peer?.name ?? '—';
@@ -153,8 +158,8 @@ export default async function ChatPage({
 
   const messages = rawMessages.filter(m => (m.hides?.length ?? 0) === 0);
 
-  // отметка о прочтении — сразу при заходе
-  if (threadId) {
+  // отметка о прочтении — только если тред существует
+  if (threadId && active) {
     await prisma.readMark.upsert({
       where: { threadId_userId: { threadId, userId: meId } },
       update: { readAt: now() },
@@ -163,7 +168,7 @@ export default async function ChatPage({
   }
 
   const peerReadAt =
-    threadId && peerId
+    threadId && active && peerId
       ? (await prisma.readMark.findUnique({
           where: { threadId_userId: { threadId, userId: peerId } },
           select: { readAt:true },
@@ -238,7 +243,6 @@ export default async function ChatPage({
             {threadId ? (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>{peerName}</div>
-                {/* markRead — server action вызывается внутри ChatBoxClient при клике/скролле, но кнопка тоже не помешает */}
               </div>
             ) : (
               <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>выберите диалог или найдите собеседника</div>
@@ -261,7 +265,7 @@ export default async function ChatPage({
         </section>
       </div>
 
-      {/* SSE — остаётся, чтобы дёргать router.refresh() и подтягивать свежие данные напрямую из БД */}
+      {/* SSE — остаётся для подтягивания свежих данных из БД и мгновенных событий */}
       <Live uid={meId} activeThreadId={threadId || undefined} />
     </main>
   );

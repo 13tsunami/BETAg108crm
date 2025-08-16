@@ -114,10 +114,18 @@
 .threadName { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .threadDate { color: var(--muted); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
 
+/* здесь добавлен стандартный line-clamp */
 .threadLast {
   color:#374151;
-  overflow:hidden; display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  word-break: normal; overflow-wrap: break-word; hyphens: auto; text-wrap: balance;
+  overflow:hidden;
+  display:-webkit-box;
+  line-clamp: 2;           /* стандарт */
+  -webkit-line-clamp: 2;   /* fallback для старых WebKit */
+  -webkit-box-orient: vertical;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  text-wrap: balance;
 }
 .threadLastMine { text-align: right; }
 

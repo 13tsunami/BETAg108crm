@@ -28,57 +28,46 @@ export default function ChatBoxClient({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const peerReadAt = useMemo(() => (peerReadAtIso ? new Date(peerReadAtIso) : null), [peerReadAtIso]);
 
-  useEffect(() => { setMsgs(initial); }, [initial]);
+  // если сервер прислал новое initial — аккуратно сливаем, не затирая уже дорисованное
+  useEffect(() => {
+    setMsgs(prev => {
+      const byId = new Map(prev.map(m => [m.id, m]));
+      for (const m of initial) byId.set(m.id, { ...byId.get(m.id), ...m });
+      return Array.from(byId.values()).sort((a,b) => a.ts.localeCompare(b.ts));
+    });
+  }, [initial]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end' }); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ block:'end', behavior:'smooth' }); }, [msgs.length]);
 
-  // МГНОВЕННЫЕ обновления из Live (без ожидания router.refresh)
+  // Глобальный API для Live: мгновенная дорисовка активного треда
   useEffect(() => {
-    const onNew = (e: Event) => {
-      const p = (e as CustomEvent).detail as { messageId: string; text: string; authorId: string; ts: string; threadId: string };
-      if (!threadId || p.threadId !== threadId) return;
-      setMsgs(xs => {
-        // не дублируем, если уже есть (после refresh)
-        if (xs.some(m => m.id === p.messageId)) return xs;
-        return [...xs, { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId }];
-      });
+    const api = {
+      threadId,
+      push: (p: { messageId: string; text: string; authorId: string; ts: string }) => {
+        setMsgs(xs => (xs.some(m => m.id === p.messageId) ? xs : [...xs, { id: p.messageId, text: p.text, ts: p.ts, authorId: p.authorId }]));
+      },
+      edit: (p: { messageId: string; text: string }) => {
+        setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: p.text, edited: true } : m));
+      },
+      del: (p: { messageId: string; scope: 'self'|'both' }) => {
+        if (p.scope === 'both') setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: '', deleted: true } : m));
+      },
+      read: (_p: any) => { /* галочки подтянутся с сервера; можно не трогать */ },
+      onThreadDeleted: (_p: { byName: string }) => {
+        try { alert(`Ваш чат был удалён собеседником.`); } catch {}
+      },
     };
-    const onEdit = (e: Event) => {
-      const p = (e as CustomEvent).detail as { messageId: string; text: string; threadId: string };
-      if (!threadId || p.threadId !== threadId) return;
-      setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: p.text, edited: true } : m));
-    };
-    const onDel = (e: Event) => {
-      const p = (e as CustomEvent).detail as { messageId: string; threadId: string; scope: 'self'|'both' };
-      if (!threadId || p.threadId !== threadId) return;
-      if (p.scope === 'both') {
-        setMsgs(xs => xs.map(m => m.id === p.messageId ? { ...m, text: '', deleted: true } : m));
-      } else {
-        // «для себя» уже локально мы убираем сразу после вызова action
-      }
-    };
-    const onRead = () => {
-      // галочки обновятся после серверной подгрузки; здесь ничего не делаем
-    };
-
-    window.addEventListener('chat:message', onNew as any);
-    window.addEventListener('chat:messageEdited', onEdit as any);
-    window.addEventListener('chat:messageDeleted', onDel as any);
-    window.addEventListener('chat:read', onRead as any);
-    return () => {
-      window.removeEventListener('chat:message', onNew as any);
-      window.removeEventListener('chat:messageEdited', onEdit as any);
-      window.removeEventListener('chat:messageDeleted', onDel as any);
-      window.removeEventListener('chat:read', onRead as any);
-    };
+    (window as any).__chatApi = api;
+    return () => { if ((window as any).__chatApi?.threadId === threadId) (window as any).__chatApi = undefined; };
   }, [threadId]);
 
   const onSend = (formData: FormData) => {
     const text = String(formData.get('text') || '').trim();
     if (!text || !threadId) return;
-    const temp: Msg = { id: `temp-${Date.now()}`, text, ts: new Date().toISOString(), authorId: meId };
-    setMsgs(m => [...m, temp]);
+    // оптимистично дорисуем своё сообщение
+    const tempId = `temp-${Date.now()}`;
+    setMsgs(m => [...m, { id: tempId, text, ts: new Date().toISOString(), authorId: meId }]);
     setInput('');
     startTransition(() => { void sendMessageAction(formData); });
   };
@@ -96,19 +85,24 @@ export default function ChatBoxClient({
     const m = modalOf; if (!m) return;
     const text = editText.trim(); if (!text || text === m.text) { setModalOf(null); return; }
     const fd = new FormData(); fd.set('messageId', m.id); fd.set('text', text);
+    // мгновенно применим локально
+    setMsgs(xs => xs.map(x => x.id === m.id ? { ...x, text, edited: true } : x));
     startTransition(() => { void editMessageAction(fd); });
     setModalOf(null);
   };
 
   const deleteSelf = (m: Msg) => {
     const fd = new FormData(); fd.set('messageId', m.id); fd.set('scope', 'self');
+    // мгновенно уберём у себя
+    setMsgs(arr => arr.filter(x => x.id !== m.id));
     startTransition(() => { void deleteMessageAction(fd); });
     setModalOf(null);
-    setMsgs(arr => arr.filter(x => x.id !== m.id));
   };
 
   const deleteBoth = (m: Msg) => {
     const fd = new FormData(); fd.set('messageId', m.id); fd.set('scope', 'both');
+    // визуально пометим сразу, сервер подтвердит
+    setMsgs(xs => xs.map(x => x.id === m.id ? { ...x, text: '', deleted: true } : x));
     startTransition(() => { void deleteMessageAction(fd); });
     setModalOf(null);
   };
@@ -182,7 +176,7 @@ export default function ChatBoxClient({
       {modalOf ? (
         <div className="modal" style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.2)', display:'grid', placeItems:'center' }}>
           <div className="modal__card" style={{
-            width:'min(520px, 92vw)', background:'#fff', border:'1px solid rgba(229,231,235,.9)', borderRadius:12, padding:12
+            width:'мин(520px, 92vw)'.replace('мин','min'), background:'#fff', border:'1px solid rgba(229,231,235,.9)', borderRadius:12, padding:12
           }}>
             <div style={{ fontWeight:700, marginBottom:8 }}>Действия</div>
             {modalOf.authorId === meId ? (
