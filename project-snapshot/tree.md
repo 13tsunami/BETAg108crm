@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-16T12:01:37.761Z
+Generated: 2025-08-16T15:33:39.400Z
 ## UI hints
 ```json
 {
@@ -16,6 +16,8 @@ Generated: 2025-08-16T12:01:37.761Z
    │  └─ endpoints.json
    ├─ app
    │  ├─ (app)
+   │  │  ├─ calendar
+   │  │  │  └─ page.tsx
    │  │  ├─ chat
    │  │  │  ├─ ChatBoxClient.tsx
    │  │  │  ├─ SearchBox.tsx
@@ -28,6 +30,9 @@ Generated: 2025-08-16T12:01:37.761Z
    │  │  │     └─ route.ts
    │  │  ├─ dashboard
    │  │  │  ├─ page.module.css
+   │  │  │  └─ page.tsx
+   │  │  ├─ groups
+   │  │  │  ├─ actions.ts
    │  │  │  └─ page.tsx
    │  │  ├─ heartbeat
    │  │  │  ├─ Heartbeat.tsx
@@ -44,6 +49,7 @@ Generated: 2025-08-16T12:01:37.761Z
    │  │  │  └─ page.tsx
    │  │  └─ teachers
    │  │     ├─ SearchBox.tsx
+   │  │     ├─ TeachersToast.tsx
    │  │     ├─ actions.ts
    │  │     └─ page.tsx
    │  ├─ (auth)
@@ -67,12 +73,17 @@ Generated: 2025-08-16T12:01:37.761Z
    │  ├─ page.tsx
    │  └─ providers.tsx
    ├─ auth.config.ts
+   ├─ cascade_user_delete.sql
    ├─ components
    │  ├─ AddUserModal.tsx
+   │  ├─ CalendarBoard.tsx
+   │  ├─ ConfirmDeleteUser.tsx
    │  ├─ EditUserModal.tsx
+   │  ├─ GroupsBoard.tsx
    │  ├─ Modal.tsx
    │  ├─ Providers.tsx
    │  ├─ Sidebar.tsx
+   │  ├─ TaskPopover.tsx
    │  ├─ UnreadBadgeClient.tsx
    │  ├─ UserForm.tsx
    │  └─ UserMenu.tsx
@@ -105,6 +116,8 @@ Generated: 2025-08-16T12:01:37.761Z
    │  │  │  └─ migration.sql
    │  │  ├─ 20250816_004527_require_thread_participants
    │  │  │  └─ migration.sql
+   │  │  ├─ 20250816_182139_cascade_user_delete_fix
+   │  │  │  └─ migration.sql
    │  │  ├─ init_baseline_20250811_225344
    │  │  │  └─ migration.sql
    │  │  └─ migration_lock.toml
@@ -130,9 +143,11 @@ Generated: 2025-08-16T12:01:37.761Z
 /admin  ⟶  app/admin/page.tsx
 /admin/db-status  ⟶  app/admin/db-status/page.tsx
 /api/auth/[...nextauth]  ⟶  app/api/auth/[...nextauth]/route.ts
+/calendar  ⟶  app/(app)/calendar/page.tsx
 /chat  ⟶  app/(app)/chat/page.tsx
 /chat/sse  ⟶  app/(app)/chat/sse/route.ts
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
+/groups  ⟶  app/(app)/groups/page.tsx
 /inboxtasks  ⟶  app/(app)/inboxtasks/page.tsx
 /settings  ⟶  app/(app)/settings/page.tsx
 /sign-in  ⟶  app/(auth)/sign-in/page.tsx

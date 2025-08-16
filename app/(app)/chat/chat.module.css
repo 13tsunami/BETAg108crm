@@ -203,3 +203,9 @@
 .modalBtn { border:1px solid var(--line); background:#fff; padding:6px 10px; border-radius:10px; cursor:pointer; }
 .modalBtn:hover { background:#fafafa; }
 .modalBtnDanger { border-color:#fca5a5; color:#991b1b; }
+
+.threads {
+  background: #fff !important;     /* белый фон */
+  backdrop-filter: none !important; /* убираем размытость */
+  -webkit-backdrop-filter: none !important;
+}
