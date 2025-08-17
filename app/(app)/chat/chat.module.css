@@ -1,350 +1,16 @@
-/* ====== Токены (объявлены в корневом классе) ====== */
-.chatRoot, .modal {
-  --brand: #8d2828;
-  --ink: #0f172a;
-  --muted: #6b7280;
-  --line: rgba(229, 231, 235, 0.85);
-
-  --glass-top: rgba(255, 255, 255, 0.68);
-  --glass-bottom: rgba(255, 255, 255, 0.4);
-  --glass-brd: rgba(229, 231, 235, 0.85);
-  --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-
-  --card-bg: #fff;
-  --mine: #f3f4f6;
-  --other: #ffffff;
-}
-
-/* ====== Каркас страницы чата ====== */
-.chatRoot {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 12px;
-  height: calc(100dvh - 24px);
-  color: var(--ink);
-}
-
-/* Мобильная адаптация */
-@media (max-width: 768px) {
-  .chatRoot {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ====== Левая колонка ====== */
-.threads {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--glass-brd);
-  border-radius: 16px;
-  background: linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: saturate(160%) blur(8px);
-  -webkit-backdrop-filter: saturate(160%) blur(8px);
-
-  height: 100%;
-  overflow: hidden; /* хедер+поиск сверху, список скроллится */
-}
-
-.threadsHeader {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.threadsList {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  overflow-x: hidden; /* не даём раздувать колонку по ширине */
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.blockTitle {
-  font-weight: 900;
-  letter-spacing: .2px;
-  font-size: 13px;
-  text-transform: lowercase;
-  color: var(--muted);
-}
-
-/* Поиск */
-.searchBlock { position: relative; }
-.dd {
-  position: absolute;
-  z-index: 10;
-  top: 44px;
-  left: 0; right: 0;
-  background: #fff;
-  border: 1px solid var(--glass-brd);
-  border-radius: 12px;
-  box-shadow: 0 10px 26px rgba(0,0,0,.08);
-  max-height: 320px;
-  overflow-y: auto;
-}
-.ddItem {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--ink);
-  background: #fff;
-  border: none;
-  cursor: pointer;
-}
-.ddItem:hover { background: #f8fafc; }
-
-/* ====== Список тредов ====== */
-.threadWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0; /* чтобы текст не раздувал строку */
-}
-
-.thread {
-  flex: 1;
-  min-width: 0; /* позволяет ellipsis работать */
-  display: block;
-  border: 1px solid var(--glass-brd);
-  background: #fff;
-  border-radius: 14px;
-  padding: 10px 36px 10px 12px; /* место под крестик справа */
-  text-decoration: none;
-  color: inherit;
-  box-shadow: 0 4px 14px rgba(0,0,0,.04);
-  transition: transform .06s ease, box-shadow .12s ease, border-color .12s ease;
-}
-.thread:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(0,0,0,.06);
-  border-color: rgba(209,213,219,.95);
-}
-.threadActive {
-  outline: 2px solid rgba(141,40,40,.12);
-  border-color: rgba(141,40,40,.35);
-}
-.threadUnread {
-  border-color: rgba(141,40,40,.35);
-}
-
-.threadTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.peer { display:flex; align-items:center; gap:8px; min-width:0; }
-.avatar {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  display: grid; place-items: center;
-  font-size: 12px; font-weight: 800;
-  background: rgba(141,40,40,.08);
-  color: var(--brand);
-  border: 1px solid rgba(141,40,40,.15);
-}
-.threadName {
-  font-size: 14px; font-weight: 700;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.threadDate {
-  font-size: 12px; color: var(--muted);
-  white-space: nowrap;
-}
-.threadLast {
-  margin-top: 6px;
-  font-size: 13px; color: #334155;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-/* Бэйдж (не выходит за колонку) */
-.badge {
-  position: absolute;
-  top: -6px;
-  right: 6px; /* было -6px */
-  background: var(--brand);
-  color: #fff;
-  font-size: 11px; font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 999px;
-  box-shadow: 0 4px 10px rgba(141,40,40,.35);
-}
-
-/* Кнопка удаления треда — внутри карточки */
-.threadDeleteBtn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  margin: 0;
-  font-weight: 700;
-  font-size: 16px;
-  line-height: 1;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--muted);
-}
-.threadDeleteBtn:hover { color: #8d2828; }
-
-/* ====== Правая колонка ====== */
-.pane {
-  border: 1px solid var(--glass-brd);
-  border-radius: 16px;
-  background: linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: saturate(160%) blur(8px);
-  -webkit-backdrop-filter: saturate(160%) blur(8px);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;   /* критично для вложенного скролла */
-  overflow: hidden;
-}
-
-/* Внутренний каркас ChatBoxClient — без бордера/фона */
-.paneBody {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;   /* чтобы лента сообщений могла скроллиться */
-}
-
-/* ====== Сообщения ====== */
-.msgRow { display: flex; padding: 2px 12px; }
-.msgRow.mine { justify-content: flex-end; }
-.msgRow.other { justify-content: flex-start; }
-
-.msgCard {
-  max-width: 70%;
-  border: 1px solid var(--glass-brd);
-  border-radius: 16px;
-  padding: 8px 12px;
-  font-size: 14px;
-  line-height: 1.35;
-  box-shadow: 0 6px 18px rgba(0,0,0,.05);
-  position: relative;
-}
-@media (max-width: 768px) {
-  .msgCard { max-width: 100%; }
-}
-
-.msgMineBg  { background: #ade6ad; }
-.msgOtherBg { background: #f0d47a; }
-
-.msgMeta {
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--muted);
-  display: flex; gap: 8px; align-items: center;
-}
-
-/* Разделитель дней */
-.dayDivider {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 8px 0;
-  color: #6b7280;
-  font-size: 12px;
-}
-.dayDivider::before {
-  content: '';
-  position: absolute;
-  left: 12px; right: 12px; top: 50%;
-  height: 1px;
-  background: var(--line);
-}
-.dayDivider > span {
-  position: relative;
-  z-index: 1;
-  background: #fff;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(229,231,235,.7);
-}
-
-/* Поиск внутри диалога */
-.inlineSearchInput {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  outline: none;
-}
-.inlineSearchInput:focus {
-  border-color: #c7e3ff;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.08);
-}
-.inlineSearchBtn {
-  height: 34px; padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: #fff;
-  cursor: pointer;
-}
-
-/* ====== Модалки ====== */
-.modal {
-  position: fixed; inset: 0; z-index: 50;
-  display: grid; place-items: center;
-  background: rgba(15,23,42,.32);
-}
-.modalCard {
-  width: min(720px, calc(100vw - 32px));
-  border: 1px solid var(--glass-brd);
-  border-radius: 18px;
-  background: linear-gradient(180deg,#fff, #fafafa);
-  box-shadow: 0 12px 32px rgba(0,0,0,.18);
-  padding: 16px;
-}
-.modalTitle { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
-.modalRow { display: flex; gap: 8px; align-items: center; }
-.modalBtn {
-  height: 34px; padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: #fff;
-  cursor: pointer;
-}
-.modalBtnDanger {
-  background: var(--brand);
-  color: #fff;
-  border-color: rgba(141,40,40,.4);
-}
-
-/* ====== Вспомогательные ====== */
-hr.line { border: 0; border-top: 1px solid var(--line); margin: 8px 0; }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-
-.mine { letter-spacing: 0 }
-.other { letter-spacing: 0 }
-/* ====== Фиксированный размер правого окна чата ====== */
-
-/* Центруем и даём внешние отступы, чтобы окно смотрелось, как у тайлов сайдбара */
+/* ====== Правая колонка: фиксированное окно ====== */
 .paneWrap {
   display: grid;
   place-items: start center;
-  /* учитываем общие отступы страницы */
   padding: 0;
 }
 
-/* Фиксируем геометрию самого окна (ширина/высота) и сохраняем твой «glass» */
 .paneFixed {
-  /* ширина — как карточка/панель в стиле проекта */
-  width: 920px;                 /* фиксированная ширина */
-  max-width: calc(100vw - 360px); /* страховка на узких экранах (учтём лейаут + поля) */
+  width: 920px;
+  max-width: calc(100vw - 360px);
+  height: 640px;
+  max-height: calc(100dvh - 48px);
 
-  /* фиксированная высота, при этом внутри продолжают скроллиться сообщения */
-  height: 640px;                /* фиксированная высота */
-  max-height: calc(100dvh - 48px); /* не упираемся в мобильные статус-бары */
-
-  /* стеклянная эстетика — уже есть в .pane, но тут подчёркиваем рамку */
   border: 1px solid var(--glass-brd);
   border-radius: 16px;
   background: linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
@@ -354,22 +20,16 @@ hr.line { border: 0; border-top: 1px solid var(--line); margin: 8px 0; }
 
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* чтобы контент не выпирал за скругления */
+  overflow: hidden;
 }
 
-/* Внутри по-прежнему скроллится лента (смотри .paneBody и inline-стили ChatBoxClient) */
-
-/* Адаптация: на очень узких экранах окно не вылезает за границы */
 @media (max-width: 1024px) {
   .paneFixed {
-    width: min(920px, calc(100vw - 24px)); /* небольшие поля по краям */
+    width: min(920px, calc(100vw - 24px));
     height: min(640px, calc(100dvh - 24px));
   }
 }
-
-/* Если чат-страницу открывают на телефоне — переходим к «растягиванию», но всё равно с аккуратной рамкой */
 @media (max-width: 768px) {
-  .paneWrap { padding: 0; }
   .paneFixed {
     width: 100%;
     max-width: 100%;
@@ -378,38 +38,47 @@ hr.line { border: 0; border-top: 1px solid var(--line); margin: 8px 0; }
     border-radius: 14px;
   }
 }
-/* ====== Пузырьки сообщений ====== */
 
-/* Базовая карточка */
+/* ====== Сообщения (пузырьки) ====== */
+.msgRow { display: flex; padding: 6px 14px; }
+.msgRow.mine { justify-content: flex-end; }
+.msgRow.other { justify-content: flex-start; }
+
 .msgCard {
-  max-width: 70%;
-  padding: 8px 12px;
+  max-width: 72%;
+  padding: 10px 14px;
   font-size: 14px;
-  line-height: 1.35;
+  line-height: 1.4;
   border-radius: 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
-  border: 1px solid var(--glass-brd);
   position: relative;
   word-wrap: break-word;
+  border: 1px solid var(--glass-brd);
+  box-shadow: 0 4px 14px rgba(0,0,0,.06);
+  transition: box-shadow .12s ease;
+}
+.msgCard:hover { box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+
+@media (max-width: 768px) {
+  .msgCard { max-width: 100%; }
 }
 
-/* Свои */
+/* Свои сообщения */
 .msgMineBg {
-  background: #e6f6e6;               /* мягкий зелёный */
-  border-top-right-radius: 4px;      /* уголок острый — как хвостик */
+  background: #e6f6e6;
+  border-top-right-radius: 4px;
   border-top-left-radius: 18px;
   border-bottom-left-radius: 18px;
 }
 
-/* Чужие */
+/* Чужие сообщения */
 .msgOtherBg {
-  background: #fdf6db;               /* мягкий жёлто-бежевый */
-  border-top-left-radius: 4px;       /* уголок острый — как хвостик */
+  background: #fdf6db;
+  border-top-left-radius: 4px;
   border-top-right-radius: 18px;
   border-bottom-right-radius: 18px;
 }
 
-/* Треугольные хвостики */
+/* Хвостики */
 .msgRow.mine .msgCard::after,
 .msgRow.other .msgCard::after {
   content: "";
@@ -422,14 +91,65 @@ hr.line { border: 0; border-top: 1px solid var(--line); margin: 8px 0; }
 
 .msgRow.mine .msgCard::after {
   right: -8px;
-  border-left-color: #abffab; /* тот же цвет, что фон msgMineBg */
+  border-left-color: #e6f6e6;
   border-left-width: 8px;
   border-bottom: 0;
 }
 
 .msgRow.other .msgCard::after {
   left: -8px;
-  border-right-color: #fae590; /* тот же цвет, что фон msgOtherBg */
+  border-right-color: #fdf6db;
   border-right-width: 8px;
   border-bottom: 0;
+}
+
+.msgMeta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Разделитель дней — как в карточках сайдбара */
+.dayDivider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.dayDivider::before {
+  content: '';
+  position: absolute;
+  left: 16px; right: 16px; top: 50%;
+  height: 1px;
+  background: var(--line);
+}
+.dayDivider > span {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(229,231,235,.7);
+}
+.chatHeader {
+  padding: 12px;
+  border-bottom: 1px solid var(--glass-brd);
+  background: linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chatHeaderRow { display:flex; align-items:center; justify-content:space-between; width:100%; }
+
+.chatTitle {
+  font-weight: 900;
+  font-size: 17px;
+  color: var(--ink);
 }
