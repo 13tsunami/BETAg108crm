@@ -137,19 +137,3 @@
   border-radius: 999px;
   border: 1px solid rgba(229,231,235,.7);
 }
-.chatHeader {
-  padding: 12px;
-  border-bottom: 1px solid var(--glass-brd);
-  background: linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.chatHeaderRow { display:flex; align-items:center; justify-content:space-between; width:100%; }
-
-.chatTitle {
-  font-weight: 900;
-  font-size: 17px;
-  color: var(--ink);
-}
