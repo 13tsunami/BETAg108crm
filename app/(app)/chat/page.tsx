@@ -42,6 +42,14 @@ function requireSessionId(session: any): string {
   return id;
 }
 
+// server action-обёртка для формы удаления
+async function deleteThreadActionForm(formData: FormData): Promise<void> {
+  'use server';
+  const threadId = formData.get('threadId');
+  if (typeof threadId !== 'string' || !threadId) return;
+  await deleteThreadAction(threadId);
+}
+
 async function threadsWithUnread(uid: string): Promise<Row[]> {
   const rows = await prisma.thread.findMany({
     where: { OR: [{ aId: uid }, { bId: uid }] },
@@ -246,13 +254,8 @@ export default async function ChatPage({
                   {t.lastMessageText ? <div className={s.threadLast}>{t.lastMessageText}</div> : null}
                 </Link>
                 {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
-                <form
-                  action={async () => {
-                    const ok = globalThis.confirm?.('Удалить диалог?');
-                    if (!ok) return;
-                    await deleteThreadAction(t.id);
-                  }}
-                >
+                <form action={deleteThreadActionForm}>
+                  <input type="hidden" name="threadId" value={t.id} />
                   <button type="submit" className={s.threadDeleteBtn} title="Удалить диалог">×</button>
                 </form>
               </div>
