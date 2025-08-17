@@ -99,7 +99,7 @@ export default async function Page({
         )}
       </header>
 
-      {/* Вкладка: Назначенные мне (завершенные мной) */}
+      {/* назначенные мне (архив) */}
       {activeTab === 'mine' && (
         <section aria-label="Назначенные мне — архив" style={{ display: 'grid', gap: 8 }}>
           {mineAssigneesDone.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>В архиве пока пусто.</div>}
@@ -127,7 +127,7 @@ export default async function Page({
                   {t?.description && <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>}
                   <div style={{ fontSize: 12, color: '#6b7280' }}>Назначил: {t?.createdByName ?? '—'}</div>
 
-                  {/* Отдельные формы, НЕ вложенные */}
+                  {/* действия (НЕ вложенные формы) */}
                   <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                     <form action={unarchiveAssigneeAction}>
                       <input type="hidden" name="assigneeId" value={a.id} />
@@ -145,12 +145,7 @@ export default async function Page({
                     </form>
 
                     {t?.id && (
-                      <form
-                        action={deleteTaskAction}
-                        onSubmit={(e) => {
-                          if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
-                        }}
-                      >
+                      <form action={deleteTaskAction}>
                         <input type="hidden" name="taskId" value={t.id} />
                         <button
                           type="submit"
@@ -172,7 +167,7 @@ export default async function Page({
         </section>
       )}
 
-      {/* Вкладка: Назначенные мной (все исполнители завершили) */}
+      {/* назначенные мной (все завершены) */}
       {activeTab === 'byme' && mayCreate && (
         <section aria-label="Назначенные мной — архив" style={{ display: 'grid', gap: 8 }}>
           {byMeAllDone.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет завершённых задач, назначенных вами.</div>}
@@ -222,14 +217,8 @@ export default async function Page({
                     </div>
                   </div>
 
-                  {/* Единственная доступная операция — удалить задачу из базы (НЕ вложенная форма) */}
                   <div style={{ marginTop: 6 }}>
-                    <form
-                      action={deleteTaskAction}
-                      onSubmit={(e) => {
-                        if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
-                      }}
-                    >
+                    <form action={deleteTaskAction}>
                       <input type="hidden" name="taskId" value={t.id} />
                       <button
                         type="submit"

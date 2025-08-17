@@ -49,7 +49,7 @@ export default async function Page({
 
   const activeTab = mayCreate ? (tabParam === 'byme' ? 'byme' : 'mine') : 'mine';
 
-  // Данные для TaskForm (только если можно создавать задачи)
+  // данные для TaskForm (только если можно создавать задачи)
   let users: Array<{ id: string; name: string | null; role?: string | null; methodicalGroups?: string | null; subjects?: any }> = [];
   let groups: Array<{ id: string; name: string }> = [];
   let subjects: Array<{ name: string; count?: number }> = [];
@@ -80,7 +80,7 @@ export default async function Page({
     subjectMembers = subjectMembersRaw.map((sm) => ({ userId: sm.userId, subjectName: sm.subject.name }));
   }
 
-  // Списки задач
+  // списки задач
   const [assignedToMe, createdByMe]: [TaskWithAssigneesAndUsers[], TaskWithAssigneesAndUsers[]] = await Promise.all([
     prisma.task.findMany({
       where: { assignees: { some: { userId: meId, status: 'in_progress' } } },
@@ -100,7 +100,7 @@ export default async function Page({
     <main style={{ padding: 16 }}>
       <h1 style={{ margin: '0 0 12px' }}>Задачи</h1>
 
-      {/* Двухколоночный лэйаут 1/3 + 2/3 */}
+      {/* 1/3 + 2/3 */}
       <div
         style={{
           display: 'grid',
@@ -109,7 +109,7 @@ export default async function Page({
           alignItems: 'start',
         }}
       >
-        {/* Левая колонка (1/3): TaskForm ИЛИ обучающий текст для teacher */}
+        {/* левая колонка */}
         <section
           aria-label={mayCreate ? 'Создать задачу' : 'Как работать с задачами'}
           style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff' }}
@@ -129,20 +129,19 @@ export default async function Page({
             <div style={{ display: 'grid', gap: 10 }}>
               <h2 style={{ margin: 0, fontSize: 18 }}>Как пользоваться задачами</h2>
               <p style={{ margin: 0, color: '#374151', fontSize: 14 }}>
-                Вы видите задачи, которые вам назначили. Отметьте задачу как «Выполнить», когда закончите работу —
-                она переместится в архив. Для уточнений нажмите «Уточнить задачу» — откроется чат с назначившим.
+                Вы видите задачи, которые вам назначили. Нажмите «Выполнить», когда закончите работу — задача перейдёт в архив.
+                Для уточнений нажмите «Уточнить задачу» — откроется чат с назначившим.
               </p>
               <p style={{ margin: 0, color: '#374151', fontSize: 14 }}>
-                Срок задачи указан на карточке. Срочные задачи помечены бейджем «Срочно». Ваш календарь автоматически
+                Срок задачи указан на карточке. Срочные задачи помечены бейджем «Срочно». Календарь автоматически
                 показывает задачи по датам (если задача не скрыта из календаря).
               </p>
             </div>
           )}
         </section>
 
-        {/* Правая колонка (2/3): вкладки и списки */}
+        {/* правая колонка */}
         <section aria-label="Список задач" style={{ display: 'grid', gap: 12 }}>
-          {/* Табы */}
           <nav style={{ display: 'flex', gap: 8 }}>
             <a
               href="/inboxtasks?tab=mine"
@@ -176,13 +175,13 @@ export default async function Page({
             )}
           </nav>
 
-          {/* Вкладка «Назначенные мне» */}
+          {/* Назначенные мне */}
           {activeTab === 'mine' && (
             <section aria-label="Назначенные мне" style={{ display: 'grid', gap: 8 }}>
               {assignedToMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет активных задач.</div>}
               {assignedToMe.map((t) => {
                 const myAssn = t.assignees.find((a) => a.user?.id === meId);
-                const urgent = (t as any).priority === 'high'; // при сохранении мы не меняли схему, значение есть
+                const urgent = (t as any).priority === 'high';
                 return (
                   <details key={t.id} style={{ border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff' }}>
                     <summary style={{ padding: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -251,7 +250,7 @@ export default async function Page({
             </section>
           )}
 
-          {/* Вкладка «Назначенные мной» */}
+          {/* Назначенные мной */}
           {activeTab === 'byme' && mayCreate && (
             <section aria-label="Назначенные мной" style={{ display: 'grid', gap: 8 }}>
               {createdByMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Вы пока не создавали задач.</div>}
@@ -259,7 +258,6 @@ export default async function Page({
               {createdByMe.map((t) => {
                 const urgent = (t as any).priority === 'high';
                 const allDone = t.assignees.length > 0 && t.assignees.every((a) => (a as any).status === 'done');
-
                 const progressTarget = `progress-${t.id}`;
 
                 return (
@@ -277,7 +275,7 @@ export default async function Page({
                     </summary>
 
                     <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 10 }}>
-                      {/* Исполнители и статусы (ФИО) */}
+                      {/* ФИО исполнителей */}
                       <div style={{ fontSize: 13 }}>
                         <div style={{ color: '#6b7280', marginBottom: 4 }}>Кому назначено:</div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -293,14 +291,13 @@ export default async function Page({
                                 background: (a as any).status === 'done' ? '#ecfdf5' : '#fff',
                               }}
                             >
-                              {a.user?.name ?? `${a.user?.id?.slice(0, 8) ?? '—'}…`}{' '}
-                              {(a as any).status === 'done' ? '✓' : ''}
+                              {a.user?.name ?? `${a.user?.id?.slice(0, 8) ?? '—'}…`} {(a as any).status === 'done' ? '✓' : ''}
                             </span>
                           ))}
                         </div>
                       </div>
 
-                      {/* Редактирование — отдельная форма */}
+                      {/* Редактирование */}
                       <form action={updateTaskAction} style={{ display: 'grid', gap: 8 }}>
                         <input type="hidden" name="taskId" value={t.id} />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 140px', gap: 8 }}>
@@ -355,14 +352,9 @@ export default async function Page({
                         </div>
                       </form>
 
-                      {/* Панель действий — отдельные, НЕ вложенные формы */}
+                      {/* Действия (НЕ вложенные формы) */}
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <form
-                          action={deleteTaskAction}
-                          onSubmit={(e) => {
-                            if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
-                          }}
-                        >
+                        <form action={deleteTaskAction}>
                           <input type="hidden" name="taskId" value={t.id} />
                           <button
                             type="submit"
@@ -404,9 +396,9 @@ export default async function Page({
                           </form>
                         )}
 
-                        {/* Кнопка «Прогресс» — открывает CSS-модалку через :target */}
+                        {/* Прогресс — CSS-модалка через :target */}
                         <a
-                          href={`#${progressTarget}`}
+                          href={`#progress-${t.id}`}
                           style={{
                             height: 32,
                             padding: '0 12px',
@@ -425,8 +417,8 @@ export default async function Page({
                       </div>
                     </div>
 
-                    {/* CSS-модалка прогресса (без JS, через :target) */}
-                    <div id={progressTarget} style={{ position: 'fixed', inset: 0, display: 'none' }}>
+                    {/* Модалка прогресса (без JS) */}
+                    <div id={`progress-${t.id}`} style={{ position: 'fixed', inset: 0, display: 'none' }}>
                       <a href="/inboxtasks?tab=byme" aria-label="Закрыть" style={{ position: 'absolute', inset: 0 }} />
                       <div
                         style={{
@@ -449,7 +441,6 @@ export default async function Page({
                             boxShadow: '0 10px 30px rgba(0,0,0,.15)',
                             padding: 16,
                           }}
-                          onClick={(e) => e.stopPropagation()}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                             <div style={{ fontWeight: 700, fontSize: 16 }}>Прогресс по задаче</div>
@@ -492,7 +483,7 @@ export default async function Page({
                         </div>
                       </div>
                       <style>{`
-                        :target#${progressTarget} { display:block; }
+                        :target#progress-${t.id} { display:block; }
                       `}</style>
                     </div>
                   </details>
