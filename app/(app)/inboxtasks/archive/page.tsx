@@ -5,9 +5,10 @@ import { normalizeRole, canCreateTasks } from '@/lib/roles';
 import type { Prisma, TaskAssignee, Task } from '@prisma/client';
 import { deleteTaskAction, unarchiveAssigneeAction } from '../actions';
 
-
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-type TaskWithAssignees = Prisma.TaskGetPayload<{ include: { assignees: true } }>;
+type TaskWithAssigneesAndUsers = Prisma.TaskGetPayload<{
+  include: { assignees: { include: { user: { select: { id: true; name: true } } } } };
+}>;
 
 function fmtRuDate(d: Date | string | null | undefined): string {
   if (!d) return '';
@@ -15,7 +16,11 @@ function fmtRuDate(d: Date | string | null | undefined): string {
   return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(dt);
 }
 
-export default async function Page({ searchParams }: { searchParams: SearchParams }) {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const sp = await searchParams;
   const tabParam = typeof sp.tab === 'string' ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
 
@@ -37,7 +42,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   const [mineAssigneesDone, byMeAllDone]: [
     (TaskAssignee & { task: Task | null })[],
-    TaskWithAssignees[]
+    TaskWithAssigneesAndUsers[]
   ] = await Promise.all([
     prisma.taskAssignee.findMany({
       where: { userId: meId, status: 'done' },
@@ -46,14 +51,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     }),
     mayCreate
       ? prisma.task.findMany({
-          where: {
-            createdById: meId,
-            assignees: { every: { status: 'done' } },
-          },
-          include: { assignees: true },
+          where: { createdById: meId, assignees: { every: { status: 'done' } } },
+          include: { assignees: { include: { user: { select: { id: true, name: true } } } } },
           orderBy: [{ dueDate: 'desc' }, { updatedAt: 'desc' }],
         })
-      : Promise.resolve([] as TaskWithAssignees[]),
+      : Promise.resolve([] as TaskWithAssigneesAndUsers[]),
   ]);
 
   return (
@@ -121,13 +123,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                     <span>Выполнено: {fmtRuDate(a.completedAt as Date | undefined)}</span>
                   </div>
                 </summary>
-
-                <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 8 }}>
-                  {t?.description && <div style={{ whiteSpace: 'pre-wrap', color: '#111827' }}>{t.description}</div>}
+                <div style={{ padding: 10, borderTop: '1px solid #f3f4f6' }}>
+                  {t?.description && <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>}
                   <div style={{ fontSize: 12, color: '#6b7280' }}>Назначил: {t?.createdByName ?? '—'}</div>
 
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
-                    {/* Разархивировать = вернуть моё назначение из done в in_progress */}
+                  {/* Отдельные формы, НЕ вложенные */}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                     <form action={unarchiveAssigneeAction}>
                       <input type="hidden" name="assigneeId" value={a.id} />
                       <input type="hidden" name="taskId" value={t?.id ?? ''} />
@@ -143,11 +144,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                       </button>
                     </form>
 
-                    {/* Удалить из базы — удаляет задачу целиком (требуются права автора/админа) */}
                     {t?.id && (
-                      <form action={deleteTaskAction} onSubmit={(e) => {
-                        if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
-                      }}>
+                      <form
+                        action={deleteTaskAction}
+                        onSubmit={(e) => {
+                          if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
+                        }}
+                      >
                         <input type="hidden" name="taskId" value={t.id} />
                         <button
                           type="submit"
@@ -204,26 +207,29 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                       {t.assignees.map((a) => (
                         <span
                           key={a.id}
-                          title={a.status === 'done' ? 'Выполнено' : 'В работе'}
+                          title={(a as any).status === 'done' ? 'Выполнено' : 'В работе'}
                           style={{
                             border: '1px solid #e5e7eb',
                             borderRadius: 999,
                             padding: '2px 8px',
                             fontSize: 12,
-                            background: a.status === 'done' ? '#ecfdf5' : '#fff',
+                            background: (a as any).status === 'done' ? '#ecfdf5' : '#fff',
                           }}
                         >
-                          {a.userId.slice(0, 8)}… {a.status === 'done' ? '✓' : ''}
+                          {a.user?.name ?? `${a.user?.id?.slice(0, 8) ?? '—'}…`} {(a as any).status === 'done' ? '✓' : ''}
                         </span>
                       ))}
                     </div>
                   </div>
 
-                  {/* Удалить из базы — доступно авторам/админам; форма одна и та же */}
+                  {/* Единственная доступная операция — удалить задачу из базы (НЕ вложенная форма) */}
                   <div style={{ marginTop: 6 }}>
-                    <form action={deleteTaskAction} onSubmit={(e) => {
-                      if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
-                    }}>
+                    <form
+                      action={deleteTaskAction}
+                      onSubmit={(e) => {
+                        if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
+                      }}
+                    >
                       <input type="hidden" name="taskId" value={t.id} />
                       <button
                         type="submit"
