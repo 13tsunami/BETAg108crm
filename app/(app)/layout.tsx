@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import Heartbeat from './heartbeat/Heartbeat';
 import { heartbeat } from './heartbeat/actions';
 import { unstable_noStore as noStore } from 'next/cache';
+import { getUnreadTasksCount } from '@/lib/tasks/getUnreadTasks';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -35,11 +36,15 @@ async function unreadTotal(uid: string) {
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await auth();
   const uid = (session?.user as any)?.id as string | undefined;
-  const unread = uid ? await unreadTotal(uid) : 0;
+
+  const [unreadChats, unreadTasks] = await Promise.all([
+    uid ? unreadTotal(uid) : Promise.resolve(0),
+    uid ? getUnreadTasksCount(uid) : Promise.resolve(0),
+  ]);
 
   return (
     <div style={{ display:'grid', gridTemplateColumns:'280px 1fr', minHeight:'100vh' }}>
-      <Sidebar unreadChats={unread} />
+      <Sidebar unreadChats={unreadChats} unreadTasks={unreadTasks} />
       <main style={{ padding:12 }}>
         {children}
         <Heartbeat action={heartbeat} />

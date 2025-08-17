@@ -63,7 +63,14 @@ function Tile({
   );
 }
 
-export default function Sidebar({ unreadChats = 0 }: { unreadChats?: number }) {
+export default function Sidebar({
+  unreadChats = 0,
+  // НОВОЕ: счётчик задач по образцу сообщений
+  unreadTasks = 0,
+}: {
+  unreadChats?: number;
+  unreadTasks?: number;
+}) {
   const pathname = usePathname();
   const { data } = useSession();
   const authed = Boolean(data?.user);
@@ -72,12 +79,32 @@ export default function Sidebar({ unreadChats = 0 }: { unreadChats?: number }) {
   const hasAdminBlock = ['director', 'deputy_plus', 'Директор', 'Заместитель +'].includes(roleSlug || '');
   const fio = splitFio((data?.user?.name as string) || null);
 
+  // ===== чаты (как было) =====
   const [unread, setUnread] = useState(unreadChats);
   useEffect(() => setUnread(unreadChats), [unreadChats]);
   useEffect(() => {
     const onBump = () => setUnread(x => x + 1);
     window.addEventListener('app:unread-bump', onBump as any);
     return () => window.removeEventListener('app:unread-bump', onBump as any);
+  }, []);
+
+  // ===== задачи (НОВОЕ, аналогично чатам) =====
+  const [tasksUnread, setTasksUnread] = useState(unreadTasks);
+  useEffect(() => setTasksUnread(unreadTasks), [unreadTasks]);
+  useEffect(() => {
+    // универсальные события для задач: можно дергать из любого места клиента
+    const onSet = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail === 'number') setTasksUnread(detail);
+    };
+    const onBump = () => setTasksUnread(x => x + 1);
+
+    window.addEventListener('tasks:unread-set', onSet as any);
+    window.addEventListener('tasks:unread-bump', onBump as any);
+    return () => {
+      window.removeEventListener('tasks:unread-set', onSet as any);
+      window.removeEventListener('tasks:unread-bump', onBump as any);
+    };
   }, []);
 
   return (
@@ -116,7 +143,8 @@ export default function Sidebar({ unreadChats = 0 }: { unreadChats?: number }) {
               <Tile href="/dashboard"   label="Главное"     active={pathname === '/dashboard'} />
               <Tile href="/teachers"    label="Педагоги"    active={pathname === '/teachers'} />
               <Tile href="/chat"        label="Чаты"        active={pathname === '/chat'} unread={pathname === '/chat' ? 0 : unread} />
-              <Tile href="/inboxtasks"  label="Задачи"      active={pathname === '/inboxtasks'} />
+              {/* НОВОЕ: счётчик задач по образцу чатов */}
+              <Tile href="/inboxtasks"  label="Задачи"      active={pathname === '/inboxtasks'} unread={pathname === '/inboxtasks' ? 0 : tasksUnread} />
               <Tile href="/calendar"    label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"    label="Расписание"  active={pathname === '/schedule'} />
               <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
@@ -129,7 +157,7 @@ export default function Sidebar({ unreadChats = 0 }: { unreadChats?: number }) {
                 <div className="grid">
                   <Tile href="/admin"           label="Админ-панель" active={pathname === '/admin'} />
                   <Tile href="/admin/db-status" label="Статус БД"    active={pathname === '/admin/db-status'} />
-                 <Tile href="/groups" label="Кафедры" active={pathname === '/groups'} />
+                  <Tile href="/groups"          label="Кафедры"      active={pathname === '/groups'} />
                   <Tile href="/admin/cleanup"   label="Очистка базы" active={pathname === '/admin/cleanup'} />
                 </div>
               </>

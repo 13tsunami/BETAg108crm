@@ -74,8 +74,8 @@
 /* список тредов — матовый фон карточек */
 .threadWrap { position:relative; }
 .thread {
-  width:100%; text-align:left; padding:12px 40px 12px 12px;
-  border-radius:12px; border:1px solid var(--line);
+  width:100%; text-align:left;
+  border-radius:24px; border:2px solid var(--line);
   background:#fff; cursor:pointer;
   transition: border-color 120ms ease, transform 80ms ease;
   backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
@@ -85,7 +85,7 @@
 .threadActive { border-color: #c7e3ff; background:#f6faff; }
 .threadUnread { border-color: #fde68a; }
 .threadTop { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.peer { display:flex; align-items:center; gap:8px; min-width: 0; }
+.peer { display:flex; align-items:center; gap:px; min-width: 0; }
 .avatar {
   width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
   font-weight:800; color:#fff; font-size:11px;

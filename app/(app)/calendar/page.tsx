@@ -1,51 +1,33 @@
 // app/(app)/calendar/page.tsx
 import { auth } from '@/auth.config';
-import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
-import CalendarBoard from '@/components/CalendarBoard';
+import { normalizeRole } from '@/lib/roles';
+import CalendarBoard from './CalendarBoard';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-async function getOrigin() {
-  const h = await headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? '';
-  return `${proto}://${host}`;
-}
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: SearchParams;
 }) {
-  await searchParams; // контракт Next 15
+  // Контракт Next 15: ожидаем Promise и делаем await
+  const _sp = await searchParams;
+
   const session = await auth();
-  const meId = (session?.user as any)?.id as string | undefined;
-  if (!meId) redirect('/sign-in');
-
-  const origin = await getOrigin();
-
-  // Подгружаем имена пользователей на сервере, чтобы сократить «мигание» на клиенте.
-  async function fetchJson<T>(path: string, fallback: T): Promise<T> {
-    const url = path.startsWith('http') ? path : `${origin}${path}`;
-    try {
-      const r = await fetch(url, { cache: 'no-store', next: { revalidate: 0 } });
-      if (!r.ok) return fallback;
-      const j = await r.json();
-      return (j ?? fallback) as T;
-    } catch {
-      return fallback;
-    }
-  }
-
-  type SimpleUser = { id: string; name: string | null; role?: string | null; roleSlug?: string | null };
-
-  const users = await fetchJson<SimpleUser[]>('/api/users', []);
+  const meId = session?.user?.id ?? '';
+  const roleSlug = normalizeRole(session?.user?.role) ?? null;
 
   return (
-    <main style={{ padding: 14 }}>
-      <CalendarBoard meId={meId} initialUsers={users} />
+    <main style={{ padding: 16, display: 'grid', gap: 12 }}>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h1 style={{ margin: 0 }}>Календарь</h1>
+        {/* при необходимости сюда можно добавить фильтры / кнопки периода */}
+      </header>
+
+      {/* CalendarBoard — клиентский компонент.
+          Пробрасываем meId и roleSlug, чтобы внутри включить переключатель «Мои/Все» и фильтрацию. */}
+      {/* Предполагаем пропсы: { meId: string; roleSlug: string | null } */}
+      <CalendarBoard meId={meId} roleSlug={roleSlug} />
     </main>
   );
 }

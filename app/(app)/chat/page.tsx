@@ -207,38 +207,47 @@ export default async function ChatPage({
             )}
           </div>
 
-          <div className={s.block} style={{ paddingTop:16 }}>
-            {threads.length === 0 && <div style={{ color:'#6b7280' }}>диалогов пока нет</div>}
+          {threads.length === 0 && (
+            <div style={{ color:'#6b7280' }}>диалогов пока нет</div>
+          )}
 
-            {threads.map(t => {
-              const activeCls = t.id === threadId ? s.threadActive : '';
-              const unreadCls = t.unreadCount > 0 ? s.threadUnread : '';
-              const initials = (t.peerName || '—').trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+          {threads.map(t => {
+            const activeCls = t.id === threadId ? s.threadActive : '';
+            const unreadCls = t.unreadCount > 0 ? s.threadUnread : '';
+            const initials = (t.peerName || '—')
+              .trim()
+              .split(/\s+/)
+              .map(w => w[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase();
 
-              return (
-                <div key={t.id} className={s.threadWrap}>
-                  <Link className={`${s.thread} ${activeCls} ${unreadCls}`} href={`/chat?thread=${t.id}`}>
-                    <div className={s.threadTop}>
-                      <div className={s.peer}>
-                        <div className={s.avatar}>{initials || '•'}</div>
-                        <div className={s.threadName}>{t.peerName}</div>
-                      </div>
-                      <div className={s.threadDate}>
-                        {t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}
-                      </div>
+            return (
+              <div key={t.id} className={s.threadWrap}>
+                <Link
+                  className={`${s.thread} ${activeCls} ${unreadCls}`}
+                  href={`/chat?thread=${t.id}`}
+                >
+                  <div className={s.threadTop}>
+                    <div className={s.peer}>
+                      <div className={s.avatar}>{initials || '•'}</div>
+                      <div className={s.threadName}>{t.peerName}</div>
                     </div>
-                    {t.lastMessageText ? (
-                      <div className={`${s.threadLast}`}>
-                        {t.lastMessageText}
-                      </div>
-                    ) : null}
-                  </Link>
+                    <div className={s.threadDate}>
+                      {t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}
+                    </div>
+                  </div>
+                  {t.lastMessageText ? (
+                    <div className={s.threadLast}>{t.lastMessageText}</div>
+                  ) : null}
+                </Link>
 
-                  {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
-                </div>
-              );
-            })}
-          </div>
+                {t.unreadCount > 0 && (
+                  <div className={s.badge}>{t.unreadCount}</div>
+                )}
+              </div>
+            );
+          })}
         </aside>
 
         <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr auto', gap:12 }}>

@@ -25,7 +25,7 @@ export default function GroupsBoard(props: {
 
   const [tab, setTab] = React.useState<'groups' | 'subjects'>('groups');
 
-  // пользователи/группы/предметы: берём как пришли с сервера (уже отфильтрованы URL-параметрами)
+  // пользователи/группы/предметы (как пришли с сервера)
   const [users] = React.useState<SimpleUser[]>(props.initialUsers);
   const [groups, setGroups] = React.useState<Group[]>(props.initialGroups);
   const [subjects, setSubjects] = React.useState<Subject[]>(props.initialSubjects);
@@ -38,7 +38,7 @@ export default function GroupsBoard(props: {
   const [groupMembers, setGroupMembers] = React.useState<{ userId: string; name: string | null }[]>([]);
   const [subjectMembers, setSubjectMembers] = React.useState<{ userId: string; name: string | null }[]>([]);
 
-  // поля модалок (без изменений)
+  // поля модалок
   const [groupNameInput, setGroupNameInput] = React.useState<string>('');
   const [mCreateGroup, setMCreateGroup] = React.useState<boolean>(false);
   const [mRenameGroup, setMRenameGroup] = React.useState<boolean>(false);
@@ -49,11 +49,40 @@ export default function GroupsBoard(props: {
   const [mRenameSubject, setMRenameSubject] = React.useState<boolean>(false);
   const [mDeleteSubject, setMDeleteSubject] = React.useState<boolean>(false);
 
+  // локальные поисковые состояния для групп и предметов (как в TaskForm)
+  const [groupQuery, setGroupQuery] = React.useState('');
+  const [groupFound, setGroupFound] = React.useState<Group[]>([]);
+  const [groupDdOpen, setGroupDdOpen] = React.useState(false);
+
+  const [subjectQuery, setSubjectQuery] = React.useState('');
+  const [subjectFound, setSubjectFound] = React.useState<Subject[]>([]);
+  const [subjectDdOpen, setSubjectDdOpen] = React.useState(false);
+
+  function norm(s: string) {
+    return s.toLocaleLowerCase('ru-RU').replace(/\s+/g, ' ').trim();
+  }
+
+  function runGroupSearch(q: string) {
+    setGroupQuery(q);
+    const s = norm(q);
+    if (!s) { setGroupFound([]); return; }
+    const res = groups.filter(g => g.name.toLocaleLowerCase('ru-RU').includes(s)).slice(0, 60);
+    setGroupFound(res);
+  }
+
+  function runSubjectSearch(q: string) {
+    setSubjectQuery(q);
+    const s = norm(q);
+    if (!s) { setSubjectFound([]); return; }
+    const res = subjects.filter(x => x.name.toLocaleLowerCase('ru-RU').includes(s)).slice(0, 60);
+    setSubjectFound(res);
+  }
+
   function toggleUser(id: string) {
     setSelUserIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  // UI helpers (как у вас)
+  // UI helpers
   const BRAND = '#8d2828';
   function Primary(props: React.PropsWithChildren<{ onClick?: () => void; disabled?: boolean; danger?: boolean }>) {
     return (
@@ -113,7 +142,7 @@ export default function GroupsBoard(props: {
     if (!props.open) return null;
     return (
       <div
-        onClick={props.onClose} // было onMouseDown — из-за этого пропадал фокус в инпутах
+        onMouseDown={props.onClose}
         style={{
           position: 'fixed',
           inset: 0,
@@ -147,7 +176,7 @@ export default function GroupsBoard(props: {
     );
   }
 
-  // ГРУППЫ: действия (как у вас)
+  // ГРУППЫ: действия
   async function onCreateGroup() {
     const name = groupNameInput.trim(); if (!name) return;
     await createGroup(name);
@@ -188,7 +217,7 @@ export default function GroupsBoard(props: {
     router.refresh();
   }
 
-  // ПРЕДМЕТЫ: действия (как у вас)
+  // ПРЕДМЕТЫ: действия
   async function onCreateSubject() {
     const name = subjectNameInput.trim(); if (!name) return;
     await createSubject(name);
@@ -252,6 +281,49 @@ export default function GroupsBoard(props: {
 
   function resetSelection() { setSelUserIds([]); }
 
+  // Выпадающий дропдаун под инпутом (без mouseover-трюков, только клики/клавиатура)
+  function InlineDropdown<T extends { id: string; name: string }>(props: {
+    open: boolean;
+    items: T[];
+    onPick: (item: T) => void;
+    emptyText: string;
+  }) {
+    if (!props.open) return null;
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          marginTop: 4,
+          maxHeight: 240,
+          overflowY: 'auto',
+          background: '#fff',
+          border: '1px solid #e5e7eb',
+          borderRadius: 10,
+          zIndex: 50,
+          padding: 4,
+        }}
+      >
+        {props.items.length === 0 ? (
+          <div style={{ padding: 8, color: '#6b7280' }}>{props.emptyText}</div>
+        ) : (
+          props.items.map((it) => (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => props.onPick(it)}
+              style={{ display:'block', width:'100%', textAlign:'left', padding:'8px 10px', border:'none', background:'transparent', borderRadius:8, cursor:'pointer' }}
+              title={it.name}
+            >
+              {it.name}
+            </button>
+          ))
+        )}
+      </div>
+    );
+  }
+
   return (
     <section style={{ fontFamily: '"Times New Roman", serif', fontSize: 12 }}>
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 8, marginBottom: 12, display: 'flex', gap: 8 }}>
@@ -279,6 +351,7 @@ export default function GroupsBoard(props: {
               <div style={{ fontWeight: 800, fontSize: 18 }}>Пользователи</div>
               <div style={{ color: '#6b7280' }}>{users.length}</div>
             </div>
+            {/* Поиск по ФИО — оставил как был */}
             <UrlSearchBox paramKey="qu" placeholder="Поиск ФИО" />
             <ListBox>
               {users.map((u) => {
@@ -305,7 +378,23 @@ export default function GroupsBoard(props: {
               </div>
             </div>
 
-            <UrlSearchBox paramKey="qg" placeholder="Поиск группы" />
+            {/* Новый локальный поиск по группам (как в TaskForm) */}
+            <div style={{ position: 'relative', marginTop: 8 }}>
+              <input
+                value={groupQuery}
+                onChange={(e) => { setGroupDdOpen(true); runGroupSearch(e.target.value); }}
+                onFocus={() => setGroupDdOpen(true)}
+                onBlur={() => setTimeout(() => setGroupDdOpen(false), 100)}
+                placeholder="Поиск группы"
+                style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10 }}
+              />
+              <InlineDropdown
+                open={groupDdOpen && groupQuery.trim().length > 0}
+                items={groupFound}
+                onPick={(g) => { setSelGroupId(g.id); setGroupQuery(g.name); setGroupDdOpen(false); }}
+                emptyText="Группы не найдены."
+              />
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
               <ListBox>
@@ -352,6 +441,7 @@ export default function GroupsBoard(props: {
               <div style={{ fontWeight: 800, fontSize: 18 }}>Пользователи</div>
               <div style={{ color: '#6b7280' }}>{users.length}</div>
             </div>
+            {/* Поиск по ФИО — оставил как был */}
             <UrlSearchBox paramKey="qu" placeholder="Поиск ФИО" />
             <ListBox>
               {users.map((u) => {
@@ -378,7 +468,23 @@ export default function GroupsBoard(props: {
               </div>
             </div>
 
-            <UrlSearchBox paramKey="qs" placeholder="Поиск предмета" />
+            {/* Новый локальный поиск по предметам (как в TaskForm) */}
+            <div style={{ position: 'relative', marginTop: 8 }}>
+              <input
+                value={subjectQuery}
+                onChange={(e) => { setSubjectDdOpen(true); runSubjectSearch(e.target.value); }}
+                onFocus={() => setSubjectDdOpen(true)}
+                onBlur={() => setTimeout(() => setSubjectDdOpen(false), 100)}
+                placeholder="Поиск предмета"
+                style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10 }}
+              />
+              <InlineDropdown
+                open={subjectDdOpen && subjectQuery.trim().length > 0}
+                items={subjectFound}
+                onPick={(s) => { setSelSubjectId(s.id); setSubjectQuery(s.name); setSubjectDdOpen(false); }}
+                emptyText="Предметы не найдены."
+              />
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
               <ListBox>
@@ -432,6 +538,8 @@ export default function GroupsBoard(props: {
           value={groupNameInput}
           onChange={(e) => setGroupNameInput(e.target.value)}
           placeholder="Название группы"
+          autoFocus
+          onKeyDown={(e) => { if (e.key === 'Enter') onCreateGroup(); }}
           style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }}
         />
       </Modal>
@@ -446,6 +554,8 @@ export default function GroupsBoard(props: {
           value={groupNameInput}
           onChange={(e) => setGroupNameInput(e.target.value)}
           placeholder="Новое название"
+          autoFocus
+          onKeyDown={(e) => { if (e.key === 'Enter') onRenameGroup(); }}
           style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }}
         />
       </Modal>
@@ -470,6 +580,8 @@ export default function GroupsBoard(props: {
           value={subjectNameInput}
           onChange={(e) => setSubjectNameInput(e.target.value)}
           placeholder="Название предмета"
+          autoFocus
+          onKeyDown={(e) => { if (e.key === 'Enter') onCreateSubject(); }}
           style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }}
         />
       </Modal>
@@ -484,6 +596,8 @@ export default function GroupsBoard(props: {
           value={subjectNameInput}
           onChange={(e) => setSubjectNameInput(e.target.value)}
           placeholder="Новое название"
+          autoFocus
+          onKeyDown={(e) => { if (e.key === 'Enter') onRenameSubject(); }}
           style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 10 }}
         />
       </Modal>
