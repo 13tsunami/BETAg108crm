@@ -1,4 +1,4 @@
-// app/inboxtasks/actions.ts
+// app/(app)/inboxtasks/actions.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';
