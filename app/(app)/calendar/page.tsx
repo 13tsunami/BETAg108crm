@@ -1,6 +1,6 @@
-// app/(app)/calendar/page.tsx
 import { auth } from '@/auth.config';
 import { normalizeRole } from '@/lib/roles';
+import { prisma } from '@/lib/prisma';
 import CalendarBoard from './CalendarBoard';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -13,24 +13,50 @@ export default async function Page({
 }: {
   searchParams: SearchParams;
 }) {
-  // Контракт Next 15: ожидаем Promise и делаем await
-  const _sp = await searchParams;
+  await searchParams; // контракт Next 15
 
   const session = await auth();
   const meId = session?.user?.id ?? '';
   const roleSlug = normalizeRole(session?.user?.role) ?? null;
 
+  // Грузим задачи на сервере (без API).
+  // В календаре не показываем скрытые: hidden === true исключаем сразу.
+  const tasks = await prisma.task.findMany({
+    where: { hidden: false },
+    include: {
+      assignees: true, // { id, taskId, userId, status, assignedAt, completedAt }
+    },
+    orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
+  });
+
+  // Сделаем сериализацию для RSC
+  const initialTasks = tasks.map(t => ({
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    dueDate: t.dueDate,
+    hidden: t.hidden ?? false,
+    priority: (t.priority as 'normal' | 'high' | null) ?? 'normal',
+    createdById: t.createdById,
+    createdByName: t.createdByName,
+    assignees: t.assignees.map(a => ({
+      id: a.id,
+      taskId: a.taskId,
+      userId: a.userId,
+      status: a.status as 'in_progress' | 'done',
+      assignedAt: a.assignedAt,
+      completedAt: a.completedAt,
+    })),
+  }));
+
   return (
     <main style={{ padding: 16, display: 'grid', gap: 12 }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 style={{ margin: 0 }}>Календарь</h1>
-        {/* при необходимости сюда можно добавить фильтры / кнопки периода */}
       </header>
 
-      {/* CalendarBoard — клиентский компонент.
-         Пробрасываем meId и roleSlug, чтобы внутри включить переключатель «Мои/Все» (только для директора/зам. +)
-         и корректную фильтрацию «моих» задач по статусу in_progress. */}
-      <CalendarBoard meId={meId} roleSlug={roleSlug} />
+      {/* Клиентский компонент. Теперь даём ему initialTasks вместо fetch. */}
+      <CalendarBoard meId={meId} roleSlug={roleSlug} initialTasks={initialTasks} />
     </main>
   );
 }

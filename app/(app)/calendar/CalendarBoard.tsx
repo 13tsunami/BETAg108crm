@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 type Assignee = {
   id: string;
@@ -26,6 +26,7 @@ type Task = {
 type Props = {
   meId: string;
   roleSlug: string | null;
+  initialTasks: Task[];
 };
 
 const BRAND = '#8d2828';
@@ -95,7 +96,7 @@ function useModalState<T>() {
   return { open, payload, openWith, close };
 }
 
-export default function CalendarBoard({ meId, roleSlug }: Props) {
+export default function CalendarBoard({ meId, roleSlug, initialTasks }: Props) {
   // «Все задачи» — только директор и заместитель+
   const canViewAll = useMemo(() => {
     const r = (roleSlug || '').toLowerCase();
@@ -108,31 +109,8 @@ export default function CalendarBoard({ meId, roleSlug }: Props) {
   const [q, setQ] = useState('');
   const [showAll, setShowAll] = useState<boolean>(false); // для canViewAll
 
-  // ===== Загрузка задач =====
-  const [loading, setLoading] = useState(true);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [reload, setReload] = useState(0);
-
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/tasks', { cache: 'no-store' });
-      const data: Task[] = await res.json();
-      setTasks(
-        (data || []).map((t) => ({
-          ...t,
-          hidden: !!t.hidden,
-          priority: t.priority === 'high' ? 'high' : 'normal',
-        }))
-      );
-    } catch {
-      setTasks([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { void fetchTasks(); }, [fetchTasks, reload]);
+  // Задачи берём из пропсов (серверная загрузка)
+  const tasks = initialTasks;
 
   // ===== Фильтрация и «мои» флаги =====
   const visibleBase = useMemo(() => {
@@ -304,8 +282,7 @@ export default function CalendarBoard({ meId, roleSlug }: Props) {
                     </button>
                   );
                 })}
-                {!loading && list.length === 0 && <div style={{ fontSize: 12, color: '#9ca3af' }}>Нет задач</div>}
-                {loading && <div style={{ fontSize: 12, color: '#9ca3af' }}>Загрузка…</div>}
+                {list.length === 0 && <div style={{ fontSize: 12, color: '#9ca3af' }}>Нет задач</div>}
                 {list.length > 4 && (
                   <button
                     onClick={() => dayModal.openWith({ dateKey: key, list })}
@@ -476,8 +453,6 @@ export default function CalendarBoard({ meId, roleSlug }: Props) {
           </div>
         </div>
       )}
-
-      <span hidden>{reload}</span>
     </section>
   );
 }
