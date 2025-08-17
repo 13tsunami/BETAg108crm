@@ -48,6 +48,15 @@ type ReadPayload = { type: 'read'; threadId: string; at: number };
 // простой генератор clientId
 const genCid = () => Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
 
+// эвристика совпадения «темпа» с серверным сообщением (когда нет clientId)
+const looksLikeSame = (a: Msg, b: Msg) => {
+  if (a.authorId !== b.authorId) return false;
+  if ((a.text || '').trim() !== (b.text || '').trim()) return false;
+  const da = new Date(a.createdAt).getTime();
+  const db = new Date(b.createdAt).getTime();
+  return Math.abs(da - db) <= 60_000; // ±60с
+};
+
 export default function ChatBoxClient({
   meId,
   meName,
@@ -94,6 +103,42 @@ export default function ChatBoxClient({
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ===== MERGE после router.refresh(): сливаем новый initial с локальными сообщениями =====
+  useEffect(() => {
+    setMessages(prev => {
+      // базис — свежий серверный снимок
+      const base = [...initial];
+
+      // для быстрого поиска
+      const byId = new Map(base.map(m => [m.id, m]));
+
+      // добавим локальные «темпы» и любые локальные элементы, не попавшие (пока) в снапшот
+      for (const m of prev) {
+        // если сервер уже прислал этот id — пропускаем
+        if (!m.pending && byId.has(m.id)) continue;
+
+        // если это pending c clientId — проверим, не пришёл ли уже его «официальный» близнец без clientId
+        if (m.pending) {
+          const matchByCid = m.clientId && base.find(x => (x as any).clientId && x.clientId === m.clientId);
+          if (matchByCid) continue; // уже есть официальный дубль по clientId
+
+          const matchByHeur = base.find(x => looksLikeSame(x, m));
+          if (matchByHeur) continue; // уже есть официальный дубль по эвристике
+        }
+
+        // иначе — переносим локальный элемент (например, pending)
+        base.push(m);
+      }
+
+      // сортировка по времени
+      base.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      return base;
+    });
+
+    // при смене треда также переносим отметку прочитанности собеседника
+    setPeerReadAt(peerReadAtIso);
+  }, [threadId, initial, peerReadAtIso]);
+
   // API для live.tsx — с дедупом по clientId
   useEffect(() => {
     if (!threadId) return;
@@ -121,7 +166,16 @@ export default function ChatBoxClient({
               return next;
             }
           }
-          // не нашли черновик — просто добавляем
+          // не нашли черновик — попробуем эвристику (на случай потери clientId)
+          const j = prev.findIndex(m => looksLikeSame(m, {
+            id: p.messageId, threadId: p.threadId, authorId: p.authorId, text: p.text, createdAt: p.ts
+          } as Msg));
+          if (j >= 0) {
+            const next = prev.slice();
+            next[j] = { ...next[j], id: p.messageId, createdAt: p.ts, text: p.text, pending: false };
+            return next;
+          }
+          // ни по clientId, ни по эвристике — просто добавляем
           return [
             ...prev,
             { id: p.messageId, threadId: p.threadId, authorId: p.authorId, text: p.text, createdAt: p.ts },
@@ -152,10 +206,12 @@ export default function ChatBoxClient({
     };
 
     (window as any).__chatApi = api;
+    try { window.dispatchEvent(new Event('chat:api-ready')); } catch {}
     return () => {
       if ((window as any).__chatApi?.threadId === threadId) (window as any).__chatApi = null;
     };
   }, [threadId]);
+  
 
   // ===== отправка с оптимистичным пушем и clientId =====
   async function send() {

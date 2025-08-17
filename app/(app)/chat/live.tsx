@@ -17,6 +17,10 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
   const lastRefresh = useRef(0);
   const refreshTimer = useRef<number | null>(null);
 
+  // буфер событий для активного треда, пока __chatApi не готов
+  const pendingRef = useRef<P[]>([]);
+  const apiReadyRef = useRef<boolean>(false);
+
   useEffect(() => {
     if (!uid) return;
     let stop = false;
@@ -34,6 +38,24 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
       refreshTimer.current = window.setTimeout(run, minGapMs);
     };
 
+    // когда ChatBoxClient зарегистрировал __chatApi — применим накопленные события
+    const onApiReady = () => {
+      apiReadyRef.current = true;
+      const api = (window as any).__chatApi;
+      if (!api || api.threadId !== activeThreadId) return;
+      const queue = pendingRef.current;
+      pendingRef.current = [];
+      for (const p of queue) {
+        if (p.type === 'message')        api.push?.({ messageId: p.messageId, text: p.text, authorId: p.authorId, ts: p.ts, clientId: p.clientId });
+        else if (p.type === 'messageEdited')  api.edit?.({ messageId: p.messageId, text: p.text });
+        else if (p.type === 'messageDeleted') api.del?.({ messageId: p.messageId, scope: p.scope as 'self'|'both' });
+        else if (p.type === 'read')           api.read?.({ threadId: p.threadId });
+        else if (p.type === 'threadDeleted')  { api.onThreadDeleted?.({ byName: (p as any).byName }); startTransition(() => router.replace('/chat')); }
+      }
+    };
+
+    window.addEventListener('chat:api-ready', onApiReady);
+
     const connect = () => {
       if (stop) return;
       try { esRef.current?.close(); } catch {}
@@ -44,9 +66,11 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
         let p: P;
         try { p = JSON.parse(e.data || '{}'); } catch { return; }
 
-        // Активный тред: пробуем точечные апдейты
+        // точечная обработка активного треда
         if (activeThreadId && p.threadId === activeThreadId) {
           const api = (window as any).__chatApi;
+
+          // если API готово — применяем сразу
           if (api && api.threadId === activeThreadId) {
             if (p.type === 'message')        { api.push?.({ ...p, clientId: (p as any).clientId }); return; }
             if (p.type === 'messageEdited')  { api.edit?.(p); return; }
@@ -54,15 +78,17 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
             if (p.type === 'read')           { api.read?.(p); return; }
             if (p.type === 'threadDeleted')  { api.onThreadDeleted?.(p); startTransition(() => router.replace('/chat')); return; }
           }
-          // API ещё не успел подняться → безусловный мягкий refresh
-          softRefresh(150);
+
+          // иначе — складываем событие в буфер и подстраховываемся мягким refresh
+          pendingRef.current.push(p);
+          if (!apiReadyRef.current) softRefresh(150);
           return;
         }
 
-        // События по другим тредам
+        // события по другим тредам
         if (p.type === 'message' && p.authorId !== uid) {
           try { window.dispatchEvent(new CustomEvent('app:unread-bump', { detail: { threadId: p.threadId } })); } catch {}
-          return; // без refresh, чтобы не сбивать ввод
+          return; // без refresh — не сбиваем ввод
         }
         if (p.type === 'threadDeleted' || p.type === 'threadCreated') { softRefresh(250); return; }
         if (p.type === 'messageEdited' || p.type === 'messageDeleted' || p.type === 'read') { softRefresh(500); return; }
@@ -77,17 +103,18 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
     connect();
 
     const onVis = () => {
-      if (document.visibilityState === 'visible') {
-        softRefresh(0); // вернулись на вкладку — подтянуть актуалку
-      }
+      if (document.visibilityState === 'visible') softRefresh(0);
     };
     document.addEventListener('visibilitychange', onVis);
 
     return () => {
       document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('chat:api-ready', onApiReady);
       stop = true;
       try { esRef.current?.close(); } catch {}
       if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
+      pendingRef.current = [];
+      apiReadyRef.current = false;
     };
   }, [router, uid, activeThreadId]);
 
