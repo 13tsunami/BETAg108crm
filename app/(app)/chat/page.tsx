@@ -265,31 +265,30 @@ export default async function ChatPage({
           </div>
         </aside>
 
-       <div className={s.paneWrap}>
-  <section className={`${s.pane} ${s.paneFixed}`} style={{ display:'flex', flexDirection:'column' }}>
-    <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
-      {threadId ? (
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>{peerName}</div>
-        </div>
-      ) : (
-        <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>
-          выберите диалог или найдите собеседника
-        </div>
-      )}
-    </header>
+        <div className={s.paneWrap}>
+          <section className={`${s.pane} ${s.paneFixed}`}>
+            <header className={s.chatHeader}>
+              {threadId ? (
+                <div className={s.chatHeaderRow}>
+                  <div className={s.chatTitle}>{peerName}</div>
+                </div>
+              ) : (
+                <div className={s.chatTitle}>
+                  выберите диалог или найдите собеседника
+                </div>
+              )}
+            </header>
 
-    <ChatBoxClient
-      meId={meId}
-      meName={meName}
-      peerName={peerName}
-      threadId={threadId || ''}
-      peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
-      initial={messages}
-    />
-  </section>
-</div>
-
+            <ChatBoxClient
+              meId={meId}
+              meName={meName}
+              peerName={peerName}
+              threadId={threadId || ''}
+              peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
+              initial={messages}
+            />
+          </section>
+        </div>
       </div>
 
       <Live uid={meId} activeThreadId={threadId || undefined} />
