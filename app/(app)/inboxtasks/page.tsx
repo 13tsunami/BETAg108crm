@@ -1,10 +1,14 @@
-// app/(app)/inboxtasks/page.tsx
 import { Suspense } from 'react';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
 import TaskForm from './TaskForm';
-import { createTaskAction, updateTaskAction, deleteTaskAction, markAssigneeDoneAction } from './actions';
+import {
+  createTaskAction,
+  updateTaskAction,
+  deleteTaskAction,
+  markAssigneeDoneAction,
+} from './actions';
 import type { Prisma } from '@prisma/client';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -15,7 +19,6 @@ type TaskWithAssignees = Prisma.TaskGetPayload<{
 function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): string {
   if (!d) return '';
   const dt = typeof d === 'string' ? new Date(d) : d;
-
   const parts = new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Asia/Yekaterinburg',
     hour: '2-digit',
@@ -25,12 +28,17 @@ function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): str
     year: 'numeric',
   }).formatToParts(dt);
   const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-  const datePart = `${map.day} ${String(map.month || '').replace('.', '')} ${map.year}`;
-  const hm = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Yekaterinburg', hour: '2-digit', minute: '2-digit' }).formatToParts(dt);
-  const hh = hm.find(p => p.type === 'hour')?.value ?? '23';
-  const mm = hm.find(p => p.type === 'minute')?.value ?? '59';
+  const dd = `${map.day} ${map.month?.replace('.', '')}`;
+  const yyyy = map.year;
+  const hm = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Yekaterinburg',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(dt);
+  const hh = hm.find(p => p.type === 'hour')?.value ?? '00';
+  const mm = hm.find(p => p.type === 'minute')?.value ?? '00';
   const isDefaultEnd = hh === '23' && mm === '59';
-  return isDefaultEnd ? datePart : `${datePart}, ${hh}:${mm}`;
+  return isDefaultEnd ? `${dd} ${yyyy}` : `${dd} ${yyyy}, ${hh}:${mm}`;
 }
 
 function TeacherGuide() {
@@ -47,7 +55,11 @@ function TeacherGuide() {
   );
 }
 
-export default async function Page({ searchParams }: { searchParams: SearchParams }) {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const sp = await searchParams;
   const tabParam = typeof sp.tab === 'string' ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
 
@@ -77,7 +89,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   if (mayCreate) {
     const [usersRaw, groupsRaw, subjectsRaw, groupMembersRaw, subjectMembersRaw] = await Promise.all([
       prisma.user.findMany({
-        select: { id: true, name: true, role: true, methodicalGroups: true, subjects: true },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+          methodicalGroups: true,
+          subjects: true,
+        },
         orderBy: { name: 'asc' },
       }),
       prisma.group.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
@@ -86,7 +104,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         orderBy: { name: 'asc' },
       }),
       prisma.groupMember.findMany({ select: { groupId: true, userId: true } }),
-      prisma.subjectMember.findMany({ select: { userId: true, subject: { select: { name: true } } } }),
+      prisma.subjectMember.findMany({
+        select: {
+          userId: true,
+          subject: { select: { name: true } },
+        },
+      }),
     ]);
 
     users = usersRaw;
@@ -99,8 +122,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   // Списки задач
   const [assignedToMe, createdByMe]: [TaskWithAssignees[], TaskWithAssignees[]] = await Promise.all([
     prisma.task.findMany({
-      where: { assignees: { some: { userId: meId, status: 'in_progress' } } },
-      include: { assignees: { include: { user: { select: { id: true, name: true } } } } },
+      where: {
+        assignees: { some: { userId: meId, status: 'in_progress' } },
+      },
+      include: {
+        assignees: { include: { user: { select: { id: true, name: true } } } },
+      },
       orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
     }),
     mayCreate
@@ -115,7 +142,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   return (
     <main style={{ padding: 16 }}>
       <div className="gridWrap">
-        {/* Левая колонка: форма (или гид) */}
+        {/* Левая колонка: форма (или гид для Teacher) */}
         <aside className="leftCol">
           {mayCreate ? (
             <section aria-label="Создать задачу" className="card">
@@ -140,19 +167,29 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           <header className="tabsWrap">
             {mayCreate ? (
               <nav className="tabs">
-                <a href="/inboxtasks?tab=mine" className={`tab ${activeTab === 'mine' ? 'tab--active' : ''}`} aria-current={activeTab === 'mine' ? 'page' : undefined}>
+                <a
+                  href="/inboxtasks?tab=mine"
+                  className={`tab ${activeTab === 'mine' ? 'tab--active' : ''}`}
+                  aria-current={activeTab === 'mine' ? 'page' : undefined}
+                >
                   Назначенные мне ({assignedToMe.length})
                 </a>
-                <a href="/inboxtasks?tab=byme" className={`tab ${activeTab === 'byme' ? 'tab--active' : ''}`} aria-current={activeTab === 'byme' ? 'page' : undefined}>
+                <a
+                  href="/inboxtasks?tab=byme"
+                  className={`tab ${activeTab === 'byme' ? 'tab--active' : ''}`}
+                  aria-current={activeTab === 'byme' ? 'page' : undefined}
+                >
                   Назначенные мной ({createdByMe.length})
                 </a>
               </nav>
             ) : (
-              <div style={{ fontSize: 13, color: '#6b7280' }}>Роль: преподаватель — доступна только вкладка «Назначенные мне»</div>
+              <div style={{ fontSize: 13, color: '#6b7280' }}>
+                Роль: преподаватель — доступна только вкладка «Назначенные мне»
+              </div>
             )}
           </header>
 
-          {/* Назначенные мне */}
+          {/* Вкладка: Назначенные мне — ПЕРЕВЁРСТАНО */}
           {activeTab === 'mine' && (
             <section aria-label="Назначенные мне" style={{ display: 'grid', gap: 8 }}>
               {assignedToMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет активных задач.</div>}
@@ -164,26 +201,45 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                     <summary className="taskSummary">
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <span style={{ fontWeight: 600 }}>{t.title}</span>
-                        {urgent && <span className="pillUrgent">Срочно</span>}
+                        {urgent && (
+                          <span className="pillUrgent">Срочно</span>
+                        )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#374151' }}>
                         <span>{fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
-                        <span style={{ color: '#111827' }}>Назначил: {t.createdByName ?? '—'}</span>
+                        <span>Назначил: {t.createdByName ?? '—'}</span>
                       </div>
                     </summary>
                     <div className="taskBody">
                       {t.description && (
-                        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#111827', marginBottom: 8 }}>{t.description}</div>
+                        <div
+                          style={{
+                            whiteSpace: 'pre-wrap',
+                            color: '#111827',
+                            marginBottom: 8,
+                            overflowWrap: 'anywhere',
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {t.description}
+                        </div>
                       )}
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <form action={markAssigneeDoneAction}>
                           <input type="hidden" name="taskId" value={t.id} />
-                          <button type="submit" className="btnPrimaryGreen" disabled={!myAssn || myAssn.status === 'done'}>
+                          <button
+                            type="submit"
+                            className="btnPrimaryGreen"
+                            disabled={!myAssn || myAssn.status === 'done'}
+                          >
                             Выполнить
                           </button>
                         </form>
                         {t.createdById && (
-                          <a href={`/chat?userId=${encodeURIComponent(t.createdById)}`} className="btnGhost">
+                          <a
+                            href={`/chat?userId=${encodeURIComponent(t.createdById)}`}
+                            className="btnGhost"
+                          >
                             Уточнить задачу
                           </a>
                         )}
@@ -195,7 +251,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             </section>
           )}
 
-          {/* Назначенные мной */}
+          {/* Вкладка: Назначенные мной (как было в предыдущей версии) */}
           {activeTab === 'byme' && mayCreate && (
             <section aria-label="Назначенные мной" style={{ display: 'grid', gap: 8 }}>
               {createdByMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Вы пока не создавали задач.</div>}
@@ -231,6 +287,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                       {/* Кому назначено (сворачиваемый список) */}
                       <div style={{ fontSize: 13 }}>
                         <div style={{ color: '#6b7280', marginBottom: 4 }}>Кому назначено:</div>
+
                         {hasMore ? (
                           <details>
                             <summary style={{ listStyle: 'none', cursor: 'pointer' }}>
@@ -247,7 +304,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                                       background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                     }}
                                   >
-                                    {(a.user?.name ?? `${a.userId.slice(0, 8)}…`)} {a.status === 'done' ? '✓' : ''}
+                                    {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
                                   </span>
                                 ))}
                               </div>
@@ -266,7 +323,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                                     background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                   }}
                                 >
-                                  {(a.user?.name ?? `${a.userId.slice(0, 8)}…`)} {a.status === 'done' ? '✓' : ''}
+                                  {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
                                 </span>
                               ))}
                             </div>
@@ -285,14 +342,14 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                                   background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                 }}
                               >
-                                {(a.user?.name ?? `${a.userId.slice(0, 8)}…`)} {a.status === 'done' ? '✓' : ''}
+                                {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
                               </span>
                             ))}
                           </div>
                         )}
                       </div>
 
-                      {/* Редактирование — отдельная форма */}
+                      {/* Редактирование основных полей */}
                       <form action={updateTaskAction} style={{ display: 'grid', gap: 8 }}>
                         <input type="hidden" name="taskId" value={t.id} />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 140px', gap: 8 }}>
@@ -300,15 +357,15 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                             name="title"
                             defaultValue={t.title}
                             placeholder="Название"
-                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, width: '100%' }}
+                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
                           />
                           <input
                             name="dueDate"
                             type="date"
                             defaultValue={new Date(t.dueDate as Date).toISOString().slice(0, 10)}
-                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, width: '100%' }}
+                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
                           />
-                          <select name="priority" defaultValue={t.priority ?? 'normal'} style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, width: '100%' }}>
+                          <select name="priority" defaultValue={t.priority ?? 'normal'} style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}>
                             <option value="normal">обычный</option>
                             <option value="high">срочно</option>
                           </select>
@@ -318,29 +375,40 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                           defaultValue={t.description ?? ''}
                           rows={3}
                           placeholder="Описание"
-                          style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, resize: 'vertical', width: '100%' }}
+                          style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, resize: 'vertical' }}
                         />
                         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
                           <input type="checkbox" name="hidden" defaultChecked={t['hidden'] ?? false} /> не размещать в календаре
                         </label>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <button type="submit" className="btnPrimary">Сохранить изменения</button>
+                          <button type="submit" className="btnPrimary">
+                            Сохранить изменения
+                          </button>
                         </div>
                       </form>
 
-                      {/* Отдельные формы: Удалить / В архив */}
+                      {/* Кнопки Удалить / В архив */}
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <form action={deleteTaskAction}>
                           <input type="hidden" name="taskId" value={t.id} />
-                          <button type="submit" className="btnDanger">Удалить</button>
+                          <button type="submit" className="btnDanger">
+                            Удалить
+                          </button>
                         </form>
-                        {allDone && (
-                          <form action={updateTaskAction} style={{ marginLeft: 'auto' }}>
-                            <input type="hidden" name="taskId" value={t.id} />
-                            <input type="hidden" name="archive" value="1" />
-                            <button type="submit" className="btnPrimaryGreen">В архив</button>
-                          </form>
-                        )}
+                        {(() => {
+                          const total = t.assignees.length;
+                          const done = t.assignees.filter(a => a.status === 'done').length;
+                          const allDone = total > 0 && done === total;
+                          return allDone ? (
+                            <form action={updateTaskAction} style={{ marginLeft: 'auto' }}>
+                              <input type="hidden" name="taskId" value={t.id} />
+                              <input type="hidden" name="archive" value="1" />
+                              <button type="submit" className="btnPrimaryGreen">
+                                В архив
+                              </button>
+                            </form>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </details>
@@ -351,6 +419,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         </section>
       </div>
 
+      {/* обычный <style>, НЕ styled-jsx */}
       <style>{`
         .gridWrap {
           display: grid;
@@ -360,7 +429,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         @media (max-width: 980px) {
           .gridWrap { grid-template-columns: 1fr; }
         }
-        .leftCol, .rightCol { min-width: 0; }
+        .leftCol { min-width: 0; }
+        .rightCol { min-width: 0; }
+
         .card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff; }
 
         .tabsWrap { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
@@ -386,10 +457,19 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
         .pillUrgent { font-size:11px; color:#8d2828; border:1px solid #8d2828; border-radius:999px; padding:0 6px; }
 
-        .btnPrimary { height:32px; padding:0 12px; border-radius:10px; border:1px solid #111827; background:#111827; color:#fff; cursor:pointer; font-size:13px; }
-        .btnPrimaryGreen { height:32px; padding:0 12px; border-radius:10px; border:1px solid #10b981; background:#10b981; color:#fff; cursor:pointer; font-size:13px; }
-        .btnDanger { height:32px; padding:0 12px; border-radius:10px; border:1px solid #ef4444; background:#ef4444; color:#fff; cursor:pointer; font-size:13px; }
-        .btnGhost { height:32px; padding:0 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; color:#111827; text-decoration:none; display:inline-flex; align-items:center; font-size:13px; }
+        .btnPrimary {
+          height:32px; padding:0 12px; border-radius:10px; border:1px solid #111827; background:#111827; color:#fff; cursor:pointer; font-size:13px;
+        }
+        .btnPrimaryGreen {
+          height:32px; padding:0 12px; border-radius:10px; border:1px solid #10b981; background:#10b981; color:#fff; cursor:pointer; font-size:13px;
+        }
+        .btnDanger {
+          height:32px; padding:0 12px; border-radius:10px; border:1px solid #ef4444; background:#ef4444; color:#fff; cursor:pointer; font-size:13px;
+        }
+        .btnGhost {
+          height:32px; padding:0 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; color:#111827;
+          text-decoration:none; display:inline-flex; align-items:center; font-size:13px;
+        }
       `}</style>
     </main>
   );

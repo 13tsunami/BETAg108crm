@@ -1,4 +1,3 @@
-// app/inboxtasks/TaskForm.tsx
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -14,7 +13,7 @@ type SubjectMember = { subjectName: string; userId: string };
 
 const BRAND = '#8d2828';
 
-// Екатеринбург «сегодня» YYYY-MM-DD
+// Получаем «сегодня» в зоне Asia/Yekaterinburg (UTC+5) в формате YYYY-MM-DD
 const todayYekbYMD = () => {
   const fmt = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Yekaterinburg', year: 'numeric', month: '2-digit', day: '2-digit' });
   const [{ value: day }, , { value: month }, , { value: year }] = fmt.formatToParts(new Date());
@@ -58,9 +57,12 @@ export default function TaskForm({
   const [title, setTitle] = useState('');
   const [description, setDesc] = useState('');
   const [due, setDue] = useState('');
-  const [dueTime, setDueTime] = useState('');
+  const [dueTime, setDueTime] = useState(''); // опциональное время
   const [priority, setPriority] = useState<'normal'|'high'>('normal');
   const [noCalendar, setNoCalendar] = useState(false);
+
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
   const todayStr = useMemo(() => todayYekbYMD(), []);
@@ -107,7 +109,7 @@ export default function TaskForm({
     setAssignees((prev) => prev.filter((x) => !(x.type === a.type && x.id === a.id)));
   }
 
-  // развёртка выбранных в userId
+  // развёртка выбранных в userId (через groupMembers / subjectMembers)
   async function expandAssigneesToUserIds(): Promise<string[]> {
     const userIds = new Set<string>();
 
@@ -158,11 +160,13 @@ export default function TaskForm({
   async function onSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
 
+    // Валидация: дата не раньше текущего дня в зоне Asia/Yekaterinburg
     const today = todayYekbYMD();
     if (!due || due < today) { alert('Срок не может быть раньше сегодняшнего дня (Екатеринбург).'); return; }
 
     const assigneeUserIds = await expandAssigneesToUserIds();
 
+    // Формируем ISO в зоне Екатеринбурга (+05:00). Если время не указано — 23:59.
     const datePart = due;
     const timePart = (dueTime && /^\d{2}:\d{2}$/.test(dueTime)) ? dueTime : '23:59';
     const dueDate = new Date(`${datePart}T${timePart}:00+05:00`);
@@ -180,91 +184,41 @@ export default function TaskForm({
 
     try {
       setTitle(''); setDesc(''); setDue(''); setDueTime(''); setPriority('normal'); setNoCalendar(false);
-      setAssignees([]); setQuery(''); setFound([]); setPreviewTotal(0);
+      setAssignees([]); setQuery(''); setFound([]); setFiles([]); setPreviewTotal(0);
     } catch {}
   }
 
-  // --- UI helpers ---
-  const TogglePriority = () => {
-    const on = priority === 'high';
-    return (
-      <button
-        type="button"
-        onClick={() => setPriority(on ? 'normal' : 'high')}
-        aria-pressed={on}
-        title={on ? 'срочно' : 'обычный'}
-        style={{
-          position: 'relative',
-          width: 150,
-          minWidth: 130,
-          height: 36,
-          borderRadius: 999,
-          border: `1px solid ${on ? BRAND : '#e5e7eb'}`,
-          background: on ? '#fde2e2' : '#fff',
-          cursor: 'pointer',
-          padding: 4,
-          display: 'grid',
-          alignItems: 'center',
-          justifyContent: on ? 'end' : 'start',
-        }}
-      >
-        {/* Текст по центру */}
-        <span
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 13,
-            color: on ? BRAND : '#111827',
-            fontWeight: 600,
-            userSelect: 'none',
-          }}
-        >
-          {on ? 'срочно' : 'обычный'}
-        </span>
-        {/* Ручка */}
-        <span
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 999,
-            background: on ? BRAND : '#e5e7eb',
-          }}
-        />
-      </button>
-    );
-  };
+  const isHigh = priority === 'high';
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} style={{ display: 'grid', gap: 10, width: '100%', minWidth: 0 }}>
+    <form ref={formRef} onSubmit={onSubmit} style={{ display: 'grid', gap: 10 }}>
       {/* Название */}
-      <div style={{ minWidth: 0 }}>
+      <div>
         <label style={{ display: 'block', marginBottom: 4 }}>Название</label>
         <input
           value={title}
           onChange={(e)=>setTitle(e.target.value)}
           required
           maxLength={256}
-          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', boxSizing:'border-box' }}
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none' }}
         />
       </div>
 
       {/* Описание */}
-      <div style={{ minWidth: 0 }}>
+      <div>
         <label style={{ display: 'block', marginBottom: 4 }}>Описание</label>
         <textarea
           value={description}
           onChange={(e)=>setDesc(e.target.value)}
           rows={4}
           placeholder="Кратко опишите задачу…"
-          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', resize:'vertical', boxSizing:'border-box' }}
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', resize:'vertical' }}
         />
       </div>
 
-      {/* Срок, время и приоритет */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, width:'100%' }}>
-        <div style={{ minWidth: 0 }}>
+      {/* Срок, время (опц.) и приоритет */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
+        <div>
           <label style={{ display:'block', marginBottom:4 }}>Срок</label>
           <input
             type="date"
@@ -272,26 +226,73 @@ export default function TaskForm({
             min={todayStr}
             onChange={(e)=>setDue(e.target.value)}
             required
-            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', boxSizing:'border-box' }}
+            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none' }}
           />
         </div>
-        <div style={{ minWidth: 0 }}>
+        <div>
           <label style={{ display:'block', marginBottom:4 }}>Время (опц.)</label>
           <input
             type="time"
             value={dueTime}
             onChange={(e)=>setDueTime(e.target.value)}
-            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', boxSizing:'border-box' }}
+            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none' }}
           />
         </div>
-        <div style={{ minWidth: 0 }}>
+        <div>
           <label style={{ display:'block', marginBottom:4 }}>Приоритет</label>
-          <TogglePriority />
+          {/* ТУТ НОВЫЙ TOGGLE, растягивается на 100% ширины ячейки */}
+          <div style={{ width:'100%', maxWidth:'100%' }}>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isHigh}
+              onClick={() => setPriority(p => p === 'high' ? 'normal' : 'high')}
+              style={{
+                width:'100%',
+                maxWidth:'100%',
+                height:36,
+                position:'relative',
+                borderRadius:999,
+                border:`1px solid ${isHigh ? BRAND+'66' : '#e5e7eb'}`,
+                background: isHigh ? `${BRAND}1a` : '#f3f4f6',
+                padding:4,
+                display:'flex',
+                alignItems:'center',
+                justifyContent: isHigh ? 'flex-end' : 'flex-start',
+                overflow:'hidden',
+                cursor:'pointer'
+              }}
+              title={isHigh ? 'срочно' : 'обычный'}
+            >
+              <span
+                style={{
+                  position:'absolute',
+                  left:0, right:0,
+                  textAlign:'center',
+                  fontWeight:700,
+                  color: isHigh ? BRAND : '#111827',
+                  fontSize:13,
+                  pointerEvents:'none'
+                }}
+              >
+                {isHigh ? 'срочно' : 'обычный'}
+              </span>
+              <span
+                aria-hidden
+                style={{
+                  width:28, height:28,
+                  borderRadius:'50%',
+                  background: isHigh ? BRAND : '#e5e7eb',
+                  boxShadow:'0 1px 2px rgba(0,0,0,.1)'
+                }}
+              />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Кому назначить */}
-      <div style={{ minWidth: 0 }}>
+      <div>
         <label style={{ display:'block', marginBottom:4 }}>Кому назначить</label>
         <Chips
           users={users}
@@ -310,7 +311,7 @@ export default function TaskForm({
           onRemove={removeAssignee}
           runSearch={runSearch}
         />
-        <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+        <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:10 }}>
           <span style={{ fontSize:13, color:'#374151' }}>
             Предпросмотр: {previewLoading ? 'подсчёт…' : `${previewTotal} исполнител${previewTotal % 10 === 1 && previewTotal % 100 !== 11 ? 'ь' : 'ей'}`}
           </span>
@@ -327,7 +328,8 @@ export default function TaskForm({
       </div>
 
       <div style={{ display:'flex', gap:8 }}>
-        <button type="submit" style={{ height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${BRAND}`, background:BRAND, color:'#fff', cursor:'pointer' }}>
+        <button type="submit"
+          style={{ height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${BRAND}`, background:BRAND, color:'#fff', cursor:'pointer' }}>
           Сохранить задачу
         </button>
       </div>
@@ -392,7 +394,7 @@ function Chips(props: {
       <div
         ref={chipsRef}
         onClick={() => inputRef.current?.focus()}
-        style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', padding:6, border:'1px solid #e5e7eb', borderRadius:10, minHeight:40, cursor:'text', width:'100%', boxSizing:'border-box' }}
+        style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', padding:6, border:'1px solid #e5e7eb', borderRadius:10, minHeight:40, cursor:'text' }}
       >
         {assignees.map((a) => (
           <span key={`${a.type}:${a.id}`} style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid #e5e7eb', borderRadius:999, padding:'2px 8px', fontSize:12 }}>
