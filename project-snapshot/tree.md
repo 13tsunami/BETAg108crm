@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-16T17:33:45.783Z
+Generated: 2025-08-17T11:29:05.249Z
 ## UI hints
 ```json
 {
@@ -17,6 +17,7 @@ Generated: 2025-08-16T17:33:45.783Z
    ├─ app
    │  ├─ (app)
    │  │  ├─ calendar
+   │  │  │  ├─ CalendarBoard.tsx
    │  │  │  └─ page.tsx
    │  │  ├─ chat
    │  │  │  ├─ ChatBoxClient.tsx
@@ -41,6 +42,8 @@ Generated: 2025-08-16T17:33:45.783Z
    │  │  ├─ inboxtasks
    │  │  │  ├─ TaskForm.tsx
    │  │  │  ├─ actions.ts
+   │  │  │  ├─ archive
+   │  │  │  │  └─ page.tsx
    │  │  │  ├─ page.tsx
    │  │  │  └─ tasks-search-client.tsx
    │  │  ├─ layout.module.css
@@ -78,7 +81,6 @@ Generated: 2025-08-16T17:33:45.783Z
    ├─ cascade_user_delete.sql
    ├─ components
    │  ├─ AddUserModal.tsx
-   │  ├─ CalendarBoard.tsx
    │  ├─ ConfirmDeleteUser.tsx
    │  ├─ EditUserModal.tsx
    │  ├─ GroupsBoard.tsx
@@ -105,8 +107,11 @@ Generated: 2025-08-16T17:33:45.783Z
    │  ├─ search
    │  │  ├─ index.ts
    │  │  └─ types.ts
-   │  └─ serialize.ts
+   │  ├─ serialize.ts
+   │  └─ tasks
+   │     └─ getUnreadTasks.ts
    ├─ middleware.ts
+   ├─ migration_sync_20250817_010051.sql
    ├─ next-env.d.ts
    ├─ next.config.ts
    ├─ package-lock.json
@@ -115,6 +120,8 @@ Generated: 2025-08-16T17:33:45.783Z
    │  ├─ dev.db
    │  ├─ migrations
    │  │  ├─ 000_init
+   │  │  │  └─ migration.sql
+   │  │  ├─ 2025-08-16_taskassignee_unique
    │  │  │  └─ migration.sql
    │  │  ├─ 20250814151727_init
    │  │  │  └─ migration.sql
@@ -127,6 +134,12 @@ Generated: 2025-08-16T17:33:45.783Z
    │  │  ├─ 20250816_182139_cascade_user_delete_fix
    │  │  │  └─ migration.sql
    │  │  ├─ 20250816_add_subjects
+   │  │  │  └─ migration.sql
+   │  │  ├─ 20250817_010445_sync_to_prisma
+   │  │  │  └─ migration.sql
+   │  │  ├─ 20250817_010821_sync_to_prisma
+   │  │  │  └─ migration.sql
+   │  │  ├─ 20250817_task_audit_and_status
    │  │  │  └─ migration.sql
    │  │  ├─ init_baseline_20250811_225344
    │  │  │  └─ migration.sql
@@ -159,6 +172,7 @@ Generated: 2025-08-16T17:33:45.783Z
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
 /groups  ⟶  app/(app)/groups/page.tsx
 /inboxtasks  ⟶  app/(app)/inboxtasks/page.tsx
+/inboxtasks/archive  ⟶  app/(app)/inboxtasks/archive/page.tsx
 /settings  ⟶  app/(app)/settings/page.tsx
 /sign-in  ⟶  app/(auth)/sign-in/page.tsx
 /teachers  ⟶  app/(app)/teachers/page.tsx
