@@ -256,7 +256,7 @@ export default async function ChatPage({
           })}
         </aside>
 
-        <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr auto', gap:12 }}>
+       <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr', gap:12 }}>
           <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
             {threadId ? (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>

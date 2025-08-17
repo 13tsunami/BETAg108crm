@@ -236,3 +236,5 @@
 /* ====== Вспомогательные ====== */
 hr.line{ border:0; border-top:1px solid var(--line); margin:8px 0; }
 .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mine{ letter-spacing: 0 }    /* маркерный класс для CSS Modules */
+.other{ letter-spacing: 0 }   /* маркерный класс для CSS Modules */
