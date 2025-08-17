@@ -403,9 +403,7 @@ export default async function Page({
                             <form action={updateTaskAction} style={{ marginLeft: 'auto' }}>
                               <input type="hidden" name="taskId" value={t.id} />
                               <input type="hidden" name="archive" value="1" />
-                              <button type="submit" className="btnPrimaryGreen">
-                                В архив
-                              </button>
+                              
                             </form>
                           ) : null;
                         })()}
