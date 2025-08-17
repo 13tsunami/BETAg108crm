@@ -104,13 +104,9 @@ export default async function ChatPage({
   const sp = await searchParams;
   const get = (k: string) => toStr(sp?.[k]);
 
-  const rawThread = get('thread');
-  const rawQ      = get('q');
-  const rawStart  = get('start');
-
-  const threadId = typeof rawThread === 'string' ? rawThread.trim() : '';
-  const q        = typeof rawQ === 'string' ? rawQ.trim() : '';
-  const start    = typeof rawStart === 'string' ? rawStart.trim() : '';
+  const threadId = get('thread').trim();
+  const q        = get('q').trim();
+  const start    = get('start').trim();
 
   if (start) {
     return ensureThread(meId, start);
@@ -163,13 +159,21 @@ export default async function ChatPage({
           authorId: true,
           editedAt: true,
           deletedAt: true,
-          threadId: true,                        // добавлено
+          threadId: true,
           hides: { where: { userId: meId }, select: { userId: true } },
         },
       })
     : [];
 
-  const messages = rawMessages.filter(m => (m.hides?.length ?? 0) === 0);
+  const messages = rawMessages
+    .filter(m => (m.hides?.length ?? 0) === 0)
+    .map(m => ({
+      id: m.id,
+      threadId: m.threadId,
+      authorId: m.authorId,
+      text: m.text,
+      createdAt: m.createdAt.toISOString(),
+    }));
 
   if (threadId && active) {
     await prisma.readMark.upsert({
@@ -197,7 +201,6 @@ export default async function ChatPage({
             <div className={s.searchRow}>
               <SearchBox initialQuery={q} />
             </div>
-
             {!!q && (
               <div className={s.dd}>
                 {users.length === 0 && <div className={s.ddItem} style={{ color:'#6b7280' }}>ничего не найдено</div>}
@@ -213,9 +216,7 @@ export default async function ChatPage({
             )}
           </div>
 
-          {threads.length === 0 && (
-            <div style={{ color:'#6b7280' }}>диалогов пока нет</div>
-          )}
+          {threads.length === 0 && <div style={{ color:'#6b7280' }}>диалогов пока нет</div>}
 
           {threads.map(t => {
             const activeCls = t.id === threadId ? s.threadActive : '';
@@ -230,33 +231,23 @@ export default async function ChatPage({
 
             return (
               <div key={t.id} className={s.threadWrap}>
-                <Link
-                  className={`${s.thread} ${activeCls} ${unreadCls}`}
-                  href={`/chat?thread=${t.id}`}
-                >
+                <Link className={`${s.thread} ${activeCls} ${unreadCls}`} href={`/chat?thread=${t.id}`}>
                   <div className={s.threadTop}>
                     <div className={s.peer}>
                       <div className={s.avatar}>{initials || '•'}</div>
                       <div className={s.threadName}>{t.peerName}</div>
                     </div>
-                    <div className={s.threadDate}>
-                      {t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}
-                    </div>
+                    <div className={s.threadDate}>{t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}</div>
                   </div>
-                  {t.lastMessageText ? (
-                    <div className={s.threadLast}>{t.lastMessageText}</div>
-                  ) : null}
+                  {t.lastMessageText ? <div className={s.threadLast}>{t.lastMessageText}</div> : null}
                 </Link>
-
-                {t.unreadCount > 0 && (
-                  <div className={s.badge}>{t.unreadCount}</div>
-                )}
+                {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
               </div>
             );
           })}
         </aside>
 
-       <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr', gap:12 }}>
+        <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr', gap:12 }}>
           <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
             {threadId ? (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -273,16 +264,7 @@ export default async function ChatPage({
             peerName={peerName}
             threadId={threadId || ''}
             peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
-            initial={messages.map(m => ({
-              id: m.id,
-              text: m.text,
-              ts: m.createdAt.toISOString(),
-              authorId: m.authorId,
-              edited: !!m.editedAt,
-              deleted: !!m.deletedAt,
-              threadId: m.threadId,                       // добавлено
-              createdAt: m.createdAt.toISOString(),       // добавлено
-            }))}
+            initial={messages}
           />
         </section>
       </div>
