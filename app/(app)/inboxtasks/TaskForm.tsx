@@ -272,11 +272,6 @@ export default function TaskForm({
           style={{ height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${BRAND}`, background:BRAND, color:'#fff', cursor:'pointer' }}>
           Сохранить задачу
         </button>
-        <button type="button"
-          onClick={()=>{ setTitle(''); setDesc(''); setDue(''); setDueTime(''); setPriority('normal'); setNoCalendar(false); setAssignees([]); setQuery(''); setFound([]); setFiles([]); setPreviewTotal(0); }}
-          style={{ height:36, padding:'0 14px', borderRadius:10, border:'1px solid #e5e7eb', background:'#fff', cursor:'pointer' }}>
-          Очистить
-        </button>
       </div>
     </form>
   );

@@ -1,4 +1,3 @@
-// app/(app)/inboxtasks/page.tsx
 import { Suspense } from 'react';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
@@ -217,17 +216,6 @@ export default async function Page({
                       {t.description && (
                         <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>
                       )}
-
-                      {/* МЕТАДАННЫЕ: назначение и выполнение (добавлено) */}
-                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: '#374151', marginBottom: 8 }}>
-                        <span>Назначена: {fmtRuDateWithOptionalTimeYekb(myAssn?.assignedAt)}</span>
-                        {myAssn?.completedAt ? (
-                          <span>Выполнено: {fmtRuDateWithOptionalTimeYekb(myAssn.completedAt)}</span>
-                        ) : (
-                          <span>Статус: в работе</span>
-                        )}
-                      </div>
-
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <form action={markAssigneeDoneAction}>
                           <input type="hidden" name="taskId" value={t.id} />
@@ -356,7 +344,7 @@ export default async function Page({
                         )}
                       </div>
 
-                      {/* Редактирование основных полей (ОТДЕЛЬНАЯ ФОРМА) */}
+                      {/* Редактирование основных полей */}
                       <form action={updateTaskAction} style={{ display: 'grid', gap: 8 }}>
                         <input type="hidden" name="taskId" value={t.id} />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 140px', gap: 8 }}>
@@ -394,7 +382,7 @@ export default async function Page({
                         </div>
                       </form>
 
-                      {/* Кнопки Удалить / В архив — ОТДЕЛЬНЫЕ ФОРМЫ (НЕ вложенные) */}
+                      {/* Кнопки Удалить / В архив — отдельные формы */}
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <form action={deleteTaskAction}>
                           <input type="hidden" name="taskId" value={t.id} />
@@ -423,23 +411,37 @@ export default async function Page({
 
       {/* ВАЖНО: обычный <style>, НЕ styled-jsx */}
       <style>{`
+        /* 1/3 + 2/3 на широких экранах */
         .gridWrap {
           display: grid;
-          grid-template-columns: minmax(320px, clamp(320px, 33%, 420px)) 1fr;
+          grid-template-columns: 1fr 2fr; /* ровно 1/3 : 2/3 */
           gap: 12px;
+          align-items: start;
         }
-        @media (max-width: 980px) {
-          .gridWrap {
-            grid-template-columns: 1fr;
-          }
-        }
-        .leftCol { min-width: 0; }
+        /* ограничим чрезмерный разлет левой колонки */
+        .leftCol { min-width: 340px; }
         .rightCol { min-width: 0; }
 
+        /* На узких экранах переносим задачи под форму */
+        @media (max-width: 980px) {
+          .gridWrap { grid-template-columns: 1fr; }
+          .leftCol { min-width: 0; }
+        }
+
+        /* Карточка формы */
         .card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff; }
 
+        /* Инпуты/textarea/select внутри формы — по ширине карточки */
+        .card input,
+        .card textarea,
+        .card select {
+          width: 100%;
+          box-sizing: border-box;
+          max-width: 100%;
+        }
+
         .tabsWrap { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-        .tabs { display:flex; gap:8px; }
+        .tabs { display:flex; gap:8px; flex-wrap: wrap; }
         .tab {
           padding: 6px 10px;
           border-radius: 999px;
