@@ -207,60 +207,64 @@ export default async function ChatPage({
     <main style={{ padding:12, fontFamily:'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial' }}>
       <div className={s.chatRoot}>
         <aside className={s.threads}>
-          <div className={s.blockTitle}>чаты</div>
+          <div className={s.threadsHeader}>
+            <div className={s.blockTitle}>чаты</div>
 
-          <div className={s.searchBlock}>
-            <div className={s.searchRow}>
-              <SearchBox initialQuery={q} />
-            </div>
-            {!!q && (
-              <div className={s.dd}>
-                {users.length === 0 && <div className={s.ddItem} style={{ color:'#6b7280' }}>ничего не найдено</div>}
-                {users.map(u => (
-                  <form key={u.id} action="/chat" method="get">
-                    <input type="hidden" name="start" value={u.id} />
-                    <button className={s.ddItem} type="submit" title={u.email ?? ''}>
-                      {u.name || u.email || u.id}
-                    </button>
-                  </form>
-                ))}
+            <div className={s.searchBlock}>
+              <div className={s.searchRow}>
+                <SearchBox initialQuery={q} />
               </div>
-            )}
+              {!!q && (
+                <div className={s.dd}>
+                  {users.length === 0 && <div className={s.ddItem} style={{ color:'#6b7280' }}>ничего не найдено</div>}
+                  {users.map(u => (
+                    <form key={u.id} action="/chat" method="get">
+                      <input type="hidden" name="start" value={u.id} />
+                      <button className={s.ddItem} type="submit" title={u.email ?? ''}>
+                        {u.name || u.email || u.id}
+                      </button>
+                    </form>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {threads.length === 0 && <div style={{ color:'#6b7280' }}>диалогов пока нет</div>}
+          <div className={s.threadsList}>
+            {threads.length === 0 && <div style={{ color:'#6b7280' }}>диалогов пока нет</div>}
 
-          {threads.map(t => {
-            const activeCls = active?.id === t.id ? s.threadActive : '';
-            const unreadCls = t.unreadCount > 0 ? s.threadUnread : '';
-            const initials = (t.peerName || '—')
-              .trim()
-              .split(/\s+/)
-              .map(w => w[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase();
+            {threads.map(t => {
+              const activeCls = active?.id === t.id ? s.threadActive : '';
+              const unreadCls = t.unreadCount > 0 ? s.threadUnread : '';
+              const initials = (t.peerName || '—')
+                .trim()
+                .split(/\s+/)
+                .map(w => w[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase();
 
-            return (
-              <div key={t.id} className={s.threadWrap}>
-                <Link className={`${s.thread} ${activeCls} ${unreadCls}`} href={`/chat?thread=${t.id}`}>
-                  <div className={s.threadTop}>
-                    <div className={s.peer}>
-                      <div className={s.avatar}>{initials || '•'}</div>
-                      <div className={s.threadName}>{t.peerName}</div>
+              return (
+                <div key={t.id} className={s.threadWrap}>
+                  <Link className={`${s.thread} ${activeCls} ${unreadCls}`} href={`/chat?thread=${t.id}`}>
+                    <div className={s.threadTop}>
+                      <div className={s.peer}>
+                        <div className={s.avatar}>{initials || '•'}</div>
+                        <div className={s.threadName}>{t.peerName}</div>
+                      </div>
+                      <div className={s.threadDate}>{t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}</div>
                     </div>
-                    <div className={s.threadDate}>{t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}</div>
-                  </div>
-                  {t.lastMessageText ? <div className={s.threadLast}>{t.lastMessageText}</div> : null}
-                </Link>
-                {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
-                <form action={deleteThreadActionForm}>
-                  <input type="hidden" name="threadId" value={t.id} />
-                  <button type="submit" className={s.threadDeleteBtn} title="Удалить диалог">×</button>
-                </form>
-              </div>
-            );
-          })}
+                    {t.lastMessageText ? <div className={s.threadLast}>{t.lastMessageText}</div> : null}
+                  </Link>
+                  {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
+                  <form action={deleteThreadActionForm}>
+                    <input type="hidden" name="threadId" value={t.id} />
+                    <button type="submit" className={s.threadDeleteBtn} title="Удалить диалог">×</button>
+                  </form>
+                </div>
+              );
+            })}
+          </div>
         </aside>
 
         <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr', gap:12 }}>
