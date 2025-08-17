@@ -1,39 +1,41 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 type Assignee = {
   id: string;
-  taskId: string;
   userId: string;
   status: 'in_progress' | 'done';
-  assignedAt?: string | Date | null;
-  completedAt?: string | Date | null;
+  completedAt: string | null;
+  user?: { id: string; name: string | null } | null;
 };
 
 type Task = {
   id: string;
   title: string;
-  description?: string | null;
-  dueDate: string | Date;
-  hidden?: boolean | null;
-  priority?: 'normal' | 'high' | null;
-  createdById?: string | null;
-  createdByName?: string | null;
+  description: string | null;
+  dueDate: string; // ISO
+  hidden: boolean;
+  priority: 'normal' | 'high';
+  createdById: string | null;
+  createdByName: string | null;
   assignees: Assignee[];
 };
 
 type Props = {
   meId: string;
-  canSeeAll: boolean; // разрешение показывать "Все задачи" (director, deputy_plus)
+  roleCanSeeAll: boolean;
+  initialTasks: Task[];
 };
 
-// Цвета (согласовано):
 const BRAND = '#8d2828';
-const TILE_MINE = '#ffe169';      // сочный жёлтый — назначенные МНЕ
-const TILE_BYME = '#e6f1ff';      // лёгкий голубой — назначенные МНОЙ
-const TILE_EVENT = '#e8f7ea';     // зелёный для будущих "событий" (плейсхолдер)
-const TILE_BG = '#ffffff';
+
+// Цвета по договоренности:
+// — назначенные МНЕ (я исполнитель): сочный жёлтый
+// — назначенные МНОЙ (я автор): лёгкий голубой
+// — срочно: красный бейдж
+const BG_MINE = '#fef08a';       // yellow-200-ish
+const BG_BYME = '#e0f2fe';       // sky-100-ish
 
 function ymd(d: Date): string {
   const y = d.getFullYear();
@@ -41,96 +43,57 @@ function ymd(d: Date): string {
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 }
+
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
-  const day = (d.getDay() + 6) % 7; // Monday=0
+  const day = (d.getDay() + 6) % 7; // monday-first
   d.setDate(d.getDate() - day);
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
   return d;
 }
-function fmtRuDate(d: Date | string) {
-  const dt = typeof d === 'string' ? new Date(d) : d;
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(dt);
-}
-function fmtYekbTimeIfNotDefault(d: Date | string) {
-  const dt = typeof d === 'string' ? new Date(d) : d;
-  // покажем HH:MM только если это не "23:59"
-  const hh = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Yekaterinburg', hour: '2-digit' }).format(dt);
-  const mm = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Yekaterinburg', minute: '2-digit' }).format(dt);
-  if (hh === '23' && mm === '59') return '';
-  return `${hh}:${mm}`;
-}
 
-export default function CalendarBoard({ meId, canSeeAll }: Props) {
-  // ===== Параметры представления =====
+export default function CalendarBoard({ meId, roleCanSeeAll, initialTasks }: Props) {
+  // Представление
   const [view, setView] = useState<'week' | 'month'>('week');
   const [cursor, setCursor] = useState<Date>(startOfWeek(new Date()));
+  const [showMyOnly, setShowMyOnly] = useState<boolean>(!roleCanSeeAll); // если нельзя «все», держим «мои»
 
-  // Только director / deputy_plus видят "Все задачи". Остальные — всегда только "Мои".
-  const [showMyOnly, setShowMyOnly] = useState<boolean>(!canSeeAll);
-
-  // ===== Загрузка задач (read-only CRUD fetch) =====
-  const [loading, setLoading] = useState(true);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [reload, setReload] = useState(0);
   const [q, setQ] = useState('');
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/tasks', { cache: 'no-store' });
-      const data: Task[] = await res.json();
-      setTasks(
-        (data || []).map((t) => ({
-          ...t,
-          hidden: !!t.hidden,
-          priority: (t.priority === 'high' ? 'high' : 'normal') as 'normal' | 'high',
-        }))
-      );
-    } catch {
-      setTasks([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // База: берём только не скрытые (страница уже прислала hidden=false, но держим фильтр)
+  const base = useMemo(
+    () => (initialTasks || []).filter(t => !!t.dueDate && !t.hidden),
+    [initialTasks]
+  );
 
-  useEffect(() => {
-    void fetchTasks();
-  }, [fetchTasks, reload]);
+  // Флаг «мои» — либо я автор, либо я исполнитель
+  const isMine = (t: Task) =>
+    t.createdById === meId || t.assignees.some(a => a.userId === meId);
 
-  // ===== Фильтрация =====
-  // Сначала отбросим "hidden"
-  const visible = useMemo(() => (tasks || []).filter((t) => !!t.dueDate && !t.hidden), [tasks]);
-
-  // Мои / Все
-  const scoped = useMemo(() => {
-    if (!showMyOnly) return visible;
-    return visible.filter(
-      (t) => t.createdById === meId || t.assignees.some((a) => a.userId === meId)
-    );
-  }, [visible, showMyOnly, meId]);
+  // Фильтрация по правам/переключателю
+  const scopeFiltered = useMemo(() => {
+    if (!roleCanSeeAll) return base.filter(isMine);
+    return showMyOnly ? base.filter(isMine) : base;
+  }, [base, roleCanSeeAll, showMyOnly]);
 
   // Поиск
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
-    if (!qq) return scoped;
-    return scoped.filter(
+    if (!qq) return scopeFiltered;
+    return scopeFiltered.filter(
       (t) =>
         (t.title || '').toLowerCase().includes(qq) ||
         (t.description || '').toLowerCase().includes(qq)
     );
-  }, [scoped, q]);
+  }, [scopeFiltered, q]);
 
-  // ===== Группировка по дням =====
+  // Группировка по дням
   const byDay = useMemo(() => {
     const map = new Map<string, Task[]>();
     for (const t of filtered) {
@@ -139,7 +102,6 @@ export default function CalendarBoard({ meId, canSeeAll }: Props) {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(t);
     }
-    // сортировка: срочные выше, затем по названию
     for (const [k, arr] of map) {
       arr.sort((a, b) => {
         const ap = a.priority === 'high' ? 0 : 1;
@@ -152,7 +114,7 @@ export default function CalendarBoard({ meId, canSeeAll }: Props) {
     return map;
   }, [filtered]);
 
-  // ===== Сетки дат =====
+  // Сетки дат
   const weekDays = useMemo(() => {
     const start = startOfWeek(cursor);
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
@@ -164,115 +126,55 @@ export default function CalendarBoard({ meId, canSeeAll }: Props) {
     return Array.from({ length: 42 }, (_, i) => addDays(firstGrid, i));
   }, [cursor]);
 
-  // ===== Модалка дня =====
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalDayKey, setModalDayKey] = useState<string | null>(null);
-
-  const openDay = (key: string) => {
-    setModalDayKey(key);
-    setModalOpen(true);
-  };
-  const closeModal = () => {
-    setModalOpen(false);
-    setModalDayKey(null);
-  };
-
-  // ===== Хэндлеры навигации =====
-  const next = () =>
-    setCursor((d) => (view === 'week' ? addDays(d, 7) : new Date(d.getFullYear(), d.getMonth() + 1, d.getDate())));
-  const prev = () =>
-    setCursor((d) => (view === 'week' ? addDays(d, -7) : new Date(d.getFullYear(), d.getMonth() - 1, d.getDate())));
+  const next = () => setCursor((d) => (view === 'week' ? addDays(d, 7) : new Date(d.getFullYear(), d.getMonth() + 1, d.getDate())));
+  const prev = () => setCursor((d) => (view === 'week' ? addDays(d, -7) : new Date(d.getFullYear(), d.getMonth() - 1, d.getDate())));
   const today = () => setCursor(startOfWeek(new Date()));
 
-  // ===== Вспомогательные =====
-  const tileStyleForTask = (t: Task): React.CSSProperties => {
-    const mineIncoming = t.assignees.some((a) => a.userId === meId);
-    const iCreated = t.createdById === meId;
-
-    // Приоритет отображения фона:
-    // 1) если назначено мне — жёлтый
-    // 2) иначе если назначено мной — голубой
-    // 3) события (на будущее) — зелёный
-    // 4) иначе — белый
-    let bg = TILE_BG;
-    if (mineIncoming) bg = TILE_MINE;
-    else if (iCreated) bg = TILE_BYME;
-
-    return {
-      textAlign: 'left',
-      borderRadius: 10,
-      padding: '6px 8px',
-      border: '1px solid #e5e7eb',
-      background: bg,
-      cursor: 'pointer',
-    };
-  };
-
-  // ===== Разметка =====
+  // Разметка
   return (
     <section style={{ display: 'grid', gap: 12 }}>
-      {/* Панель управления */}
+      {/* Панель */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button onClick={prev} style={btn()}>
-            ←
-          </button>
-          <button onClick={today} style={btn()}>
-            Сегодня
-          </button>
-          <button onClick={next} style={btn()}>
-            →
-          </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={prev} style={btn()}>←</button>
+          <button onClick={today} style={btn()}>Сегодня</button>
+          <button onClick={next} style={btn()}>→</button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input
-            placeholder="Поиск задач…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={{ padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, minWidth: 220 }}
-          />
-        </div>
+        <input
+          placeholder="Поиск задач…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          style={{ padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, minWidth: 220 }}
+        />
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* Мои / Все — только если есть право */}
           <button
             onClick={() => setShowMyOnly(true)}
             style={pill(showMyOnly)}
             title="Показывать только мои задачи"
+            disabled={!roleCanSeeAll}
           >
             Мои задачи
           </button>
-          {canSeeAll && (
-            <button
-              onClick={() => setShowMyOnly(false)}
-              style={pill(!showMyOnly)}
-              title="Показывать все задачи"
-            >
-              Все задачи
-            </button>
-          )}
+          <button
+            onClick={() => setShowMyOnly(false)}
+            style={pill(!showMyOnly)}
+            title="Показывать все задачи"
+            disabled={!roleCanSeeAll}
+          >
+            Все задачи
+          </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button onClick={() => setView('week')} style={pill(view === 'week')}>
-            Неделя
-          </button>
-          <button onClick={() => setView('month')} style={pill(view === 'month')}>
-            Месяц
-          </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setView('week')} style={pill(view === 'week')}>Неделя</button>
+          <button onClick={() => setView('month')} style={pill(view === 'month')}>Месяц</button>
         </div>
       </div>
 
-      {/* Сетка календаря */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: 8,
-          alignItems: 'stretch',
-        }}
-      >
+      {/* Сетка */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
         {(view === 'week' ? weekDays : monthDays).map((day) => {
           const key = ymd(day);
           const list = byDay.get(key) || [];
@@ -293,191 +195,57 @@ export default function CalendarBoard({ meId, canSeeAll }: Props) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <button
-                  onClick={() => openDay(key)}
-                  title="Показать задачи этого дня"
-                  style={{
-                    border: 0,
-                    background: 'transparent',
-                    textAlign: 'left',
-                    padding: 0,
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
-                >
-                  {day.getDate()}
-                </button>
+                <div style={{ fontWeight: 600 }}>{day.getDate()}</div>
                 <div style={{ fontSize: 12, color: '#6b7280' }}>{key}</div>
               </div>
 
               <div style={{ display: 'grid', gap: 6 }}>
                 {list.map((t) => {
                   const urgent = (t.priority ?? 'normal') === 'high';
-                  const timeStr = fmtYekbTimeIfNotDefault(t.dueDate);
+                  const assignedToMe = t.assignees.some(a => a.userId === meId);
+                  const createdByMe = t.createdById === meId;
+
+                  // Выбор цвета:
+                  // если я назначенный — желтый, если я автор — голубой, иначе белый (когда canSeeAll=true и включен режим "Все")
+                  const bg = assignedToMe ? BG_MINE : createdByMe ? BG_BYME : '#fff';
+                  const border = urgent ? BRAND : '#e5e7eb';
+
                   return (
                     <button
                       key={t.id}
-                      onClick={() => openDay(key)}
-                      style={tileStyleForTask(t)}
+                      onClick={() => {
+                        // якорь на твою модалку (если будет)
+                        const ev = new CustomEvent('calendar:open-task', { detail: { taskId: t.id } });
+                        window.dispatchEvent(ev);
+                      }}
+                      style={{
+                        textAlign: 'left',
+                        borderRadius: 10,
+                        padding: '6px 8px',
+                        border: `1px solid ${border}`,
+                        background: bg,
+                        cursor: 'pointer',
+                      }}
                       title={t.description || ''}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>
-                          {t.title}
-                        </div>
-                        {urgent && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: '#fff',
-                              background: BRAND,
-                              border: `1px solid ${BRAND}`,
-                              borderRadius: 999,
-                              padding: '0 6px',
-                              fontWeight: 700,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            Срочно
-                          </span>
-                        )}
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2, display:'flex', gap:8, alignItems:'center' }}>
+                        {t.title}
+                        {urgent && <span style={{ fontSize: 10, color: '#fff', background: BRAND, borderRadius: 999, padding: '0 6px' }}>Срочно</span>}
                       </div>
-                      {timeStr ? (
-                        <div style={{ fontSize: 12, color: '#374151', marginTop: 2 }}>
-                          {timeStr}
-                        </div>
-                      ) : null}
+                      <div style={{ fontSize: 12, color: '#374151' }}>
+                        {(t.assignees || []).length ? `Исполнители: ${(t.assignees || []).length}` : 'Без назначений'}
+                      </div>
                     </button>
                   );
                 })}
-                {!loading && list.length === 0 && (
+                {list.length === 0 && (
                   <div style={{ fontSize: 12, color: '#9ca3af' }}>Нет задач</div>
                 )}
-                {loading && <div style={{ fontSize: 12, color: '#9ca3af' }}>Загрузка…</div>}
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Модалка дня */}
-      {modalOpen && modalDayKey && (
-        <div
-          onClick={closeModal}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,.35)',
-            zIndex: 50,
-            display: 'grid',
-            placeItems: 'center',
-            padding: 16,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: 'min(920px, 96vw)',
-              maxHeight: '86vh',
-              overflow: 'auto',
-              background: '#fff',
-              borderRadius: 12,
-              border: '1px solid #e5e7eb',
-              boxShadow: '0 10px 24px rgba(0,0,0,.15)',
-              display: 'grid',
-              gap: 10,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #f3f4f6' }}>
-              <div style={{ fontWeight: 800, fontSize: 16 }}>
-                {modalDayKey} · {fmtRuDate(new Date(modalDayKey))}
-              </div>
-              <button
-                onClick={closeModal}
-                style={{ height: 32, padding: '0 10px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer' }}
-              >
-                Закрыть
-              </button>
-            </div>
-
-            <div style={{ padding: '0 12px 12px', display: 'grid', gap: 8 }}>
-              {(byDay.get(modalDayKey) || []).map((t) => {
-                const urgent = (t.priority ?? 'normal') === 'high';
-                const mine = t.assignees.some((a) => a.userId === meId);
-                const iCreated = t.createdById === meId;
-                const timeStr = fmtYekbTimeIfNotDefault(t.dueDate);
-
-                // вычислим счётчик выполнено/всего
-                const total = t.assignees.length;
-                const done = t.assignees.filter(a => a.status === 'done').length;
-
-                return (
-                  <details key={t.id} open style={{ border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff' }}>
-                    <summary style={{ padding: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontWeight: 700 }}>{t.title}</span>
-                        {urgent && (
-                          <span style={{ fontSize: 11, color: '#fff', background: BRAND, border: `1px solid ${BRAND}`, borderRadius: 999, padding: '0 6px', fontWeight: 700 }}>
-                            Срочно
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: '#374151' }}>
-                        {timeStr ? <span>{timeStr}</span> : null}
-                        {typeof t.createdByName === 'string' && t.createdByName ? (
-                          <span>Назначил: {t.createdByName}</span>
-                        ) : null}
-                        {total > 0 ? <span style={{ color: '#111827', fontWeight: 700 }}>{done}/{total} выполнено</span> : null}
-                      </div>
-                    </summary>
-                    <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 8 }}>
-                      {t.description ? (
-                        <div style={{ fontSize: 14, color: '#111827', lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>
-                          {t.description}
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 12, color: '#9ca3af' }}>Без описания</div>
-                      )}
-
-                      {/* Кнопки действий — перенаправляем в раздел задач, где есть серверные формы */}
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 }}>
-                        {mine && (
-                          <a
-                            href="/inboxtasks?tab=mine"
-                            style={btnPrimaryGreenLink()}
-                            title="Открыть мои задачи и отметить выполненной"
-                          >
-                            Отметить выполненной
-                          </a>
-                        )}
-                        {(iCreated || mine) && (
-                          <a
-                            href={`/inboxtasks?tab=${iCreated ? 'byme' : 'mine'}`}
-                            style={btnGhostLink()}
-                          >
-                            Открыть в задачах
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </details>
-                );
-              })}
-              {!loading && (byDay.get(modalDayKey) || []).length === 0 && (
-                <div style={{ fontSize: 13, color: '#6b7280' }}>На этот день задач нет.</div>
-              )}
-              {loading && <div style={{ fontSize: 13, color: '#6b7280' }}>Загрузка…</div>}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* локальные стили без styled-jsx */}
-      <style>{`
-        @media (max-width: 980px) {
-          /* сетка сама схлопывается только на странице задач, здесь — адаптив через auto-fit не нужен */
-        }
-      `}</style>
     </section>
   );
 }
@@ -492,6 +260,7 @@ function btn(): React.CSSProperties {
     cursor: 'pointer',
   };
 }
+
 function pill(active: boolean): React.CSSProperties {
   return {
     height: 32,
@@ -501,35 +270,6 @@ function pill(active: boolean): React.CSSProperties {
     background: active ? '#111827' : '#fff',
     color: active ? '#fff' : '#111827',
     cursor: 'pointer',
-    fontSize: 13,
-  };
-}
-function btnPrimaryGreenLink(): React.CSSProperties {
-  return {
-    height: 32,
-    padding: '0 12px',
-    borderRadius: 10,
-    border: '1px solid #10b981',
-    background: '#10b981',
-    color: '#fff',
-    textDecoration: 'none',
-    display: 'inline-flex',
-    alignItems: 'center',
-    fontSize: 13,
-    fontWeight: 700,
-  };
-}
-function btnGhostLink(): React.CSSProperties {
-  return {
-    height: 32,
-    padding: '0 12px',
-    borderRadius: 10,
-    border: '1px solid #e5e7eb',
-    background: '#fff',
-    color: '#111827',
-    textDecoration: 'none',
-    display: 'inline-flex',
-    alignItems: 'center',
     fontSize: 13,
   };
 }
