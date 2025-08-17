@@ -112,7 +112,7 @@ export default async function ChatPage({
   const sp = await searchParams;
   const get = (k: string) => toStr(sp?.[k]);
 
-  const threadId = get('thread').trim();
+  const threadIdRaw = get('thread').trim();
   const q        = get('q').trim();
   const start    = get('start').trim();
 
@@ -124,9 +124,9 @@ export default async function ChatPage({
     | { id: string; aId: string; bId: string; a: { id: string; name: string | null }; b: { id: string; name: string | null } }
     | null = null;
 
-  if (threadId) {
+  if (threadIdRaw) {
     active = await prisma.thread.findFirst({
-      where: { id: threadId, OR: [{ aId: meId }, { bId: meId }] },
+      where: { id: threadIdRaw, OR: [{ aId: meId }, { bId: meId }] },
       include: { a:{ select:{ id:true, name:true } }, b:{ select:{ id:true, name:true } } },
     });
     if (!active) redirect('/chat');
@@ -156,9 +156,9 @@ export default async function ChatPage({
   const peerId = peer?.id ?? '';
   const peerName = peer?.name ?? '—';
 
-  const rawMessages = threadId
+  const rawMessages = active
     ? await prisma.message.findMany({
-        where: { threadId },
+        where: { threadId: active.id },
         orderBy: { createdAt: 'asc' },
         select: {
           id: true,
@@ -187,18 +187,18 @@ export default async function ChatPage({
       deletedAt: m.deletedAt ? m.deletedAt.toISOString() : null,
     }));
 
-  if (threadId && active) {
+  if (active) {
     await prisma.readMark.upsert({
-      where: { threadId_userId: { threadId, userId: meId } },
+      where: { threadId_userId: { threadId: active.id, userId: meId } },
       update: { readAt: now() },
-      create: { threadId, userId: meId, readAt: now() },
+      create: { threadId: active.id, userId: meId, readAt: now() },
     });
   }
 
   const peerReadAt =
-    threadId && active && peerId
+    active && peerId
       ? (await prisma.readMark.findUnique({
-          where: { threadId_userId: { threadId, userId: peerId } },
+          where: { threadId_userId: { threadId: active.id, userId: peerId } },
           select: { readAt:true },
         }))?.readAt ?? null
       : null;
@@ -231,7 +231,7 @@ export default async function ChatPage({
           {threads.length === 0 && <div style={{ color:'#6b7280' }}>диалогов пока нет</div>}
 
           {threads.map(t => {
-            const activeCls = t.id === threadId ? s.threadActive : '';
+            const activeCls = active?.id === t.id ? s.threadActive : '';
             const unreadCls = t.unreadCount > 0 ? s.threadUnread : '';
             const initials = (t.peerName || '—')
               .trim()
@@ -265,27 +265,33 @@ export default async function ChatPage({
 
         <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr', gap:12 }}>
           <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
-            {threadId ? (
+            {active ? (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>{peerName}</div>
               </div>
             ) : (
-              <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>выберите диалог или найдите собеседника</div>
+              <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>
+                выберите диалог или найдите собеседника
+              </div>
             )}
           </header>
 
-          <ChatBoxClient
-            meId={meId}
-            meName={meName}
-            peerName={peerName}
-            threadId={threadId || ''}
-            peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
-            initial={messages}
-          />
+          {active ? (
+            <ChatBoxClient
+              meId={meId}
+              meName={meName}
+              peerName={peerName}
+              threadId={active.id}
+              peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
+              initial={messages}
+            />
+          ) : (
+            <div style={{ padding:16, color:'#6b7280' }}>Нет выбранного диалога</div>
+          )}
         </section>
       </div>
 
-      <Live uid={meId} activeThreadId={threadId || undefined} />
+      <Live uid={meId} activeThreadId={active?.id} />
     </main>
   );
 }
