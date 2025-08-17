@@ -1,211 +1,238 @@
-/* app/(app)/chat/chat.module.css */
-.chatRoot {
+/* ====== Токены (объявлены в корневом классе) ====== */
+.chatRoot, .modal {
   --brand: #8d2828;
-  --glass-bg: rgba(255,255,255,0.55);
-  --glass-brd: rgba(229,231,235,0.8);
   --ink: #0f172a;
   --muted: #6b7280;
-  --line: #e5e7eb;
+  --line: rgba(229, 231, 235, 0.85);
 
+  --glass-top: rgba(255, 255, 255, 0.68);
+  --glass-bottom: rgba(255, 255, 255, 0.4);
+  --glass-brd: rgba(229, 231, 235, 0.85);
+  --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+
+  --card-bg: #fff;
+  --mine: #f3f4f6;
+  --other: #ffffff;
+}
+
+/* ====== Каркас страницы чата ====== */
+.chatRoot {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 320px 1fr;
   gap: 12px;
   height: calc(100dvh - 24px);
+  color: var(--ink);
 }
 
-/* вспомогательный класс — больше НЕ используется для левой колонки */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: saturate(180%) blur(10px);
-  -webkit-backdrop-filter: saturate(180%) blur(10px);
-  border: 1px solid var(--glass-brd);
-  border-radius: 16px;
+/* ====== Левая колонка (список чатов + поиск) ====== */
+.threads{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:12px;
+  border:1px solid var(--glass-brd);
+  border-radius:16px;
+  background:
+    linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: saturate(160%) blur(8px);
+  -webkit-backdrop-filter: saturate(160%) blur(8px);
 }
 
-/* ===== левая колонка (матовая, без blur) ===== */
-.threads {
-  font-size: 13px;
-  padding: 12px;
-
-  /* обнуление любых «протёкших» эффектов */
-  background: transparent;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+.blockTitle{
+  font-weight:900;
+  letter-spacing:.2px;
+  font-size:13px;
+  text-transform:lowercase;
+  color:var(--muted);
 }
 
-.block {
-  padding: 12px;
-  background: transparent;               /* никакого стекла */
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+/* Поиск собеседников */
+.searchBlock{ position:relative; }
+.dd{
+  position:absolute;
+  z-index:10;
+  top: 44px;
+  left:0; right:0;
+  background:#fff;
+  border:1px solid var(--glass-brd);
+  border-radius:12px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.08);
+  overflow:hidden;
 }
-.block + .block { margin-top: 12px; }
-
-.blockTitle {
-  font-weight: 800; margin-bottom: 8px; position: relative; color: var(--ink);
+.ddItem{
+  display:block;
+  width:100%;
+  text-align:left;
+  padding:10px 12px;
+  font-size:14px;
+  color:var(--ink);
+  background:#fff;
+  border:none;
+  cursor:pointer;
 }
-.blockTitle::after {
-  content:""; position:absolute; left:0; right:0; bottom:-6px; height:2px;
-  background:var(--brand); opacity:.12; border-radius:2px;
-}
-
-/* поиск в колонке — матовый */
-.searchBlock { position: relative; z-index: 20; }
-.searchRow { position: relative; margin-top: 10px; }
-.searchInput {
-  width: 100%; padding: 10px 12px; border: 1px solid var(--line);
-  border-radius: 12px; outline: none; background: #fff;
-  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-}
-.searchInput:focus { border-color:#c7e3ff; box-shadow: 0 0 0 4px rgba(59,130,246,.08); }
-
-/* дропдаун поиска — тоже без blur */
-.searchBlock:not(:focus-within) .dd { display: none; }
-.dd {
-  position:absolute; left:0; right:0; top:calc(100% + 6px);
-  background:#fff; border:1px solid var(--line); border-radius:12px;
-  box-shadow:0 12px 16px rgba(0,0,0,.08), 0 4px 6px rgba(0,0,0,.06);
-  z-index:2000; max-height:260px; overflow:auto;
-  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-}
-.ddItem { width:100%; text-align:left; padding:10px 12px; border:0; background:transparent; cursor:pointer; }
-.ddItem:hover { background:#f9fafb; }
-
-/* список тредов — матовый фон карточек */
-.threadWrap { position:relative; }
-.thread {
-  width:100%; text-align:left;
-  border-radius:24px; border:2px solid var(--line);
-  background:#fff; cursor:pointer;
-  transition: border-color 120ms ease, transform 80ms ease;
-  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-}
-.thread + .thread { margin-top: 8px; }
-.thread:hover { transform: translateY(-1px); border-color: #c7e3ff; }
-.threadActive { border-color: #c7e3ff; background:#f6faff; }
-.threadUnread { border-color: #fde68a; }
-.threadTop { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.peer { display:flex; align-items:center; gap:px; min-width: 0; }
-.avatar {
-  width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
-  font-weight:800; color:#fff; font-size:11px;
-  background: radial-gradient(120% 120% at 0% 0%, #c34a4a 0%, var(--brand) 60%, #5a1818 100%);
-  flex-shrink:0;
-}
-.threadName { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.threadDate { color: var(--muted); font-size: 11px; white-space: nowrap; }
-.threadLast { margin-top:4px; color:#374151; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
-/* бейдж непрочитанного и кнопка удаления */
-.badge { position:absolute; right:10px; top:10px; font-size:11px; background:var(--brand); color:#fff; padding:0 7px; line-height:18px; min-width:20px; text-align:center; border-radius:9999px; box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:800; }
-.btnDel { display:none; }
-.threadWrap:hover .btnDel {
-  display:inline-flex; position:absolute; right:10px; bottom:10px;
-  width:24px; height:24px; border-radius:8px; border:1px solid var(--line);
-  background:#fff; align-items:center; justify-content:center; color: var(--muted);
-}
-.btnDelIcon { width:14px; height:14px; }
-
-/* ===== правая панель ===== */
-.pane {
-  padding: 12px;
-  display:grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 12px;
-  height: 100%;
-  min-height: 0;
+.ddItem:hover{
+  background:#f8fafc;
 }
 
-/* область сообщений — матовая (без blur); «стекло» только у пузырей */
-.paneBody {
-  position: relative;
-  overflow: auto;
-  height: 100%;
-  padding: 8px 8px 24px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+/* ====== Список тредов ====== */
+.threadWrap{ position:relative; }
+.thread{
+  display:block;
+  border:1px solid var(--glass-brd);
+  background:#fff;
+  border-radius:14px;
+  padding:10px 12px;
+  text-decoration:none;
+  color:inherit;
+  box-shadow: 0 4px 14px rgba(0,0,0,.04);
+  transition: transform .06s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.thread:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0,0,0,.06);
+  border-color: rgba(209,213,219,.95);
+}
+.threadActive{
+  outline: 2px solid rgba(141,40,40,.12);
+  border-color: rgba(141,40,40,.35);
+}
+.threadUnread{
+  border-color: rgba(141,40,40,.35);
 }
 
-/* верх панели */
-.blockTop { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.blockTopRight { display:flex; gap:8px; }
-
-/* поиск по активному чату */
-.inlineSearch { display:flex; align-items:center; gap:8px; }
-.inlineSearchInput {
-  width: 220px; max-width: 40vw; padding: 6px 10px;
-  border: 1px solid var(--line); border-radius: 10px; outline: none; background:#fff;
+.threadTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
 }
-.inlineSearchBtn { border: 1px solid var(--line); background:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; }
-.inlineSearchBtn:hover { background:#fafafa; }
-
-/* пузырьки сообщений — тут оставляем «лёгкое стекло» */
-.msgRow { display:flex; margin: 6px 0; }
-.msgMine { justify-content: flex-end; }
-
-.msgCard {
-  max-width: 72ch; width: fit-content;
-  border: 1px solid var(--glass-brd);
-  border-radius: 14px; padding: 8px 10px; color: var(--ink);
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: saturate(180%) blur(12px);
-  -webkit-backdrop-filter: saturate(180%) blur(12px);
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
-  word-break: break-word; overflow-wrap: anywhere;
+.peer{ display:flex; align-items:center; gap:8px; min-width:0; }
+.avatar{
+  width:28px; height:28px;
+  border-radius:50%;
+  display:grid; place-items:center;
+  font-size:12px; font-weight:800;
+  background: rgba(141,40,40,.08);
+  color: var(--brand);
+  border:1px solid rgba(141,40,40,.15);
 }
-.msgMineBg { background: #e6ffea; }
-.msgOtherBg { background: #e4f4ff; }
-
-.msgHead { display:flex; align-items:baseline; gap:6px; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-.headMine { justify-content: flex-end; text-align: right; }
-.headOther { justify-content: flex-start; text-align: left; }
-
-.msgAuthor { color: var(--ink); font-weight: 800; }
-.msgMeta { color: var(--muted); }
-.msgText { white-space: pre-wrap; }
-
-/* подсветка совпадений */
-.match { outline: 2px solid #93c5fd; outline-offset: 2px; }
-
-/* композер */
-.composer { border:1px solid var(--line); border-radius:12px; background:#fff; padding:8px; }
-.textarea { width: 100%; border: 0; outline: none; resize: none; font: inherit; background: transparent; }
-.sendBtn { border: 1px solid var(--line); background: #fff; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
-.sendBtn:hover { background: #fafafa; }
-
-/* кнопка «вниз» */
-.toBottom {
-  position: sticky; left: 100%; bottom: 6px; transform: translateX(-100%);
-  border: 1px solid var(--line); background: #fff; padding: 6px 10px;
-  border-radius: 9999px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.08);
+.threadName{
+  font-size:14px; font-weight:700;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.threadDate{
+  font-size:12px; color:var(--muted);
+  white-space:nowrap;
+}
+.threadLast{
+  margin-top:6px;
+  font-size:13px; color:#334155;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
-/* разделители дней — без стекла у фона */
-.daySep { position: sticky; top: 0; z-index: 5; display:flex; justify-content:center; margin: 6px 0; }
-.daySep span {
-  padding:2px 10px; border-radius:9999px;
-  background:#fff; border:1px solid rgba(229,231,235,0.9);
-  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
-  font-size:12px; color:#374151;
+/* Бэйдж непрочитанного */
+.badge{
+  position:absolute; top: -6px; right:-6px;
+  background: var(--brand);
+  color:#fff;
+  font-size:11px; font-weight:800;
+  padding:2px 7px;
+  border-radius:999px;
+  box-shadow: 0 4px 10px rgba(141,40,40,.35);
 }
 
-/* модалка */
-.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, .35); display: grid; place-items: center; }
-.modalCard { width: min(520px, 92vw); background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow: 0 20px 40px rgba(0,0,0,.15); padding: 12px; }
-.modalTitle { font-weight: 900; margin-bottom: 10px; color:#0f172a; }
-.modalRow { display:flex; gap:8px; }
-.modalInput { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
-.modalBtn { border:1px solid var(--line); background:#fff; padding:6px 10px; border-radius:10px; cursor:pointer; }
-.modalBtn:hover { background:#fafafa; }
-.modalBtnDanger { border-color:#fca5a5; color:#991b1b; }
-
-.threads {
-  background: #fff !important;     /* белый фон */
-  backdrop-filter: none !important; /* убираем размытость */
-  -webkit-backdrop-filter: none !important;
+/* ====== Правая колонка (активный диалог) ====== */
+.pane{
+  border:1px solid var(--glass-brd);
+  border-radius:16px;
+  background:
+    linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: saturate(160%) blur(8px);
+  -webkit-backdrop-filter: saturate(160%) blur(8px);
+  display:flex; flex-direction:column;
 }
+
+/* ====== Сообщения ====== */
+.msgRow{
+  display:flex;
+  padding:2px 12px;
+}
+.msgRow.mine{ justify-content:flex-end; }
+.msgRow.other{ justify-content:flex-start; }
+
+.msgCard{
+  max-width:min(72ch, 88%);
+  border:1px solid var(--glass-brd);
+  border-radius:16px;
+  padding:8px 12px;
+  font-size:14px;
+  line-height:1.35;
+  box-shadow: 0 6px 18px rgba(0,0,0,.05);
+  position:relative;
+}
+.msgMineBg{ background: var(--mine); }
+.msgOtherBg{ background: var(--other); }
+
+.msgMeta{
+  margin-top:4px;
+  font-size:11px;
+  color:var(--muted);
+  display:flex; gap:8px; align-items:center;
+}
+
+/* Встроенный поиск по диалогу (если используется) */
+.inlineSearchInput{
+  width:100%;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  outline:none;
+}
+.inlineSearchInput:focus{
+  border-color:#c7e3ff;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.08);
+}
+.inlineSearchBtn{
+  height:34px; padding:0 12px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:#fff;
+  cursor:pointer;
+}
+
+/* ====== Модалки редактирования/удаления ====== */
+.modal{
+  position:fixed; inset:0; z-index:50;
+  display:grid; place-items:center;
+  background: rgba(15,23,42,.32);
+}
+.modalCard{
+  width:min(720px, calc(100vw - 32px));
+  border:1px solid var(--glass-brd);
+  border-radius:18px;
+  background:linear-gradient(180deg,#fff, #fafafa);
+  box-shadow: 0 12px 32px rgba(0,0,0,.18);
+  padding:16px;
+}
+.modalTitle{
+  font-size:16px; font-weight:800; margin-bottom:8px;
+}
+.modalRow{ display:flex; gap:8px; align-items:center; }
+.modalBtn{
+  height:34px; padding:0 14px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:#fff;
+  cursor:pointer;
+}
+.modalBtnDanger{
+  background: var(--brand);
+  color:#fff; border-color: rgba(141,40,40,.4);
+}
+
+/* ====== Вспомогательные ====== */
+hr.line{ border:0; border-top:1px solid var(--line); margin:8px 0; }
+.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
