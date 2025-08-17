@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation'; // ← добавили
 import s from './chat.module.css';
 import { sendMessageAction, editMessageAction, deleteMessageAction } from './actions';
 
@@ -72,6 +73,8 @@ export default function ChatBoxClient({
   peerReadAtIso: string | null;
   initial: Msg[];
 }) {
+  const router = useRouter(); // ← добавили
+
   const [messages, setMessages] = useState<Msg[]>(initial || []);
   const [peerReadAt, setPeerReadAt] = useState<string | null>(peerReadAtIso);
   const [text, setText] = useState('');
@@ -79,6 +82,11 @@ export default function ChatBoxClient({
   const [editText, setEditText] = useState('');
   const endRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // refs для fallback-рефреша
+  const messagesRef = useRef<Msg[]>(messages);
+  const lastSendCidRef = useRef<string | null>(null);
+  const confirmTimerRef = useRef<number | null>(null);
 
   const setBusy = (v: boolean) => {
     document.documentElement.dataset.chatBusy = v ? '1' : '0';
@@ -97,6 +105,9 @@ export default function ChatBoxClient({
     if (sameDay(d, yesterday)) return 'Вчера';
     return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
   };
+
+  // держим актуальную копию messages для таймера
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   // автопрокрутка вниз при изменениях
   useEffect(() => {
@@ -211,9 +222,8 @@ export default function ChatBoxClient({
       if ((window as any).__chatApi?.threadId === threadId) (window as any).__chatApi = null;
     };
   }, [threadId]);
-  
 
-  // ===== отправка с оптимистичным пушем и clientId =====
+  // ===== отправка с оптимистичным пушем и clientId + fallback-refresh =====
   async function send() {
     const txt = text.trim();
     if (!txt || !threadId) return;
@@ -231,6 +241,8 @@ export default function ChatBoxClient({
 
     // сразу показываем локально
     setMessages(prev => [...prev, optimistic]);
+    lastSendCidRef.current = cid;
+    if (confirmTimerRef.current) window.clearTimeout(confirmTimerRef.current);
 
     setBusy(true);
     try {
@@ -241,8 +253,20 @@ export default function ChatBoxClient({
       await sendMessageAction(fd);
       setText('');
       inputRef.current?.focus();
-      // дальше придёт SSE с тем же clientId и заменит «tmp» на реальный id
-    } catch (e) {
+
+      // если SSE не подтвердит «tmp» быстро — подтянем снапшот сами
+      confirmTimerRef.current = window.setTimeout(() => {
+        const currentCid = lastSendCidRef.current;
+        if (!currentCid) return;
+
+        const stillPending = messagesRef.current.some(
+          m => m.clientId === currentCid && m.pending
+        );
+        if (stillPending) {
+          router.refresh(); // мягкий авто-рефреш (как твой F5)
+        }
+      }, 400); // 300–500 мс обычно достаточно
+    } catch {
       // откатим черновик при ошибке
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       alert('Не удалось отправить сообщение');
@@ -284,6 +308,13 @@ export default function ChatBoxClient({
       setBusy(false);
     }
   }
+
+  // почистим таймер при размонтаже
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) window.clearTimeout(confirmTimerRef.current);
+    };
+  }, []);
 
   let lastDateLabel: string | null = null;
 
