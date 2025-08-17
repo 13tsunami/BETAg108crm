@@ -4,12 +4,7 @@ import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
 import TaskForm from './TaskForm';
-import {
-  createTaskAction,
-  updateTaskAction,
-  deleteTaskAction,
-  markAssigneeDoneAction,
-} from './actions';
+import { createTaskAction, updateTaskAction, deleteTaskAction, markAssigneeDoneAction } from './actions';
 import type { Prisma } from '@prisma/client';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -29,21 +24,13 @@ function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): str
     month: 'short',
     year: 'numeric',
   }).formatToParts(dt);
-
   const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-  const dd = `${map.day} ${String(map.month || '').replace('.', '')}`;
-  const yyyy = map.year;
-
-  const hm = new Intl.DateTimeFormat('ru-RU', {
-    timeZone: 'Asia/Yekaterinburg',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).formatToParts(dt);
-  const hh = hm.find(p => p.type === 'hour')?.value ?? '00';
-  const mm = hm.find(p => p.type === 'minute')?.value ?? '00';
-
+  const datePart = `${map.day} ${String(map.month || '').replace('.', '')} ${map.year}`;
+  const hm = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Yekaterinburg', hour: '2-digit', minute: '2-digit' }).formatToParts(dt);
+  const hh = hm.find(p => p.type === 'hour')?.value ?? '23';
+  const mm = hm.find(p => p.type === 'minute')?.value ?? '59';
   const isDefaultEnd = hh === '23' && mm === '59';
-  return isDefaultEnd ? `${dd} ${yyyy}` : `${dd} ${yyyy}, ${hh}:${mm}`;
+  return isDefaultEnd ? datePart : `${datePart}, ${hh}:${mm}`;
 }
 
 function TeacherGuide() {
@@ -60,11 +47,7 @@ function TeacherGuide() {
   );
 }
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const tabParam = typeof sp.tab === 'string' ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
 
@@ -84,7 +67,7 @@ export default async function Page({
 
   const activeTab = mayCreate ? (tabParam === 'byme' ? 'byme' : 'mine') : 'mine';
 
-  // данные для TaskForm
+  // Данные для TaskForm
   let users: Array<{ id: string; name: string | null; role?: string | null; methodicalGroups?: string | null; subjects?: any }> = [];
   let groups: Array<{ id: string; name: string }> = [];
   let subjects: Array<{ name: string; count?: number }> = [];
@@ -113,7 +96,7 @@ export default async function Page({
     subjectMembers = subjectMembersRaw.map((sm) => ({ userId: sm.userId, subjectName: sm.subject.name }));
   }
 
-  // списки задач
+  // Списки задач
   const [assignedToMe, createdByMe]: [TaskWithAssignees[], TaskWithAssignees[]] = await Promise.all([
     prisma.task.findMany({
       where: { assignees: { some: { userId: meId, status: 'in_progress' } } },
@@ -132,7 +115,7 @@ export default async function Page({
   return (
     <main style={{ padding: 16 }}>
       <div className="gridWrap">
-        {/* левая колонка: TaskForm или гид */}
+        {/* Левая колонка: форма (или гид) */}
         <aside className="leftCol">
           {mayCreate ? (
             <section aria-label="Создать задачу" className="card">
@@ -152,34 +135,24 @@ export default async function Page({
           )}
         </aside>
 
-        {/* правая колонка: список задач с табами */}
+        {/* Правая колонка: список задач с табами */}
         <section className="rightCol">
           <header className="tabsWrap">
             {mayCreate ? (
               <nav className="tabs">
-                <a
-                  href="/inboxtasks?tab=mine"
-                  className={`tab ${activeTab === 'mine' ? 'tab--active' : ''}`}
-                  aria-current={activeTab === 'mine' ? 'page' : undefined}
-                >
+                <a href="/inboxtasks?tab=mine" className={`tab ${activeTab === 'mine' ? 'tab--active' : ''}`} aria-current={activeTab === 'mine' ? 'page' : undefined}>
                   Назначенные мне ({assignedToMe.length})
                 </a>
-                <a
-                  href="/inboxtasks?tab=byme"
-                  className={`tab ${activeTab === 'byme' ? 'tab--active' : ''}`}
-                  aria-current={activeTab === 'byme' ? 'page' : undefined}
-                >
+                <a href="/inboxtasks?tab=byme" className={`tab ${activeTab === 'byme' ? 'tab--active' : ''}`} aria-current={activeTab === 'byme' ? 'page' : undefined}>
                   Назначенные мной ({createdByMe.length})
                 </a>
               </nav>
             ) : (
-              <div style={{ fontSize: 13, color: '#6b7280' }}>
-                Роль: преподаватель — доступна только вкладка «Назначенные мне»
-              </div>
+              <div style={{ fontSize: 13, color: '#6b7280' }}>Роль: преподаватель — доступна только вкладка «Назначенные мне»</div>
             )}
           </header>
 
-          {/* Вкладка: Назначенные мне */}
+          {/* Назначенные мне */}
           {activeTab === 'mine' && (
             <section aria-label="Назначенные мне" style={{ display: 'grid', gap: 8 }}>
               {assignedToMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет активных задач.</div>}
@@ -193,15 +166,16 @@ export default async function Page({
                         <span style={{ fontWeight: 600 }}>{t.title}</span>
                         {urgent && <span className="pillUrgent">Срочно</span>}
                       </div>
-                      <div style={{ fontSize: 12, color: '#374151' }}>
-                        {fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#374151' }}>
+                        <span>{fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
+                        <span style={{ color: '#111827' }}>Назначил: {t.createdByName ?? '—'}</span>
                       </div>
                     </summary>
                     <div className="taskBody">
                       {t.description && (
-                        <div className="descBox">{t.description}</div>
+                        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#111827', marginBottom: 8 }}>{t.description}</div>
                       )}
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <form action={markAssigneeDoneAction}>
                           <input type="hidden" name="taskId" value={t.id} />
                           <button type="submit" className="btnPrimaryGreen" disabled={!myAssn || myAssn.status === 'done'}>
@@ -213,9 +187,6 @@ export default async function Page({
                             Уточнить задачу
                           </a>
                         )}
-                        <div style={{ marginLeft: 'auto', fontSize: 12, color: '#6b7280' }}>
-                          Назначил: {t['createdByName'] ?? '—'}
-                        </div>
                       </div>
                     </div>
                   </details>
@@ -224,7 +195,7 @@ export default async function Page({
             </section>
           )}
 
-          {/* Вкладка: Назначенные мной */}
+          {/* Назначенные мной */}
           {activeTab === 'byme' && mayCreate && (
             <section aria-label="Назначенные мной" style={{ display: 'grid', gap: 8 }}>
               {createdByMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Вы пока не создавали задач.</div>}
@@ -260,7 +231,6 @@ export default async function Page({
                       {/* Кому назначено (сворачиваемый список) */}
                       <div style={{ fontSize: 13 }}>
                         <div style={{ color: '#6b7280', marginBottom: 4 }}>Кому назначено:</div>
-
                         {hasMore ? (
                           <details>
                             <summary style={{ listStyle: 'none', cursor: 'pointer' }}>
@@ -277,7 +247,7 @@ export default async function Page({
                                       background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                     }}
                                   >
-                                    {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
+                                    {(a.user?.name ?? `${a.userId.slice(0, 8)}…`)} {a.status === 'done' ? '✓' : ''}
                                   </span>
                                 ))}
                               </div>
@@ -296,7 +266,7 @@ export default async function Page({
                                     background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                   }}
                                 >
-                                  {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
+                                  {(a.user?.name ?? `${a.userId.slice(0, 8)}…`)} {a.status === 'done' ? '✓' : ''}
                                 </span>
                               ))}
                             </div>
@@ -315,14 +285,14 @@ export default async function Page({
                                   background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                 }}
                               >
-                                {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
+                                {(a.user?.name ?? `${a.userId.slice(0, 8)}…`)} {a.status === 'done' ? '✓' : ''}
                               </span>
                             ))}
                           </div>
                         )}
                       </div>
 
-                      {/* Редактирование основных полей */}
+                      {/* Редактирование — отдельная форма */}
                       <form action={updateTaskAction} style={{ display: 'grid', gap: 8 }}>
                         <input type="hidden" name="taskId" value={t.id} />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 140px', gap: 8 }}>
@@ -330,15 +300,15 @@ export default async function Page({
                             name="title"
                             defaultValue={t.title}
                             placeholder="Название"
-                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, width: '100%' }}
                           />
                           <input
                             name="dueDate"
                             type="date"
                             defaultValue={new Date(t.dueDate as Date).toISOString().slice(0, 10)}
-                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, width: '100%' }}
                           />
-                          <select name="priority" defaultValue={t.priority ?? 'normal'} style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+                          <select name="priority" defaultValue={t.priority ?? 'normal'} style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, width: '100%' }}>
                             <option value="normal">обычный</option>
                             <option value="high">срочно</option>
                           </select>
@@ -348,7 +318,7 @@ export default async function Page({
                           defaultValue={t.description ?? ''}
                           rows={3}
                           placeholder="Описание"
-                          style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, resize: 'vertical' }}
+                          style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, resize: 'vertical', width: '100%' }}
                         />
                         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
                           <input type="checkbox" name="hidden" defaultChecked={t['hidden'] ?? false} /> не размещать в календаре
@@ -368,6 +338,7 @@ export default async function Page({
                           <form action={updateTaskAction} style={{ marginLeft: 'auto' }}>
                             <input type="hidden" name="taskId" value={t.id} />
                             <input type="hidden" name="archive" value="1" />
+                            <button type="submit" className="btnPrimaryGreen">В архив</button>
                           </form>
                         )}
                       </div>
@@ -380,13 +351,11 @@ export default async function Page({
         </section>
       </div>
 
-      {/* обычный <style>, без styled-jsx */}
       <style>{`
         .gridWrap {
           display: grid;
           grid-template-columns: minmax(320px, clamp(320px, 33%, 420px)) 1fr;
           gap: 12px;
-          align-items: start;
         }
         @media (max-width: 980px) {
           .gridWrap { grid-template-columns: 1fr; }
@@ -405,13 +374,9 @@ export default async function Page({
           text-decoration: none;
           font-size: 13px;
         }
-        .tab--active,
-        .tab--active:link,
-        .tab--active:visited,
-        .tab--active:hover,
-        .tab--active:focus {
+        .tab--active {
           background: #8d2828;
-          color: #fff !important;
+          color: #fff;
           border-color: #8d2828;
         }
 
@@ -419,31 +384,12 @@ export default async function Page({
         .taskSummary { padding:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
         .taskBody { padding:10px; border-top:1px solid #f3f4f6; }
 
-        /* описание — аккуратное, переносы, без горизонтального скролла */
-        .descBox {
-          white-space: pre-wrap;
-          word-break: break-word;
-          overflow-wrap: anywhere;
-          max-width: 100%;
-          color: #111827;
-          margin-bottom: 8px;
-        }
-
         .pillUrgent { font-size:11px; color:#8d2828; border:1px solid #8d2828; border-radius:999px; padding:0 6px; }
 
-        .btnPrimary {
-          height:32px; padding:0 12px; border-radius:10px; border:1px solid #111827; background:#111827; color:#fff; cursor:pointer; font-size:13px;
-        }
-        .btnPrimaryGreen {
-          height:32px; padding:0 12px; border-radius:10px; border:1px solid #10b981; background:#10b981; color:#fff; cursor:pointer; font-size:13px;
-        }
-        .btnDanger {
-          height:32px; padding:0 12px; border-radius:10px; border:1px solid #ef4444; background:#ef4444; color:#fff; cursor:pointer; font-size:13px;
-        }
-        .btnGhost {
-          height:32px; padding:0 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; color:#111827;
-          text-decoration:none; display:inline-flex; align-items:center; font-size:13px;
-        }
+        .btnPrimary { height:32px; padding:0 12px; border-radius:10px; border:1px solid #111827; background:#111827; color:#fff; cursor:pointer; font-size:13px; }
+        .btnPrimaryGreen { height:32px; padding:0 12px; border-radius:10px; border:1px solid #10b981; background:#10b981; color:#fff; cursor:pointer; font-size:13px; }
+        .btnDanger { height:32px; padding:0 12px; border-radius:10px; border:1px solid #ef4444; background:#ef4444; color:#fff; cursor:pointer; font-size:13px; }
+        .btnGhost { height:32px; padding:0 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; color:#111827; text-decoration:none; display:inline-flex; align-items:center; font-size:13px; }
       `}</style>
     </main>
   );

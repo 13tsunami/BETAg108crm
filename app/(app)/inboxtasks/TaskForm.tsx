@@ -14,7 +14,7 @@ type SubjectMember = { subjectName: string; userId: string };
 
 const BRAND = '#8d2828';
 
-// «сегодня» в зоне Asia/Yekaterinburg (UTC+5) YYYY-MM-DD
+// Екатеринбург «сегодня» YYYY-MM-DD
 const todayYekbYMD = () => {
   const fmt = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Yekaterinburg', year: 'numeric', month: '2-digit', day: '2-digit' });
   const [{ value: day }, , { value: month }, , { value: year }] = fmt.formatToParts(new Date());
@@ -154,6 +154,7 @@ export default function TaskForm({
 
   useEffect(() => { void recomputePreview(); }, [assignees, recomputePreview]);
 
+  const formRef = useRef<HTMLFormElement | null>(null);
   async function onSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
 
@@ -161,6 +162,7 @@ export default function TaskForm({
     if (!due || due < today) { alert('Срок не может быть раньше сегодняшнего дня (Екатеринбург).'); return; }
 
     const assigneeUserIds = await expandAssigneesToUserIds();
+
     const datePart = due;
     const timePart = (dueTime && /^\d{2}:\d{2}$/.test(dueTime)) ? dueTime : '23:59';
     const dueDate = new Date(`${datePart}T${timePart}:00+05:00`);
@@ -176,59 +178,121 @@ export default function TaskForm({
 
     await createAction(fd);
 
-    // сброс
-    setTitle(''); setDesc(''); setDue(''); setDueTime(''); setPriority('normal'); setNoCalendar(false);
-    setAssignees([]); setQuery(''); setFound([]); setPreviewTotal(0);
+    try {
+      setTitle(''); setDesc(''); setDue(''); setDueTime(''); setPriority('normal'); setNoCalendar(false);
+      setAssignees([]); setQuery(''); setFound([]); setPreviewTotal(0);
+    } catch {}
   }
 
-  // iOS-переключатель приоритета
-  const togglePriority = () => setPriority(p => (p === 'normal' ? 'high' : 'normal'));
+  // --- UI helpers ---
+  const TogglePriority = () => {
+    const on = priority === 'high';
+    return (
+      <button
+        type="button"
+        onClick={() => setPriority(on ? 'normal' : 'high')}
+        aria-pressed={on}
+        title={on ? 'срочно' : 'обычный'}
+        style={{
+          position: 'relative',
+          width: 150,
+          minWidth: 130,
+          height: 36,
+          borderRadius: 999,
+          border: `1px solid ${on ? BRAND : '#e5e7eb'}`,
+          background: on ? '#fde2e2' : '#fff',
+          cursor: 'pointer',
+          padding: 4,
+          display: 'grid',
+          alignItems: 'center',
+          justifyContent: on ? 'end' : 'start',
+        }}
+      >
+        {/* Текст по центру */}
+        <span
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 13,
+            color: on ? BRAND : '#111827',
+            fontWeight: 600,
+            userSelect: 'none',
+          }}
+        >
+          {on ? 'срочно' : 'обычный'}
+        </span>
+        {/* Ручка */}
+        <span
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 999,
+            background: on ? BRAND : '#e5e7eb',
+          }}
+        />
+      </button>
+    );
+  };
 
   return (
-    <form className="tf" onSubmit={onSubmit}>
+    <form ref={formRef} onSubmit={onSubmit} style={{ display: 'grid', gap: 10, width: '100%', minWidth: 0 }}>
       {/* Название */}
-      <div className="f">
-        <label className="lab">Название</label>
-        <input className="inp" value={title} onChange={(e)=>setTitle(e.target.value)} required />
+      <div style={{ minWidth: 0 }}>
+        <label style={{ display: 'block', marginBottom: 4 }}>Название</label>
+        <input
+          value={title}
+          onChange={(e)=>setTitle(e.target.value)}
+          required
+          maxLength={256}
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', boxSizing:'border-box' }}
+        />
       </div>
 
       {/* Описание */}
-      <div className="f">
-        <label className="lab">Описание</label>
-        <textarea className="inp ta" value={description} onChange={(e)=>setDesc(e.target.value)} rows={4} placeholder="Кратко опишите задачу…" />
+      <div style={{ minWidth: 0 }}>
+        <label style={{ display: 'block', marginBottom: 4 }}>Описание</label>
+        <textarea
+          value={description}
+          onChange={(e)=>setDesc(e.target.value)}
+          rows={4}
+          placeholder="Кратко опишите задачу…"
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', resize:'vertical', boxSizing:'border-box' }}
+        />
       </div>
 
-      {/* Срок / Время / Приоритет */}
-      <div className="row3">
-        <div className="f">
-          <label className="lab">Срок</label>
-          <input className="inp" type="date" value={due} min={todayStr} onChange={(e)=>setDue(e.target.value)} required />
+      {/* Срок, время и приоритет */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, width:'100%' }}>
+        <div style={{ minWidth: 0 }}>
+          <label style={{ display:'block', marginBottom:4 }}>Срок</label>
+          <input
+            type="date"
+            value={due}
+            min={todayStr}
+            onChange={(e)=>setDue(e.target.value)}
+            required
+            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', boxSizing:'border-box' }}
+          />
         </div>
-        <div className="f">
-          <label className="lab">Время (опц.)</label>
-          <input className="inp" type="time" value={dueTime} onChange={(e)=>setDueTime(e.target.value)} />
+        <div style={{ minWidth: 0 }}>
+          <label style={{ display:'block', marginBottom:4 }}>Время (опц.)</label>
+          <input
+            type="time"
+            value={dueTime}
+            onChange={(e)=>setDueTime(e.target.value)}
+            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e7eb', borderRadius:10, outline:'none', boxSizing:'border-box' }}
+          />
         </div>
-        <div className="f">
-          <label className="lab">Приоритет</label>
-
-          {/* iOS-switch */}
-          <button
-            type="button"
-            role="switch"
-            aria-checked={priority === 'high'}
-            onClick={togglePriority}
-            className={`switch ${priority === 'high' ? 'on' : 'off'}`}
-            title={priority === 'high' ? 'Срочно' : 'Обычный'}
-          >
-            <span className="knob" />
-            <span className="switchLabel">{priority === 'high' ? 'Срочно' : 'Обычный'}</span>
-          </button>
+        <div style={{ minWidth: 0 }}>
+          <label style={{ display:'block', marginBottom:4 }}>Приоритет</label>
+          <TogglePriority />
         </div>
       </div>
 
       {/* Кому назначить */}
-      <div className="f">
-        <label className="lab">Кому назначить</label>
+      <div style={{ minWidth: 0 }}>
+        <label style={{ display:'block', marginBottom:4 }}>Кому назначить</label>
         <Chips
           users={users}
           roles={roles}
@@ -246,99 +310,31 @@ export default function TaskForm({
           onRemove={removeAssignee}
           runSearch={runSearch}
         />
-        <div className="previewRow">
-          <span className="hint">
+        <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+          <span style={{ fontSize:13, color:'#374151' }}>
             Предпросмотр: {previewLoading ? 'подсчёт…' : `${previewTotal} исполнител${previewTotal % 10 === 1 && previewTotal % 100 !== 11 ? 'ь' : 'ей'}`}
           </span>
-          <button type="button" onClick={()=>void recomputePreview()} className="btnGhostSm">Обновить</button>
+          <button type="button" onClick={()=>void recomputePreview()} style={{ height:28, padding:'0 10px', borderRadius:999, border:'1px solid #e5e7eb', background:'#fff', cursor:'pointer', fontSize:12 }}>
+            Обновить
+          </button>
         </div>
       </div>
 
       {/* Календарь */}
-      <label className="checkRow">
-        <input type="checkbox" checked={noCalendar} onChange={(e)=>setNoCalendar(e.currentTarget.checked)} />
-        <span>не размещать в календаре</span>
-      </label>
-
-      <div className="actions">
-        <button type="submit" className="btnPrimary">Сохранить задачу</button>
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:2 }}>
+        <input id="noCal" type="checkbox" checked={noCalendar} onChange={(e)=>setNoCalendar(e.currentTarget.checked)} />
+        <label htmlFor="noCal">не размещать в календаре</label>
       </div>
 
-      {/* ЖЁСТКИЕ стили контейнера формы — чтобы НИЧЕГО не вылезало за границы */}
-      <style>{`
-        .tf {
-          --brand: ${BRAND};
-          box-sizing: border-box;
-          display: grid;
-          gap: 10px;
-          max-width: 100%;
-        }
-        .tf * { box-sizing: border-box; max-width: 100%; }
-        .f { display: grid; gap: 4px; min-width: 0; }
-        .lab { font-size: 13px; color: #111827; }
-        .inp {
-          width: 100%;
-          padding: 8px 10px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          outline: none;
-          background: #fff;
-        }
-        .ta { resize: vertical; }
-        .row3 {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
-          min-width: 0;
-        }
-        @media (max-width: 640px) {
-          .row3 { grid-template-columns: 1fr; }
-        }
-
-        /* iOS-переключатель */
-        .switch {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          border: 1px solid #e5e7eb;
-          border-radius: 999px;
-          padding: 2px 8px 2px 2px;
-          height: 32px;
-          background: #f3f4f6;
-          cursor: pointer;
-          user-select: none;
-        }
-        .switch.off { background: #f3f4f6; }
-        .switch.on  { background: #fee2e2; border-color: #fecaca; }
-        .switch .knob {
-          display: inline-block;
-          width: 26px; height: 26px;
-          border-radius: 999px;
-          background: #9ca3af;
-          transition: transform .15s ease, background-color .15s ease;
-        }
-        .switch.on .knob { background: var(--brand); transform: translateX(24px); }
-        .switch .switchLabel {
-          font-size: 13px; color: #111827; font-weight: 600; min-width: 64px; text-align: left;
-        }
-        .switch.on .switchLabel { color: var(--brand); }
-
-        .previewRow { margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .hint { font-size: 13px; color: #374151; }
-        .btnGhostSm {
-          height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; font-size: 12px;
-        }
-        .checkRow { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
-        .actions { display: flex; gap: 8px; }
-        .btnPrimary {
-          height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--brand); background: var(--brand); color: #fff; cursor: pointer;
-        }
-      `}</style>
+      <div style={{ display:'flex', gap:8 }}>
+        <button type="submit" style={{ height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${BRAND}`, background:BRAND, color:'#fff', cursor:'pointer' }}>
+          Сохранить задачу
+        </button>
+      </div>
     </form>
   );
 }
 
-/* ===== Chips (без изменений по логике, но с безопасной вёрсткой) ===== */
 function Chips(props: {
   users: SimpleUser[];
   roles: Array<{ id: string; name: string }>;
@@ -396,11 +392,11 @@ function Chips(props: {
       <div
         ref={chipsRef}
         onClick={() => inputRef.current?.focus()}
-        style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', padding:6, border:'1px solid #e5e7eb', borderRadius:10, minHeight:40, cursor:'text' }}
+        style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', padding:6, border:'1px solid #e5e7eb', borderRadius:10, minHeight:40, cursor:'text', width:'100%', boxSizing:'border-box' }}
       >
         {assignees.map((a) => (
-          <span key={`${a.type}:${a.id}`} style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid #e5e7eb', borderRadius:999, padding:'2px 8px', fontSize:12, maxWidth:'100%' }}>
-            <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}{a.type==='group' ? ' (группа)' : a.type==='role' ? ' (роль)' : a.type==='subject' ? ' (предмет)' : ''}</span>
+          <span key={`${a.type}:${a.id}`} style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid #e5e7eb', borderRadius:999, padding:'2px 8px', fontSize:12 }}>
+            {a.name}{a.type==='group' ? ' (группа)' : a.type==='role' ? ' (роль)' : a.type==='subject' ? ' (предмет)' : ''}
             <button type="button" onClick={() => onRemove(a)} style={{ border:0, background:'transparent', cursor:'pointer', color:'#6b7280' }} aria-label="Убрать">×</button>
           </span>
         ))}
@@ -414,7 +410,6 @@ function Chips(props: {
           style={{ flex:'1 0 180px', minWidth:120, border:'none', outline:'none', padding:'6px 8px' }}
         />
       </div>
-
       {openDd && found.length > 0 && ddPos &&
         createPortal(
           <div
