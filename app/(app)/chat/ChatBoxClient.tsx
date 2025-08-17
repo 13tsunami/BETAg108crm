@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, startTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { sendMessageAction /*, editMessageAction, deleteMessageAction */ } from './actions';
 import s from './chat.module.css';
 
 type Msg = {
@@ -11,12 +13,26 @@ type Msg = {
   createdAt: string; // ISO
 };
 
+type PushEvt = {
+  type: 'message';
+  threadId: string;
+  messageId: string;
+  authorId: string;
+  text: string;
+  ts: string;
+  clientId?: string;
+};
+
+type EditEvt = { type: 'messageEdited'; threadId: string; messageId: string; byId: string; text: string };
+type DelEvt  = { type: 'messageDeleted'; threadId: string; messageId: string; byId: string; scope: 'self' | 'both' };
+type ReadEvt = { type: 'read'; threadId: string };
+
 export default function ChatBoxClient({
   meId,
-  meName,        // оставляю пропсы для совместимости
-  peerName,      // заголовок уже есть в page.tsx — здесь не дублируем
+  meName,
+  peerName,
   threadId,
-  peerReadAtIso, // не используется в этой версии — можно подключить для «прочитано»
+  peerReadAtIso,
   initial,
 }: {
   meId: string;
@@ -26,38 +42,58 @@ export default function ChatBoxClient({
   peerReadAtIso: string | null;
   initial: Msg[];
 }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initial || []);
   const [text, setText] = useState('');
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  // SSE-подписка (оставляю ваш эндпоинт /chat/live как есть)
+  // вспомогательная карта для оптимистических отправок
+  const pendingByClient = useRef<Set<string>>(new Set());
+
+  // регистрируем API, который дергает Live (/chat/sse)
   useEffect(() => {
-    if (!threadId) return;
-
-    const url = `/chat/live?threadId=${encodeURIComponent(threadId)}`;
-    const es = new EventSource(url);
-
-    const onMsg = (ev: MessageEvent) => {
-      try {
-        const payload: Msg = JSON.parse(ev.data);
-        if (payload?.threadId === threadId) {
-          setMessages(prev => [...prev, payload]);
+    const api = {
+      threadId,
+      push: (e: PushEvt) => {
+        if (e.threadId !== threadId) return;
+        // если это эхо нашего оптимистичного клиента — можно пропустить дубль
+        if (e.clientId && pendingByClient.current.has(e.clientId)) {
+          pendingByClient.current.delete(e.clientId);
+          return;
         }
-      } catch {
-        // игнорируем не-JSON
+        setMessages(prev => prev.concat({
+          id: e.messageId,
+          threadId: e.threadId,
+          authorId: e.authorId,
+          text: e.text,
+          createdAt: e.ts,
+        }));
+      },
+      edit: (e: EditEvt) => {
+        if (e.threadId !== threadId) return;
+        setMessages(prev => prev.map(m => m.id === e.messageId ? { ...m, text: e.text } : m));
+      },
+      del: (e: DelEvt) => {
+        if (e.threadId !== threadId) return;
+        setMessages(prev => prev.filter(m => m.id !== e.messageId));
+      },
+      read: (_e: ReadEvt) => {
+        // при необходимости можно подсветить "прочитано"
+      },
+      onThreadDeleted: () => {
+        startTransition(() => router.replace('/chat'));
       }
     };
-
-    es.addEventListener('message', onMsg);
-    es.addEventListener('error', () => { /* авто-переподключение — забота браузера */ });
-
+    (window as any).__chatApi = api;
     return () => {
-      es.removeEventListener('message', onMsg as any);
-      es.close();
+      const w = (window as any);
+      if (w.__chatApi && w.__chatApi.threadId === threadId) {
+        w.__chatApi = undefined;
+      }
     };
-  }, [threadId]);
+  }, [router, threadId]);
 
-  // Автопрокрутка вниз
+  // автопрокрутка
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -66,20 +102,35 @@ export default function ChatBoxClient({
     const txt = text.trim();
     if (!txt || !threadId) return;
 
-    const res = await fetch(`/chat/live?threadId=${encodeURIComponent(threadId)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: txt }),
-    });
+    // оптимистичное добавление
+    const clientId = crypto.randomUUID();
+    pendingByClient.current.add(clientId);
+    const optimistic: Msg = {
+      id: `tmp-${clientId}`,
+      threadId,
+      authorId: meId,
+      text: txt,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => prev.concat(optimistic));
+    setText('');
 
-    if (res.ok) setText('');
+    // реальный вызов server action (Promise<void> по вашему контракту)
+    const fd = new FormData();
+    fd.append('threadId', threadId);
+    fd.append('text', txt);
+    fd.append('clientId', clientId);
+    try {
+      await sendMessageAction(fd);
+    } catch {
+      // откат при ошибке
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+      pendingByClient.current.delete(clientId);
+    }
   }
 
-  // Внутренняя раскладка: растягиваемся на всю высоту правой колонки
-  // grid: лента (1fr) + форма (auto)
   return (
     <div style={{ height: '100%', display: 'grid', gridTemplateRows: '1fr auto', gap: 12 }}>
-      {/* Лента сообщений */}
       <div style={{ overflowY: 'auto', padding: '8px 0' }}>
         {messages.map((m) => {
           const mine = m.authorId === meId;
@@ -99,7 +150,6 @@ export default function ChatBoxClient({
         <div ref={endRef} />
       </div>
 
-      {/* Поле ввода */}
       <div style={{ display: 'flex', gap: 8, borderTop: '1px solid rgba(229,231,235,.85)', paddingTop: 8 }}>
         <input
           value={text}
