@@ -1,3 +1,4 @@
+// app/(app)/inboxtasks/page.tsx
 import { Suspense } from 'react';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
@@ -19,6 +20,7 @@ type TaskWithAssignees = Prisma.TaskGetPayload<{
 function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): string {
   if (!d) return '';
   const dt = typeof d === 'string' ? new Date(d) : d;
+
   const parts = new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Asia/Yekaterinburg',
     hour: '2-digit',
@@ -29,7 +31,7 @@ function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): str
   }).formatToParts(dt);
 
   const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-  const dd = `${map.day} ${map.month?.replace('.', '')}`;
+  const dd = `${map.day} ${String(map.month || '').replace('.', '')}`;
   const yyyy = map.year;
 
   const hm = new Intl.DateTimeFormat('ru-RU', {
@@ -82,7 +84,7 @@ export default async function Page({
 
   const activeTab = mayCreate ? (tabParam === 'byme' ? 'byme' : 'mine') : 'mine';
 
-  // Данные для TaskForm
+  // данные для TaskForm
   let users: Array<{ id: string; name: string | null; role?: string | null; methodicalGroups?: string | null; subjects?: any }> = [];
   let groups: Array<{ id: string; name: string }> = [];
   let subjects: Array<{ name: string; count?: number }> = [];
@@ -92,13 +94,7 @@ export default async function Page({
   if (mayCreate) {
     const [usersRaw, groupsRaw, subjectsRaw, groupMembersRaw, subjectMembersRaw] = await Promise.all([
       prisma.user.findMany({
-        select: {
-          id: true,
-          name: true,
-          role: true,
-          methodicalGroups: true,
-          subjects: true,
-        },
+        select: { id: true, name: true, role: true, methodicalGroups: true, subjects: true },
         orderBy: { name: 'asc' },
       }),
       prisma.group.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
@@ -107,12 +103,7 @@ export default async function Page({
         orderBy: { name: 'asc' },
       }),
       prisma.groupMember.findMany({ select: { groupId: true, userId: true } }),
-      prisma.subjectMember.findMany({
-        select: {
-          userId: true,
-          subject: { select: { name: true } },
-        },
-      }),
+      prisma.subjectMember.findMany({ select: { userId: true, subject: { select: { name: true } } } }),
     ]);
 
     users = usersRaw;
@@ -122,15 +113,11 @@ export default async function Page({
     subjectMembers = subjectMembersRaw.map((sm) => ({ userId: sm.userId, subjectName: sm.subject.name }));
   }
 
-  // Списки задач
+  // списки задач
   const [assignedToMe, createdByMe]: [TaskWithAssignees[], TaskWithAssignees[]] = await Promise.all([
     prisma.task.findMany({
-      where: {
-        assignees: { some: { userId: meId, status: 'in_progress' } },
-      },
-      include: {
-        assignees: { include: { user: { select: { id: true, name: true } } } },
-      },
+      where: { assignees: { some: { userId: meId, status: 'in_progress' } } },
+      include: { assignees: { include: { user: { select: { id: true, name: true } } } } },
       orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
     }),
     mayCreate
@@ -145,7 +132,7 @@ export default async function Page({
   return (
     <main style={{ padding: 16 }}>
       <div className="gridWrap">
-        {/* Левая колонка: форма (или гид для Teacher) */}
+        {/* левая колонка: TaskForm или гид */}
         <aside className="leftCol">
           {mayCreate ? (
             <section aria-label="Создать задачу" className="card">
@@ -165,7 +152,7 @@ export default async function Page({
           )}
         </aside>
 
-        {/* Правая колонка: список задач с табами */}
+        {/* правая колонка: список задач с табами */}
         <section className="rightCol">
           <header className="tabsWrap">
             {mayCreate ? (
@@ -204,9 +191,7 @@ export default async function Page({
                     <summary className="taskSummary">
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <span style={{ fontWeight: 600 }}>{t.title}</span>
-                        {urgent && (
-                          <span className="pillUrgent">Срочно</span>
-                        )}
+                        {urgent && <span className="pillUrgent">Срочно</span>}
                       </div>
                       <div style={{ fontSize: 12, color: '#374151' }}>
                         {fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}
@@ -214,29 +199,22 @@ export default async function Page({
                     </summary>
                     <div className="taskBody">
                       {t.description && (
-                        <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>
+                        <div className="descBox">{t.description}</div>
                       )}
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <form action={markAssigneeDoneAction}>
                           <input type="hidden" name="taskId" value={t.id} />
-                          <button
-                            type="submit"
-                            className="btnPrimaryGreen"
-                            disabled={!myAssn || myAssn.status === 'done'}
-                          >
+                          <button type="submit" className="btnPrimaryGreen" disabled={!myAssn || myAssn.status === 'done'}>
                             Выполнить
                           </button>
                         </form>
                         {t.createdById && (
-                          <a
-                            href={`/chat?userId=${encodeURIComponent(t.createdById)}`}
-                            className="btnGhost"
-                          >
+                          <a href={`/chat?userId=${encodeURIComponent(t.createdById)}`} className="btnGhost">
                             Уточнить задачу
                           </a>
                         )}
                         <div style={{ marginLeft: 'auto', fontSize: 12, color: '#6b7280' }}>
-                          Назначил: {t.createdByName ?? '—'}
+                          Назначил: {t['createdByName'] ?? '—'}
                         </div>
                       </div>
                     </div>
@@ -376,27 +354,20 @@ export default async function Page({
                           <input type="checkbox" name="hidden" defaultChecked={t['hidden'] ?? false} /> не размещать в календаре
                         </label>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <button type="submit" className="btnPrimary">
-                            Сохранить изменения
-                          </button>
+                          <button type="submit" className="btnPrimary">Сохранить изменения</button>
                         </div>
                       </form>
 
-                      {/* Кнопки Удалить / В архив — отдельные формы */}
+                      {/* Отдельные формы: Удалить / В архив */}
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <form action={deleteTaskAction}>
                           <input type="hidden" name="taskId" value={t.id} />
-                          <button type="submit" className="btnDanger">
-                            Удалить
-                          </button>
+                          <button type="submit" className="btnDanger">Удалить</button>
                         </form>
                         {allDone && (
                           <form action={updateTaskAction} style={{ marginLeft: 'auto' }}>
                             <input type="hidden" name="taskId" value={t.id} />
                             <input type="hidden" name="archive" value="1" />
-                            <button type="submit" className="btnPrimaryGreen">
-                              В архив
-                            </button>
                           </form>
                         )}
                       </div>
@@ -409,39 +380,22 @@ export default async function Page({
         </section>
       </div>
 
-      {/* ВАЖНО: обычный <style>, НЕ styled-jsx */}
+      {/* обычный <style>, без styled-jsx */}
       <style>{`
-        /* 1/3 + 2/3 на широких экранах */
         .gridWrap {
           display: grid;
-          grid-template-columns: 1fr 2fr; /* ровно 1/3 : 2/3 */
+          grid-template-columns: minmax(320px, clamp(320px, 33%, 420px)) 1fr;
           gap: 12px;
           align-items: start;
         }
-        /* ограничим чрезмерный разлет левой колонки */
-        .leftCol { min-width: 340px; }
-        .rightCol { min-width: 0; }
-
-        /* На узких экранах переносим задачи под форму */
         @media (max-width: 980px) {
           .gridWrap { grid-template-columns: 1fr; }
-          .leftCol { min-width: 0; }
         }
-
-        /* Карточка формы */
+        .leftCol, .rightCol { min-width: 0; }
         .card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff; }
 
-        /* Инпуты/textarea/select внутри формы — по ширине карточки */
-        .card input,
-        .card textarea,
-        .card select {
-          width: 100%;
-          box-sizing: border-box;
-          max-width: 100%;
-        }
-
         .tabsWrap { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-        .tabs { display:flex; gap:8px; flex-wrap: wrap; }
+        .tabs { display:flex; gap:8px; }
         .tab {
           padding: 6px 10px;
           border-radius: 999px;
@@ -451,15 +405,29 @@ export default async function Page({
           text-decoration: none;
           font-size: 13px;
         }
-        .tab--active {
+        .tab--active,
+        .tab--active:link,
+        .tab--active:visited,
+        .tab--active:hover,
+        .tab--active:focus {
           background: #8d2828;
-          color: #fff;
+          color: #fff !important;
           border-color: #8d2828;
         }
 
         .taskCard { border:1px solid #e5e7eb; border-radius:12px; background:#fff; }
         .taskSummary { padding:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
         .taskBody { padding:10px; border-top:1px solid #f3f4f6; }
+
+        /* описание — аккуратное, переносы, без горизонтального скролла */
+        .descBox {
+          white-space: pre-wrap;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+          max-width: 100%;
+          color: #111827;
+          margin-bottom: 8px;
+        }
 
         .pillUrgent { font-size:11px; color:#8d2828; border:1px solid #8d2828; border-radius:999px; padding:0 6px; }
 
