@@ -2,11 +2,11 @@
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
-import { updateTaskAction, deleteTaskAction } from '../actions';
 import type { Prisma, TaskAssignee, Task } from '@prisma/client';
+import { unarchiveAssigneeAction, deleteTaskAction } from '@/app/(app)/inboxtasks/actions';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-type TaskWithAssignees = Prisma.TaskGetPayload<{ include: { assignees: true } }>;
+type TaskWithAssignees = Prisma.TaskGetPayload<{ include: { assignees: { include: { user: { select: { id: true; name: true } } } } } }>;
 
 function fmtRuDate(d: Date | string | null | undefined): string {
   if (!d) return '';
@@ -14,38 +14,7 @@ function fmtRuDate(d: Date | string | null | undefined): string {
   return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(dt);
 }
 
-function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): string {
-  if (!d) return '';
-  const dt = typeof d === 'string' ? new Date(d) : d;
-  const parts = new Intl.DateTimeFormat('ru-RU', {
-    timeZone: 'Asia/Yekaterinburg',
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).formatToParts(dt);
-
-  const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-  const dd = `${map.day} ${map.month?.replace('.', '')}`;
-  const yyyy = map.year;
-
-  const hm = new Intl.DateTimeFormat('ru-RU', {
-    timeZone: 'Asia/Yekaterinburg',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).formatToParts(dt);
-  const hh = hm.find(p => p.type === 'hour')?.value ?? '00';
-  const mm = hm.find(p => p.type === 'minute')?.value ?? '00';
-  const isDefaultEnd = hh === '23' && mm === '59';
-  return isDefaultEnd ? `${dd} ${yyyy}` : `${dd} ${yyyy}, ${hh}:${mm}`;
-}
-
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const tabParam = typeof sp.tab === 'string' ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
 
@@ -76,11 +45,8 @@ export default async function Page({
     }),
     mayCreate
       ? prisma.task.findMany({
-          where: {
-            createdById: meId,
-            assignees: { every: { status: 'done' } },
-          },
-          include: { assignees: true },
+          where: { createdById: meId, assignees: { every: { status: 'done' } } },
+          include: { assignees: { include: { user: { select: { id: true, name: true } } } } },
           orderBy: [{ dueDate: 'desc' }, { updatedAt: 'desc' }],
         })
       : Promise.resolve([] as TaskWithAssignees[]),
@@ -127,7 +93,7 @@ export default async function Page({
         )}
       </header>
 
-      {/* Вкладка: Назначенные мне (завершенные мной) */}
+      {/* Назначенные мне (архив) */}
       {activeTab === 'mine' && (
         <section aria-label="Назначенные мне — архив" style={{ display: 'grid', gap: 8 }}>
           {mineAssigneesDone.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>В архиве пока пусто.</div>}
@@ -147,35 +113,28 @@ export default async function Page({
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: '#374151' }}>
-                    <span>Срок: {fmtRuDateWithOptionalTimeYekb(t?.dueDate as Date | undefined)}</span>
+                    <span>Срок: {fmtRuDate(t?.dueDate as Date | undefined)}</span>
                     <span>Выполнено: {fmtRuDate(a.completedAt as Date | undefined)}</span>
                   </div>
                 </summary>
-                <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {/* Кнопка разархивирования: просто hidden=false через updateTaskAction */}
-                  {t && (
-                    <form action={updateTaskAction}>
-                      <input type="hidden" name="taskId" value={t.id} />
-                      <input type="hidden" name="hidden" value="" />
-                      <button
-                        type="submit"
-                        style={{
-                          height: 32,
-                          padding: '0 12px',
-                          borderRadius: 10,
-                          border: '1px solid #111827',
-                          background: '#111827',
-                          color: '#fff',
-                          cursor: 'pointer',
-                          fontSize: 13,
-                        }}
-                      >
-                        Разархивировать
-                      </button>
-                    </form>
-                  )}
-                  {/* УДАЛИТЬ ДЛЯ "Назначенные мне" — по ТЗ кнопки удаления здесь быть не должно */}
-                  <div style={{ marginLeft: 'auto', fontSize: 12, color: '#6b7280' }}>Назначил: {t?.createdByName ?? '—'}</div>
+                <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 8 }}>
+                  {t?.description && <div style={{ whiteSpace: 'pre-wrap', color: '#111827' }}>{t.description}</div>}
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Назначил: {t?.createdByName ?? '—'}</div>
+
+                  {/* Разархивировать (только для «Назначенные мне») */}
+                  <form action={unarchiveAssigneeAction}>
+                    <input type="hidden" name="taskId" value={t?.id ?? ''} />
+                    <button
+                      type="submit"
+                      style={{
+                        height: 32, padding: '0 12px', borderRadius: 10,
+                        border: '1px solid #111827', background: '#111827', color: '#fff', cursor: 'pointer', fontSize: 13,
+                        width: 'fit-content'
+                      }}
+                    >
+                      Разархивировать
+                    </button>
+                  </form>
                 </div>
               </details>
             );
@@ -183,7 +142,7 @@ export default async function Page({
         </section>
       )}
 
-      {/* Вкладка: Назначенные мной (все исполнители завершили) */}
+      {/* Назначенные мной (все исполнители завершили) */}
       {activeTab === 'byme' && mayCreate && (
         <section aria-label="Назначенные мной — архив" style={{ display: 'grid', gap: 8 }}>
           {byMeAllDone.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет завершённых задач, назначенных вами.</div>}
@@ -197,7 +156,7 @@ export default async function Page({
 
             const lastCompletedAt =
               completedList.length
-                ? completedList.sort((a: Date, b: Date) => b.getTime() - a.getTime())[0]
+                ? completedList.sort((a, b) => b.getTime() - a.getTime())[0]
                 : null;
 
             return (
@@ -212,10 +171,11 @@ export default async function Page({
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: '#374151' }}>
-                    <span>Срок: {fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
+                    <span>Срок: {fmtRuDate(t.dueDate as Date)}</span>
                     <span>Завершено: {fmtRuDate(lastCompletedAt)}</span>
                   </div>
                 </summary>
+
                 <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 6 }}>
                   {t.description && <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>}
                   <div style={{ fontSize: 13 }}>
@@ -233,27 +193,21 @@ export default async function Page({
                             background: a.status === 'done' ? '#ecfdf5' : '#fff',
                           }}
                         >
-                          {a.userId.slice(0, 8)}… {a.status === 'done' ? '✓' : ''}
+                          {(a.user?.name ?? `${a.userId.slice(0, 8)}…`)} {a.status === 'done' ? '✓' : ''}
                         </span>
                       ))}
                     </div>
                   </div>
 
-                  {/* Здесь удалять можно (это ваши же задачи) */}
-                  <form action={deleteTaskAction} style={{ display: 'inline-block' }}>
+                  {/* В архиве «Назначенные мной» — можно удалить целиком задачу */}
+                  <form action={deleteTaskAction} style={{ marginTop: 6 }}>
                     <input type="hidden" name="taskId" value={t.id} />
                     <button
                       type="submit"
                       style={{
-                        height: 32,
-                        padding: '0 12px',
-                        borderRadius: 10,
-                        border: '1px solid #ef4444',
-                        background: '#ef4444',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        fontSize: 13,
-                        width: 'fit-content',
+                        height: 32, padding: '0 12px', borderRadius: 10,
+                        border: '1px solid #ef4444', background: '#ef4444', color: '#fff', cursor: 'pointer', fontSize: 13,
+                        width: 'fit-content'
                       }}
                     >
                       Удалить из базы

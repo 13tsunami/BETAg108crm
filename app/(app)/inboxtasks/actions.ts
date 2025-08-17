@@ -192,27 +192,45 @@ export async function markAssigneeDoneAction(fd: FormData): Promise<void> {
 }
 
 // НОВОЕ: снять из архива своё назначение (done -> in_progress)
+// НОВОЕ: снять из архива своё назначение
+// Поддерживает ДВА варианта вызова:
+// 1) с assigneeId — точечное изменение конкретной записи назначения;
+// 2) только с taskId — откатывает статус для назначения текущего пользователя на эту задачу.
 export async function unarchiveAssigneeAction(fd: FormData): Promise<void> {
   const session = await auth();
   const meId = session?.user?.id ?? null;
+
+  // оба поля читаем, будем решать по наличию assigneeId
   const assigneeId = String(fd.get('assigneeId') ?? '').trim();
-  const taskId = String(fd.get('taskId') ?? '').trim(); // для revalidate целевых страниц
+  const taskId = String(fd.get('taskId') ?? '').trim();
 
-  if (!meId || !assigneeId) { revalidateAll(); return; }
-
-  // Разрешаем правку только своей записи назначения
-  const ass = await prisma.taskAssignee.findUnique({
-    where: { id: assigneeId },
-    select: { id: true, userId: true },
-  });
-  if (!ass || ass.userId !== meId) { revalidateAll(); return; }
+  if (!meId) { revalidateAll(); return; }
 
   try {
-    await prisma.taskAssignee.update({
-      where: { id: assigneeId },
-      data: { status: 'in_progress', completedAt: null },
-    });
+    if (assigneeId) {
+      // Вариант 1: задан конкретный assigneeId — убедимся, что он принадлежит текущему пользователю
+      const ass = await prisma.taskAssignee.findUnique({
+        where: { id: assigneeId },
+        select: { id: true, userId: true },
+      });
+      if (!ass || ass.userId !== meId) {
+        revalidateAll();
+        return;
+      }
+
+      await prisma.taskAssignee.update({
+        where: { id: assigneeId },
+        data: { status: 'in_progress', completedAt: null },
+      });
+    } else if (taskId) {
+      // Вариант 2: только taskId — откатить статус моего назначения по этой задаче
+      await prisma.taskAssignee.updateMany({
+        where: { taskId, userId: meId, status: 'done' },
+        data: { status: 'in_progress', completedAt: null },
+      });
+    }
   } finally {
     revalidateAll();
   }
 }
+

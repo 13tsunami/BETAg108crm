@@ -217,6 +217,17 @@ export default async function Page({
                       {t.description && (
                         <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>
                       )}
+
+                      {/* МЕТАДАННЫЕ: назначение и выполнение (добавлено) */}
+                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: '#374151', marginBottom: 8 }}>
+                        <span>Назначена: {fmtRuDateWithOptionalTimeYekb(myAssn?.assignedAt)}</span>
+                        {myAssn?.completedAt ? (
+                          <span>Выполнено: {fmtRuDateWithOptionalTimeYekb(myAssn.completedAt)}</span>
+                        ) : (
+                          <span>Статус: в работе</span>
+                        )}
+                      </div>
+
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <form action={markAssigneeDoneAction}>
                           <input type="hidden" name="taskId" value={t.id} />
