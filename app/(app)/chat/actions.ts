@@ -1,3 +1,4 @@
+// app/(app)/chat/actions.ts
 'use server';
 
 import { auth } from '@/auth.config';
@@ -22,6 +23,7 @@ async function participantsOf(threadId: string): Promise<[string, string]> {
   return [th?.aId || '', th?.bId || ''] as [string, string];
 }
 
+// --- отправка сообщения ---
 export async function sendMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -64,10 +66,11 @@ export async function sendMessageAction(fd: FormData): Promise<void> {
     authorId: created.authorId,
     text: created.text,
     ts: created.createdAt.toISOString(),
-    clientId, // ← ключ к замене temp -> real
+    clientId,
   } as any);
 }
 
+// --- редактирование сообщения ---
 export async function editMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -93,6 +96,7 @@ export async function editMessageAction(fd: FormData): Promise<void> {
   } as any);
 }
 
+// --- удаление сообщения ---
 export async function deleteMessageAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -127,6 +131,7 @@ export async function deleteMessageAction(fd: FormData): Promise<void> {
   } as any);
 }
 
+// --- отметка прочитанного ---
 export async function markReadAction(fd: FormData): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
@@ -148,10 +153,10 @@ export async function markReadAction(fd: FormData): Promise<void> {
   broker.publish([th.aId, th.bId], { type: 'read', threadId, at: Date.now() } as any);
 }
 
-export async function deleteThreadAction(fd: FormData): Promise<void> {
+// --- удаление диалога ---
+export async function deleteThreadAction(threadId: string): Promise<void> {
   const session = await auth();
   const me = requireUserId(session);
-  const threadId = s(fd.get('threadId')).trim();
   if (!threadId) return;
 
   const th = await prisma.thread.findFirst({
@@ -177,6 +182,4 @@ export async function deleteThreadAction(fd: FormData): Promise<void> {
     byId: me,
     byName,
   } as any);
-
-  redirect('/chat');
 }

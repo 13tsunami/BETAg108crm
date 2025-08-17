@@ -1,40 +1,27 @@
 'use client';
 
-import { useEffect, useRef, useState, startTransition } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  sendMessageAction,
-  editMessageAction,
-  deleteMessageAction,
-} from './actions';
 import s from './chat.module.css';
+import { editMessageAction, deleteMessageAction } from './actions';
 
 type Msg = {
   id: string;
   threadId: string;
   authorId: string;
+  authorName?: string | null;
   text: string;
   createdAt: string; // ISO
+  editedAt?: string | null;
+  deletedAt?: string | null;
 };
-
-type PushEvt = {
-  type: 'message';
-  threadId: string;
-  messageId: string;
-  authorId: string;
-  text: string;
-  ts: string;
-  clientId?: string;
-};
-type EditEvt = { type: 'messageEdited'; threadId: string; messageId: string; byId: string; text: string };
-type DelEvt  = { type: 'messageDeleted'; threadId: string; messageId: string; byId: string; scope: 'self' | 'both' };
-type ReadEvt = { type: 'read'; threadId: string };
 
 export default function ChatBoxClient({
   meId,
   meName,
   peerName,
   threadId,
+  meReadAtIso,
   peerReadAtIso,
   initial,
 }: {
@@ -42,143 +29,242 @@ export default function ChatBoxClient({
   meName: string;
   peerName: string;
   threadId: string;
+  meReadAtIso?: string | null;
   peerReadAtIso: string | null;
   initial: Msg[];
 }) {
-  const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initial || []);
   const [text, setText] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
   const endRef = useRef<HTMLDivElement | null>(null);
+  const firstUnreadRef = useRef<HTMLDivElement | null>(null);
+  const didInitScrollRef = useRef(false);
+  const router = useRouter();
 
-  // редактор модалки
-  const [edit, setEdit] = useState<null | { id: string; text: string }>(null);
-
-  // оптимистика для отправки
-  const pendingByClient = useRef<Set<string>>(new Set());
-
-  // при смене треда — сброс на initial
+  // SSE подписка
   useEffect(() => {
-    setMessages(Array.isArray(initial) ? initial : []);
-    setText('');
-    // сбросить возможную модалку
-    setEdit(null);
-  }, [threadId, initial]);
+    const url = `/chat/live?threadId=${encodeURIComponent(threadId)}`;
+    const es = new EventSource(url);
 
-  // регистрация API для Live (/chat/sse). Всегда снимаем на размонтировании.
-  useEffect(() => {
-    const api = {
-      threadId,
-      push: (e: PushEvt) => {
-        if (e.threadId !== threadId) return;
-        if (e.clientId && pendingByClient.current.has(e.clientId)) {
-          pendingByClient.current.delete(e.clientId);
-          return;
+    const onMsg = (ev: MessageEvent) => {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data?.threadId !== threadId) return;
+
+        switch (data?.type) {
+          case 'message': {
+            const m: Msg = {
+              id: data.messageId,
+              threadId,
+              authorId: data.authorId,
+              text: data.text,
+              createdAt: data.ts,
+            };
+            setMessages((prev) => [...prev, m]);
+            break;
+          }
+          case 'messageEdited': {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === data.messageId
+                  ? { ...m, text: data.text, editedAt: new Date().toISOString() }
+                  : m
+              )
+            );
+            break;
+          }
+          case 'messageDeleted': {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === data.messageId
+                  ? { ...m, text: '', deletedAt: new Date().toISOString() }
+                  : m
+              )
+            );
+            break;
+          }
+          case 'read': {
+            // галочки обновятся при следующем заходе; можно игнорировать
+            break;
+          }
+          case 'threadDeleted': {
+            if (data.threadId === threadId) router.push('/chat');
+            break;
+          }
+          default: {
+            if (data?.id && data?.text) {
+              setMessages((prev) => [...prev, data]);
+            }
+          }
         }
-        setMessages(prev => prev.concat({
-          id: e.messageId,
-          threadId: e.threadId,
-          authorId: e.authorId,
-          text: e.text,
-          createdAt: e.ts,
-        }));
-      },
-      edit: (e: EditEvt) => {
-        if (e.threadId !== threadId) return;
-        setMessages(prev => prev.map(m => m.id === e.messageId ? { ...m, text: e.text } : m));
-      },
-      del: (e: DelEvt) => {
-        if (e.threadId !== threadId) return;
-        setMessages(prev => prev.filter(m => m.id !== e.messageId));
-      },
-      read: (_e: ReadEvt) => {},
-      onThreadDeleted: () => {
-        startTransition(() => router.replace('/chat'));
-      }
+      } catch {}
     };
-    (window as any).__chatApi = api;
-    return () => { (window as any).__chatApi = undefined; };
-  }, [router, threadId]);
 
-  // автопрокрутка
+    es.addEventListener('message', onMsg);
+    return () => {
+      es.removeEventListener('message', onMsg as any);
+      es.close();
+    };
+  }, [threadId, router]);
+
+  // автопрокрутка: первичный скролл к первому непрочитанному
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!didInitScrollRef.current) {
+      const anchor = firstUnreadRef.current || endRef.current;
+      anchor?.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+      didInitScrollRef.current = true;
+      return;
+    }
+    const scroller = endRef.current?.parentElement;
+    if (scroller) {
+      const nearBottom =
+        scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 64;
+      if (nearBottom) endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   async function send() {
     const txt = text.trim();
-    if (!txt || !threadId) return;
-    const clientId = globalThis.crypto?.randomUUID?.() ?? String(Math.random());
-    pendingByClient.current.add(clientId);
-    const optimistic: Msg = {
-      id: `tmp-${clientId}`,
-      threadId,
-      authorId: meId,
-      text: txt,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages(prev => prev.concat(optimistic));
-    setText('');
-
-    const fd = new FormData();
-    fd.append('threadId', threadId);
-    fd.append('text', txt);
-    fd.append('clientId', clientId);
-    try {
-      await sendMessageAction(fd);
-    } catch {
-      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
-      pendingByClient.current.delete(clientId);
-    }
+    if (!txt) return;
+    const res = await fetch(`/chat/live?threadId=${encodeURIComponent(threadId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: txt }),
+    });
+    if (res.ok) setText('');
   }
 
-  async function applyEdit(messageId: string, newText: string) {
-    const t = newText.trim();
-    if (!t) return;
-    setMessages(prev => prev.map(m => m.id === messageId ? ({ ...m, text: t }) : m));
-    setEdit(null);
-
+  async function saveEdit(id: string) {
     const fd = new FormData();
-    fd.append('messageId', messageId);
-    fd.append('text', t);
-    try {
-      await editMessageAction(fd);
-    } catch {
-      // при ошибке обновление придёт обратно через SSE как старый текст; дополнительный откат не нужен
-    }
+    fd.set('messageId', id);
+    fd.set('text', editText.trim());
+    await editMessageAction(fd);
+    setEditingId(null);
+    setEditText('');
   }
 
-  async function applyDelete(messageId: string, scope: 'self'|'both') {
-    setMessages(prev => prev.filter(m => m.id !== messageId));
-    setEdit(null);
-
+  async function deleteMsg(id: string, scope: 'self' | 'both') {
+    if (!confirm('Удалить сообщение?')) return;
     const fd = new FormData();
-    fd.append('messageId', messageId);
-    fd.append('scope', scope);
-    try {
-      await deleteMessageAction(fd);
-    } catch {
-      // при ошибке событие не придёт, сообщение уже удалено локально — пользователь может обновить страницу
-    }
+    fd.set('messageId', id);
+    fd.set('scope', scope);
+    await deleteMessageAction(fd);
   }
+
+  function sameDay(d1: Date, d2: Date) {
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  }
+  function labelForDate(d: Date) {
+    const now = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    if (sameDay(d, now)) return 'Сегодня';
+    if (sameDay(d, yesterday)) return 'Вчера';
+    return d.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  let lastDateLabel: string | null = null;
 
   return (
-    <div style={{ height: '100%', display: 'grid', gridTemplateRows: '1fr auto', gap: 12 }}>
-      <div style={{ overflowY: 'auto', padding: '8px 0' }}>
+    <div className={s.pane}>
+      <div
+        style={{
+          padding: '8px 12px',
+          borderBottom: '1px solid #e5e7eb',
+          fontWeight: 600,
+        }}
+      >
+        {peerName}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
         {messages.map((m) => {
+          const created = new Date(m.createdAt);
+          const label = labelForDate(created);
+          const showDivider = label !== lastDateLabel;
+          lastDateLabel = label;
+
           const mine = m.authorId === meId;
-          const rowCls = `${s.msgRow} ${mine ? s.mine : s.other}`;
-          const bubbleCls = `${s.msgCard} ${mine ? s.msgMineBg : s.msgOtherBg}`;
+          const isRead =
+            peerReadAtIso && new Date(m.createdAt) <= new Date(peerReadAtIso);
+          const isAfterMyRead = meReadAtIso
+            ? created > new Date(meReadAtIso)
+            : false;
+          const isFirstUnreadAnchor =
+            !firstUnreadRef.current && isAfterMyRead && !mine;
+
           return (
-            <div key={m.id} className={rowCls}>
-              <div
-                className={bubbleCls}
-                title={new Date(m.createdAt).toLocaleString('ru-RU')}
-                onClick={() => mine && setEdit({ id: m.id, text: m.text })}
-                style={{ cursor: mine ? 'pointer' : 'default' }}
-              >
-                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.text}</div>
-                <div className={s.msgMeta}>
-                  {new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+            <div
+              key={m.id}
+              ref={isFirstUnreadAnchor ? firstUnreadRef : undefined}
+            >
+              {showDivider && (
+                <div className={s.dayDivider}>
+                  <span>{label}</span>
+                </div>
+              )}
+              <div className={`${s.msgRow} ${mine ? s.mine : s.other}`}>
+                <div
+                  className={`${s.msgCard} ${
+                    mine ? s.msgMineBg : s.msgOtherBg
+                  }`}
+                >
+                  {editingId === m.id ? (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        style={{ flex: 1 }}
+                      />
+                      <button onClick={() => saveEdit(m.id)}>OK</button>
+                      <button onClick={() => setEditingId(null)}>Отмена</button>
+                    </div>
+                  ) : (
+                    <div>
+                      {m.deletedAt ? (
+                        <i style={{ color: '#6b7280' }}>Сообщение удалено</i>
+                      ) : (
+                        m.text
+                      )}
+                    </div>
+                  )}
+                  <div className={s.msgMeta}>
+                    <span>{m.authorName || (mine ? meName : peerName)}</span>
+                    <span>
+                      {created.toLocaleTimeString('ru-RU', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    {mine && !m.deletedAt && (
+                      <span>{isRead ? '✔✔' : '✔'}</span>
+                    )}
+                    {m.editedAt && !m.deletedAt && <span>(изм.)</span>}
+                  </div>
+                  {mine && !m.deletedAt && editingId !== m.id && (
+                    <div style={{ marginTop: 4, display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => {
+                          setEditingId(m.id);
+                          setEditText(m.text);
+                        }}
+                      >
+                        ✏️
+                      </button>
+                      <button onClick={() => deleteMsg(m.id, 'both')}>🗑</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -187,41 +273,42 @@ export default function ChatBoxClient({
         <div ref={endRef} />
       </div>
 
-      <div style={{ display: 'flex', gap: 8, borderTop: '1px solid rgba(229,231,235,.85)', paddingTop: 8 }}>
+      <div
+        style={{
+          padding: 8,
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          gap: 8,
+        }}
+      >
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           placeholder="Напишите сообщение…"
-          className={s.inlineSearchInput}
+          style={{
+            flex: 1,
+            border: '1px solid #e5e7eb',
+            borderRadius: 12,
+            padding: '6px 10px',
+            outline: 'none',
+          }}
         />
-        <button onClick={send} className={s.modalBtn} style={{ height: 38 }}>
+        <button
+          onClick={send}
+          style={{
+            border: 'none',
+            borderRadius: 12,
+            background: '#8d2828',
+            color: '#fff',
+            padding: '0 16px',
+            cursor: 'pointer',
+            height: 36,
+          }}
+        >
           Отправить
         </button>
       </div>
-
-      {edit && (
-        <div className={s.modal} onClick={(e)=>{ if (e.target === e.currentTarget) setEdit(null); }}>
-          <div className={s.modalCard}>
-            <div className={s.modalTitle}>Сообщение</div>
-            <div className={s.modalRow} style={{ marginBottom: 8 }}>
-              <textarea
-                value={edit.text}
-                onChange={e => setEdit({ id: edit.id, text: e.target.value })}
-                rows={4}
-                className={s.inlineSearchInput}
-                style={{ resize:'vertical' }}
-              />
-            </div>
-            <div className={s.modalRow} style={{ justifyContent:'flex-end' }}>
-              <button className={s.modalBtn} onClick={()=> setEdit(null)}>Отмена</button>
-              <button className={s.modalBtn} onClick={()=> applyEdit(edit.id, edit.text)}>Сохранить</button>
-              <button className={s.modalBtnDanger} onClick={()=> applyDelete(edit.id, 'self')}>Удалить у меня</button>
-              <button className={s.modalBtnDanger} onClick={()=> applyDelete(edit.id, 'both')}>Удалить у всех</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
