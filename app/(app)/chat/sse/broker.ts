@@ -1,44 +1,49 @@
-// Простой in-memory брокер событий по threadId. Работает в рамках одного инстанса.
-type Msg = {
-  id: string;
-  text: string;
-  ts: string;        // ISO
-  authorId: string;
-  threadId: string;
-  edited?: boolean;
-  deleted?: boolean;
-};
+// app/(app)/chat/sse/broker.ts
+export type EventPayload =
+  | {
+      type: 'message';
+      threadId: string;
+      at: number;
+      messageId: string;
+      authorId: string;
+      text: string;
+      ts: string;
+      clientId?: string; // ← добавили
+    }
+  | { type: 'messageEdited'; threadId: string; at: number; messageId: string; byId: string; text: string }
+  | { type: 'messageDeleted'; threadId: string; at: number; messageId: string; byId: string; scope: 'self' | 'both' }
+  | { type: 'read'; threadId: string; at: number }
+  | { type: 'threadCreated'; threadId: string; at: number }
+  | { type: 'threadDeleted'; threadId: string; at: number; byId: string; byName: string };
 
-type Listener = (m: Msg) => void;
+type Subscriber = (p: EventPayload) => void;
 
-type Broker = {
-  subscribe: (threadId: string, cb: Listener) => () => void;
-  publish: (threadId: string, msg: Msg) => void;
-};
+class Broker {
+  private subs = new Map<string, Map<number, Subscriber>>();
+  private seq = 0;
 
-const g = globalThis as any;
-if (!g.__CHAT_BROKER__) {
-  g.__CHAT_BROKER__ = new Map<string, Set<Listener>>();
-}
-
-function ensureSet(threadId: string): Set<Listener> {
-  const map: Map<string, Set<Listener>> = g.__CHAT_BROKER__;
-  let set = map.get(threadId);
-  if (!set) {
-    set = new Set<Listener>();
-    map.set(threadId, set);
+  subscribe(uid: string, fn: Subscriber) {
+    if (!this.subs.has(uid)) this.subs.set(uid, new Map());
+    const id = ++this.seq;
+    this.subs.get(uid)!.set(id, fn);
+    return () => this.subs.get(uid)?.delete(id);
   }
-  return set;
+
+  publish(uids: string[] | string, payload: EventPayload) {
+    const targets = Array.isArray(uids) ? uids : [uids];
+    for (const uid of targets) {
+      const hs = this.subs.get(uid);
+      if (!hs?.size) continue;
+      for (const [, h] of hs) {
+        try {
+          h(payload);
+        } catch {}
+      }
+    }
+  }
 }
 
-export const broker: Broker = {
-  subscribe(threadId, cb) {
-    const set = ensureSet(threadId);
-    set.add(cb);
-    return () => set.delete(cb);
-  },
-  publish(threadId, msg) {
-    const set = ensureSet(threadId);
-    for (const cb of set) cb(msg);
-  },
-};
+type G = typeof globalThis & { __g108_broker?: Broker };
+const g = globalThis as G;
+const broker = g.__g108_broker ?? (g.__g108_broker = new Broker());
+export default broker;
