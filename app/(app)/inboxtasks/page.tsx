@@ -13,16 +13,50 @@ import {
 import type { Prisma } from '@prisma/client';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-type TaskWithAssigneesAndUsers = Prisma.TaskGetPayload<{
-  include: { assignees: { include: { user: { select: { id: true; name: true } } } } };
+type TaskWithAssignees = Prisma.TaskGetPayload<{
+  include: { assignees: { include: { user: { select: { id: true; name: true } } } } }
 }>;
 
-const BRAND = '#8d2828';
-
-function fmtRuDate(d: Date | string | null | undefined): string {
+function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): string {
   if (!d) return '';
   const dt = typeof d === 'string' ? new Date(d) : d;
-  return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(dt);
+  const parts = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Yekaterinburg',
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).formatToParts(dt);
+
+  const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  const dd = `${map.day} ${map.month?.replace('.', '')}`;
+  const yyyy = map.year;
+
+  const hm = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Yekaterinburg',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(dt);
+  const hh = hm.find(p => p.type === 'hour')?.value ?? '00';
+  const mm = hm.find(p => p.type === 'minute')?.value ?? '00';
+
+  const isDefaultEnd = hh === '23' && mm === '59';
+  return isDefaultEnd ? `${dd} ${yyyy}` : `${dd} ${yyyy}, ${hh}:${mm}`;
+}
+
+function TeacherGuide() {
+  return (
+    <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff', fontSize: 14, lineHeight: 1.5 }}>
+      <h3 style={{ marginTop: 0, marginBottom: 8 }}>Как работать с задачами</h3>
+      <ul style={{ margin: 0, paddingLeft: 18 }}>
+        <li>Во вкладке «Назначенные мне» вы видите актуальные задачи, назначенные вам руководителями.</li>
+        <li>Откройте задачу и нажмите «Выполнить», когда закончите работу — она уйдёт в архив.</li>
+        <li>Кнопка «Уточнить задачу» открывает чат с назначившим задачу для вопросов и уточнений.</li>
+        <li>Дедлайн отображается с датой и, при необходимости, временем.</li>
+      </ul>
+    </div>
+  );
 }
 
 export default async function Page({
@@ -49,7 +83,7 @@ export default async function Page({
 
   const activeTab = mayCreate ? (tabParam === 'byme' ? 'byme' : 'mine') : 'mine';
 
-  // данные для TaskForm (только если можно создавать задачи)
+  // Данные для TaskForm
   let users: Array<{ id: string; name: string | null; role?: string | null; methodicalGroups?: string | null; subjects?: any }> = [];
   let groups: Array<{ id: string; name: string }> = [];
   let subjects: Array<{ name: string; count?: number }> = [];
@@ -59,7 +93,13 @@ export default async function Page({
   if (mayCreate) {
     const [usersRaw, groupsRaw, subjectsRaw, groupMembersRaw, subjectMembersRaw] = await Promise.all([
       prisma.user.findMany({
-        select: { id: true, name: true, role: true, methodicalGroups: true, subjects: true },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+          methodicalGroups: true,
+          subjects: true,
+        },
         orderBy: { name: 'asc' },
       }),
       prisma.group.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
@@ -69,7 +109,10 @@ export default async function Page({
       }),
       prisma.groupMember.findMany({ select: { groupId: true, userId: true } }),
       prisma.subjectMember.findMany({
-        select: { userId: true, subject: { select: { name: true } } },
+        select: {
+          userId: true,
+          subject: { select: { name: true } },
+        },
       }),
     ]);
 
@@ -80,11 +123,15 @@ export default async function Page({
     subjectMembers = subjectMembersRaw.map((sm) => ({ userId: sm.userId, subjectName: sm.subject.name }));
   }
 
-  // списки задач
-  const [assignedToMe, createdByMe]: [TaskWithAssigneesAndUsers[], TaskWithAssigneesAndUsers[]] = await Promise.all([
+  // Списки задач
+  const [assignedToMe, createdByMe]: [TaskWithAssignees[], TaskWithAssignees[]] = await Promise.all([
     prisma.task.findMany({
-      where: { assignees: { some: { userId: meId, status: 'in_progress' } } },
-      include: { assignees: { include: { user: { select: { id: true, name: true } } } } },
+      where: {
+        assignees: { some: { userId: meId, status: 'in_progress' } },
+      },
+      include: {
+        assignees: { include: { user: { select: { id: true, name: true } } } },
+      },
       orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
     }),
     mayCreate
@@ -93,154 +140,104 @@ export default async function Page({
           include: { assignees: { include: { user: { select: { id: true, name: true } } } } },
           orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
         })
-      : Promise.resolve([] as TaskWithAssigneesAndUsers[]),
+      : Promise.resolve([] as TaskWithAssignees[]),
   ]);
 
   return (
     <main style={{ padding: 16 }}>
-      <h1 style={{ margin: '0 0 12px' }}>Задачи</h1>
-
-      {/* 1/3 + 2/3 */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(260px, 1fr) 2fr',
-          gap: 16,
-          alignItems: 'start',
-        }}
-      >
-        {/* левая колонка */}
-        <section
-          aria-label={mayCreate ? 'Создать задачу' : 'Как работать с задачами'}
-          style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff' }}
-        >
+      <div className="gridWrap">
+        {/* Левая колонка: форма (или гид для Teacher) */}
+        <aside className="leftCol">
           {mayCreate ? (
-            <Suspense fallback={null}>
-              <TaskForm
-                users={users}
-                groups={groups}
-                subjects={subjects}
-                groupMembers={groupMembers}
-                subjectMembers={subjectMembers}
-                createAction={createTaskAction}
-              />
-            </Suspense>
+            <section aria-label="Создать задачу" className="card">
+              <Suspense fallback={null}>
+                <TaskForm
+                  users={users}
+                  groups={groups}
+                  subjects={subjects}
+                  groupMembers={groupMembers}
+                  subjectMembers={subjectMembers}
+                  createAction={createTaskAction}
+                />
+              </Suspense>
+            </section>
           ) : (
-            <div style={{ display: 'grid', gap: 10 }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>Как пользоваться задачами</h2>
-              <p style={{ margin: 0, color: '#374151', fontSize: 14 }}>
-                Вы видите задачи, которые вам назначили. Нажмите «Выполнить», когда закончите работу — задача перейдёт в архив.
-                Для уточнений нажмите «Уточнить задачу» — откроется чат с назначившим.
-              </p>
-              <p style={{ margin: 0, color: '#374151', fontSize: 14 }}>
-                Срок задачи указан на карточке. Срочные задачи помечены бейджем «Срочно». Календарь автоматически
-                показывает задачи по датам (если задача не скрыта из календаря).
-              </p>
-            </div>
+            <TeacherGuide />
           )}
-        </section>
+        </aside>
 
-        {/* правая колонка */}
-        <section aria-label="Список задач" style={{ display: 'grid', gap: 12 }}>
-          <nav style={{ display: 'flex', gap: 8 }}>
-            <a
-              href="/inboxtasks?tab=mine"
-              style={{
-                padding: '6px 10px',
-                borderRadius: 999,
-                border: '1px solid #e5e7eb',
-                background: activeTab === 'mine' ? BRAND : '#fff',
-                color: activeTab === 'mine' ? '#fff' : '#111827',
-                textDecoration: 'none',
-                fontSize: 13,
-              }}
-            >
-              Назначенные мне ({assignedToMe.length})
-            </a>
-            {mayCreate && (
-              <a
-                href="/inboxtasks?tab=byme"
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: 999,
-                  border: '1px solid #e5e7eb',
-                  background: activeTab === 'byme' ? BRAND : '#fff',
-                  color: activeTab === 'byme' ? '#fff' : '#111827',
-                  textDecoration: 'none',
-                  fontSize: 13,
-                }}
-              >
-                Назначенные мной ({createdByMe.length})
-              </a>
+        {/* Правая колонка: список задач с табами */}
+        <section className="rightCol">
+          <header className="tabsWrap">
+            {mayCreate ? (
+              <nav className="tabs">
+                <a
+                  href="/inboxtasks?tab=mine"
+                  className={`tab ${activeTab === 'mine' ? 'tab--active' : ''}`}
+                  aria-current={activeTab === 'mine' ? 'page' : undefined}
+                >
+                  Назначенные мне ({assignedToMe.length})
+                </a>
+                <a
+                  href="/inboxtasks?tab=byme"
+                  className={`tab ${activeTab === 'byme' ? 'tab--active' : ''}`}
+                  aria-current={activeTab === 'byme' ? 'page' : undefined}
+                >
+                  Назначенные мной ({createdByMe.length})
+                </a>
+              </nav>
+            ) : (
+              <div style={{ fontSize: 13, color: '#6b7280' }}>
+                Роль: преподаватель — доступна только вкладка «Назначенные мне»
+              </div>
             )}
-          </nav>
+          </header>
 
-          {/* Назначенные мне */}
+          {/* Вкладка: Назначенные мне */}
           {activeTab === 'mine' && (
             <section aria-label="Назначенные мне" style={{ display: 'grid', gap: 8 }}>
               {assignedToMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет активных задач.</div>}
               {assignedToMe.map((t) => {
-                const myAssn = t.assignees.find((a) => a.user?.id === meId);
-                const urgent = (t as any).priority === 'high';
+                const myAssn = t.assignees.find((a) => a.userId === meId);
+                const urgent = (t.priority ?? 'normal') === 'high';
                 return (
-                  <details key={t.id} style={{ border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff' }}>
-                    <summary style={{ padding: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <details key={t.id} className="taskCard">
+                    <summary className="taskSummary">
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600 }}>{(t as any).title}</span>
+                        <span style={{ fontWeight: 600 }}>{t.title}</span>
                         {urgent && (
-                          <span style={{ fontSize: 11, color: BRAND, border: `1px solid ${BRAND}`, borderRadius: 999, padding: '0 6px' }}>
-                            Срочно
-                          </span>
+                          <span className="pillUrgent">Срочно</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: '#374151' }}>{fmtRuDate((t as any).dueDate as Date)}</div>
+                      <div style={{ fontSize: 12, color: '#374151' }}>
+                        {fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}
+                      </div>
                     </summary>
-                    <div style={{ padding: 10, borderTop: '1px solid #f3f4f6' }}>
-                      {(t as any).description && (
-                        <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{(t as any).description}</div>
+                    <div className="taskBody">
+                      {t.description && (
+                        <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>
                       )}
-
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <form action={markAssigneeDoneAction}>
                           <input type="hidden" name="taskId" value={t.id} />
                           <button
                             type="submit"
-                            style={{
-                              height: 32,
-                              padding: '0 12px',
-                              borderRadius: 10,
-                              border: '1px solid #10b981',
-                              background: '#10b981',
-                              color: '#fff',
-                              cursor: 'pointer',
-                              fontSize: 13,
-                            }}
-                            disabled={!myAssn || (myAssn as any).status === 'done'}
+                            className="btnPrimaryGreen"
+                            disabled={!myAssn || myAssn.status === 'done'}
                           >
                             Выполнить
                           </button>
                         </form>
-                        {(t as any).createdById && (
+                        {t.createdById && (
                           <a
-                            href={`/chat?userId=${encodeURIComponent((t as any).createdById as string)}`}
-                            style={{
-                              height: 32,
-                              padding: '0 12px',
-                              borderRadius: 10,
-                              border: '1px solid #e5e7eb',
-                              background: '#fff',
-                              color: '#111827',
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              fontSize: 13,
-                            }}
+                            href={`/chat?userId=${encodeURIComponent(t.createdById)}`}
+                            className="btnGhost"
                           >
                             Уточнить задачу
                           </a>
                         )}
                         <div style={{ marginLeft: 'auto', fontSize: 12, color: '#6b7280' }}>
-                          Назначил: {(t as any).createdByName ?? '—'}
+                          Назначил: {t.createdByName ?? '—'}
                         </div>
                       </div>
                     </div>
@@ -250,241 +247,160 @@ export default async function Page({
             </section>
           )}
 
-          {/* Назначенные мной */}
+          {/* Вкладка: Назначенные мной */}
           {activeTab === 'byme' && mayCreate && (
             <section aria-label="Назначенные мной" style={{ display: 'grid', gap: 8 }}>
               {createdByMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Вы пока не создавали задач.</div>}
-
               {createdByMe.map((t) => {
-                const urgent = (t as any).priority === 'high';
-                const allDone = t.assignees.length > 0 && t.assignees.every((a) => (a as any).status === 'done');
-                const progressTarget = `progress-${t.id}`;
+                const urgent = (t.priority ?? 'normal') === 'high';
+                const total = t.assignees.length;
+                const done = t.assignees.filter(a => a.status === 'done').length;
+                const allDone = total > 0 && done === total;
+
+                const sorted = [...t.assignees].sort((a, b) => {
+                  const av = a.status === 'done' ? 1 : 0;
+                  const bv = b.status === 'done' ? 1 : 0;
+                  return av - bv;
+                });
+
+                const preview = sorted.slice(0, 7);
+                const hasMore = sorted.length > 7;
 
                 return (
-                  <details key={t.id} style={{ border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff' }}>
-                    <summary style={{ padding: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <details key={t.id} className="taskCard">
+                    <summary className="taskSummary">
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600 }}>{(t as any).title}</span>
-                        {urgent && (
-                          <span style={{ fontSize: 11, color: BRAND, border: `1px solid ${BRAND}`, borderRadius: 999, padding: '0 6px' }}>
-                            Срочно
-                          </span>
-                        )}
+                        <span style={{ fontWeight: 600 }}>{t.title}</span>
+                        {urgent && <span className="pillUrgent">Срочно</span>}
                       </div>
-                      <div style={{ fontSize: 12, color: '#374151' }}>{fmtRuDate((t as any).dueDate as Date)}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#374151' }}>
+                        <span>{fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
+                        <span style={{ color: '#111827', fontWeight: 600 }}>{done}/{total} выполнено</span>
+                      </div>
                     </summary>
 
-                    <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 10 }}>
-                      {/* ФИО исполнителей */}
+                    <div className="taskBody" style={{ display: 'grid', gap: 10 }}>
+                      {/* Кому назначено (сворачиваемый список) */}
                       <div style={{ fontSize: 13 }}>
                         <div style={{ color: '#6b7280', marginBottom: 4 }}>Кому назначено:</div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {t.assignees.map((a) => (
-                            <span
-                              key={a.id}
-                              title={(a as any).status === 'done' ? 'Выполнено' : 'В работе'}
-                              style={{
-                                border: '1px solid #e5e7eb',
-                                borderRadius: 999,
-                                padding: '2px 8px',
-                                fontSize: 12,
-                                background: (a as any).status === 'done' ? '#ecfdf5' : '#fff',
-                              }}
-                            >
-                              {a.user?.name ?? `${a.user?.id?.slice(0, 8) ?? '—'}…`} {(a as any).status === 'done' ? '✓' : ''}
-                            </span>
-                          ))}
-                        </div>
+
+                        {hasMore ? (
+                          <details>
+                            <summary style={{ listStyle: 'none', cursor: 'pointer' }}>
+                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {preview.map((a) => (
+                                  <span
+                                    key={a.id}
+                                    title={a.status === 'done' ? 'Выполнено' : 'В работе'}
+                                    style={{
+                                      border: '1px solid #e5e7eb',
+                                      borderRadius: 999,
+                                      padding: '2px 8px',
+                                      fontSize: 12,
+                                      background: a.status === 'done' ? '#ecfdf5' : '#fff',
+                                    }}
+                                  >
+                                    {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
+                                  </span>
+                                ))}
+                              </div>
+                              <div style={{ marginTop: 6, fontSize: 12, color: '#374151' }}>Показать всех</div>
+                            </summary>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                              {sorted.map((a) => (
+                                <span
+                                  key={a.id}
+                                  title={a.status === 'done' ? 'Выполнено' : 'В работе'}
+                                  style={{
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: 999,
+                                    padding: '2px 8px',
+                                    fontSize: 12,
+                                    background: a.status === 'done' ? '#ecfdf5' : '#fff',
+                                  }}
+                                >
+                                  {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
+                                </span>
+                              ))}
+                            </div>
+                          </details>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {sorted.map((a) => (
+                              <span
+                                key={a.id}
+                                title={a.status === 'done' ? 'Выполнено' : 'В работе'}
+                                style={{
+                                  border: '1px solid #e5e7eb',
+                                  borderRadius: 999,
+                                  padding: '2px 8px',
+                                  fontSize: 12,
+                                  background: a.status === 'done' ? '#ecfdf5' : '#fff',
+                                }}
+                              >
+                                {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Редактирование */}
+                      {/* Редактирование основных полей (ОТДЕЛЬНАЯ ФОРМА) */}
                       <form action={updateTaskAction} style={{ display: 'grid', gap: 8 }}>
                         <input type="hidden" name="taskId" value={t.id} />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 140px', gap: 8 }}>
                           <input
                             name="title"
-                            defaultValue={(t as any).title}
+                            defaultValue={t.title}
                             placeholder="Название"
                             style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
                           />
                           <input
                             name="dueDate"
                             type="date"
-                            defaultValue={new Date((t as any).dueDate as Date).toISOString().slice(0, 10)}
+                            defaultValue={new Date(t.dueDate as Date).toISOString().slice(0, 10)}
                             style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
                           />
-                          <select
-                            name="priority"
-                            defaultValue={(t as any).priority ?? 'normal'}
-                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
-                          >
+                          <select name="priority" defaultValue={t.priority ?? 'normal'} style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}>
                             <option value="normal">обычный</option>
                             <option value="high">срочно</option>
                           </select>
                         </div>
                         <textarea
                           name="description"
-                          defaultValue={(t as any).description ?? ''}
+                          defaultValue={t.description ?? ''}
                           rows={3}
                           placeholder="Описание"
                           style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, resize: 'vertical' }}
                         />
                         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                          <input type="checkbox" name="hidden" defaultChecked={(t as any).hidden ?? false} /> не размещать в календаре
+                          <input type="checkbox" name="hidden" defaultChecked={t['hidden'] ?? false} /> не размещать в календаре
                         </label>
-
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <button
-                            type="submit"
-                            style={{
-                              height: 32,
-                              padding: '0 12px',
-                              borderRadius: 10,
-                              border: '1px solid #111827',
-                              background: '#111827',
-                              color: '#fff',
-                              cursor: 'pointer',
-                              fontSize: 13,
-                            }}
-                          >
+                          <button type="submit" className="btnPrimary">
                             Сохранить изменения
                           </button>
                         </div>
                       </form>
 
-                      {/* Действия (НЕ вложенные формы) */}
+                      {/* Кнопки Удалить / В архив — ОТДЕЛЬНЫЕ ФОРМЫ (НЕ вложенные) */}
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <form action={deleteTaskAction}>
                           <input type="hidden" name="taskId" value={t.id} />
-                          <button
-                            type="submit"
-                            style={{
-                              height: 32,
-                              padding: '0 12px',
-                              borderRadius: 10,
-                              border: '1px solid #ef4444',
-                              background: '#ef4444',
-                              color: '#fff',
-                              cursor: 'pointer',
-                              fontSize: 13,
-                            }}
-                          >
+                          <button type="submit" className="btnDanger">
                             Удалить
                           </button>
                         </form>
-
                         {allDone && (
-                          <form action={updateTaskAction}>
+                          <form action={updateTaskAction} style={{ marginLeft: 'auto' }}>
                             <input type="hidden" name="taskId" value={t.id} />
                             <input type="hidden" name="archive" value="1" />
-                            <button
-                              type="submit"
-                              title="Переместить в архив (все исполнители выполнили)"
-                              style={{
-                                height: 32,
-                                padding: '0 12px',
-                                borderRadius: 10,
-                                border: '1px solid #10b981',
-                                background: '#10b981',
-                                color: '#fff',
-                                cursor: 'pointer',
-                                fontSize: 13,
-                              }}
-                            >
+                            <button type="submit" className="btnPrimaryGreen">
                               В архив
                             </button>
                           </form>
                         )}
-
-                        {/* Прогресс — CSS-модалка через :target */}
-                        <a
-                          href={`#progress-${t.id}`}
-                          style={{
-                            height: 32,
-                            padding: '0 12px',
-                            borderRadius: 10,
-                            border: '1px solid #e5e7eb',
-                            background: '#fff',
-                            color: '#111827',
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            fontSize: 13,
-                          }}
-                        >
-                          Прогресс
-                        </a>
                       </div>
-                    </div>
-
-                    {/* Модалка прогресса (без JS) */}
-                    <div id={`progress-${t.id}`} style={{ position: 'fixed', inset: 0, display: 'none' }}>
-                      <a href="/inboxtasks?tab=byme" aria-label="Закрыть" style={{ position: 'absolute', inset: 0 }} />
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background: 'rgba(0,0,0,.25)',
-                          display: 'grid',
-                          placeItems: 'center',
-                          padding: 12,
-                        }}
-                      >
-                        <div
-                          role="dialog"
-                          aria-modal="true"
-                          style={{
-                            width: 'min(640px, 96vw)',
-                            background: '#fff',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: 12,
-                            boxShadow: '0 10px 30px rgba(0,0,0,.15)',
-                            padding: 16,
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                            <div style={{ fontWeight: 700, fontSize: 16 }}>Прогресс по задаче</div>
-                            <a
-                              href="/inboxtasks?tab=byme"
-                              style={{
-                                border: '1px solid #e5e7eb',
-                                borderRadius: 8,
-                                padding: '4px 8px',
-                                textDecoration: 'none',
-                                color: '#111827',
-                              }}
-                            >
-                              закрыть
-                            </a>
-                          </div>
-
-                          <div style={{ display: 'grid', gap: 8 }}>
-                            {t.assignees.map((a) => (
-                              <div
-                                key={a.id}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  border: '1px solid #f3f4f6',
-                                  borderRadius: 8,
-                                  padding: '6px 8px',
-                                }}
-                              >
-                                <div style={{ fontSize: 14 }}>
-                                  {a.user?.name ?? `${a.user?.id?.slice(0, 8) ?? '—'}…`}
-                                </div>
-                                <div style={{ fontSize: 13, color: (a as any).status === 'done' ? '#10b981' : '#6b7280' }}>
-                                  {(a as any).status === 'done' ? 'Выполнено' : 'В работе'}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <style>{`
-                        :target#progress-${t.id} { display:block; }
-                      `}</style>
                     </div>
                   </details>
                 );
@@ -493,6 +409,61 @@ export default async function Page({
           )}
         </section>
       </div>
+
+      {/* ВАЖНО: обычный <style>, НЕ styled-jsx */}
+      <style>{`
+        .gridWrap {
+          display: grid;
+          grid-template-columns: minmax(320px, clamp(320px, 33%, 420px)) 1fr;
+          gap: 12px;
+        }
+        @media (max-width: 980px) {
+          .gridWrap {
+            grid-template-columns: 1fr;
+          }
+        }
+        .leftCol { min-width: 0; }
+        .rightCol { min-width: 0; }
+
+        .card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff; }
+
+        .tabsWrap { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+        .tabs { display:flex; gap:8px; }
+        .tab {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid #e5e7eb;
+          background: #fff;
+          color: #111827;
+          text-decoration: none;
+          font-size: 13px;
+        }
+        .tab--active {
+          background: #8d2828;
+          color: #fff;
+          border-color: #8d2828;
+        }
+
+        .taskCard { border:1px solid #e5e7eb; border-radius:12px; background:#fff; }
+        .taskSummary { padding:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+        .taskBody { padding:10px; border-top:1px solid #f3f4f6; }
+
+        .pillUrgent { font-size:11px; color:#8d2828; border:1px solid #8d2828; border-radius:999px; padding:0 6px; }
+
+        .btnPrimary {
+          height:32px; padding:0 12px; border-radius:10px; border:1px solid #111827; background:#111827; color:#fff; cursor:pointer; font-size:13px;
+        }
+        .btnPrimaryGreen {
+          height:32px; padding:0 12px; border-radius:10px; border:1px solid #10b981; background:#10b981; color:#fff; cursor:pointer; font-size:13px;
+        }
+        .btnDanger {
+          height:32px; padding:0 12px; border-radius:10px; border:1px solid #ef4444; background:#ef4444; color:#fff; cursor:pointer; font-size:13px;
+        }
+        .btnGhost {
+          height:32px; padding:0 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; color:#111827;
+          text-decoration:none; display:inline-flex; align-items:center; font-size:13px;
+        }
+      `}</style>
     </main>
   );
 }
