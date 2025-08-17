@@ -42,7 +42,6 @@ function requireSessionId(session: any): string {
   return id;
 }
 
-// server action-обёртка для формы удаления
 async function deleteThreadActionForm(formData: FormData): Promise<void> {
   'use server';
   const threadId = formData.get('threadId');
@@ -112,7 +111,7 @@ export default async function ChatPage({
   const sp = await searchParams;
   const get = (k: string) => toStr(sp?.[k]);
 
-  const threadIdRaw = get('thread').trim();
+  const threadId = get('thread').trim();
   const q        = get('q').trim();
   const start    = get('start').trim();
 
@@ -124,9 +123,9 @@ export default async function ChatPage({
     | { id: string; aId: string; bId: string; a: { id: string; name: string | null }; b: { id: string; name: string | null } }
     | null = null;
 
-  if (threadIdRaw) {
+  if (threadId) {
     active = await prisma.thread.findFirst({
-      where: { id: threadIdRaw, OR: [{ aId: meId }, { bId: meId }] },
+      where: { id: threadId, OR: [{ aId: meId }, { bId: meId }] },
       include: { a:{ select:{ id:true, name:true } }, b:{ select:{ id:true, name:true } } },
     });
     if (!active) redirect('/chat');
@@ -156,9 +155,9 @@ export default async function ChatPage({
   const peerId = peer?.id ?? '';
   const peerName = peer?.name ?? '—';
 
-  const rawMessages = active
+  const rawMessages = threadId
     ? await prisma.message.findMany({
-        where: { threadId: active.id },
+        where: { threadId },
         orderBy: { createdAt: 'asc' },
         select: {
           id: true,
@@ -187,18 +186,18 @@ export default async function ChatPage({
       deletedAt: m.deletedAt ? m.deletedAt.toISOString() : null,
     }));
 
-  if (active) {
+  if (threadId && active) {
     await prisma.readMark.upsert({
-      where: { threadId_userId: { threadId: active.id, userId: meId } },
+      where: { threadId_userId: { threadId, userId: meId } },
       update: { readAt: now() },
-      create: { threadId: active.id, userId: meId, readAt: now() },
+      create: { threadId, userId: meId, readAt: now() },
     });
   }
 
   const peerReadAt =
-    active && peerId
+    threadId && active && peerId
       ? (await prisma.readMark.findUnique({
-          where: { threadId_userId: { threadId: active.id, userId: peerId } },
+          where: { threadId_userId: { threadId, userId: peerId } },
           select: { readAt:true },
         }))?.readAt ?? null
       : null;
@@ -232,9 +231,8 @@ export default async function ChatPage({
 
           <div className={s.threadsList}>
             {threads.length === 0 && <div style={{ color:'#6b7280' }}>диалогов пока нет</div>}
-
             {threads.map(t => {
-              const activeCls = active?.id === t.id ? s.threadActive : '';
+              const activeCls = t.id === threadId ? s.threadActive : '';
               const unreadCls = t.unreadCount > 0 ? s.threadUnread : '';
               const initials = (t.peerName || '—')
                 .trim()
@@ -267,9 +265,9 @@ export default async function ChatPage({
           </div>
         </aside>
 
-        <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr', gap:12 }}>
+        <section className={s.pane} style={{ display:'flex', flexDirection:'column' }}>
           <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
-            {active ? (
+            {threadId ? (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>{peerName}</div>
               </div>
@@ -280,22 +278,18 @@ export default async function ChatPage({
             )}
           </header>
 
-          {active ? (
-            <ChatBoxClient
-              meId={meId}
-              meName={meName}
-              peerName={peerName}
-              threadId={active.id}
-              peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
-              initial={messages}
-            />
-          ) : (
-            <div style={{ padding:16, color:'#6b7280' }}>Нет выбранного диалога</div>
-          )}
+          <ChatBoxClient
+            meId={meId}
+            meName={meName}
+            peerName={peerName}
+            threadId={threadId || ''}
+            peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
+            initial={messages}
+          />
         </section>
       </div>
 
-      <Live uid={meId} activeThreadId={active?.id} />
+      <Live uid={meId} activeThreadId={threadId || undefined} />
     </main>
   );
 }

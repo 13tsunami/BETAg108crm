@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-17T17:18:34.427Z
+Generated: 2025-08-17T20:55:35.749Z
 ## UI hints
 ```json
 {
@@ -22,16 +22,22 @@ Generated: 2025-08-17T17:18:34.427Z
    │  │  │  └─ page.tsx
    │  │  ├─ chat
    │  │  │  ├─ ChatBoxClient.tsx
+   │  │  │  ├─ ChatSearchByName.tsx
    │  │  │  ├─ SearchBox.tsx
+   │  │  │  ├─ ThreadDeleteButton.tsx
    │  │  │  ├─ actions.ts
    │  │  │  ├─ chat.module.css
    │  │  │  ├─ live.tsx
    │  │  │  ├─ page.tsx
+   │  │  │  ├─ search-name
+   │  │  │  │  └─ route.ts
    │  │  │  └─ sse
    │  │  │     ├─ broker.ts
    │  │  │     └─ route.ts
    │  │  ├─ dashboard
    │  │  │  ├─ page.module.css
+   │  │  │  └─ page.tsx
+   │  │  ├─ discussions
    │  │  │  └─ page.tsx
    │  │  ├─ groups
    │  │  │  ├─ actions.ts
@@ -49,6 +55,8 @@ Generated: 2025-08-17T17:18:34.427Z
    │  │  │  └─ tasks-search-client.tsx
    │  │  ├─ layout.module.css
    │  │  ├─ layout.tsx
+   │  │  ├─ schedule
+   │  │  │  └─ page.tsx
    │  │  ├─ settings
    │  │  │  ├─ SettingsToast.tsx
    │  │  │  ├─ actions.ts
@@ -173,11 +181,14 @@ Generated: 2025-08-17T17:18:34.427Z
 /api/tasks/mark-done  ⟶  app/api/tasks/mark-done/route.ts
 /calendar  ⟶  app/(app)/calendar/page.tsx
 /chat  ⟶  app/(app)/chat/page.tsx
+/chat/search-name  ⟶  app/(app)/chat/search-name/route.ts
 /chat/sse  ⟶  app/(app)/chat/sse/route.ts
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
+/discussions  ⟶  app/(app)/discussions/page.tsx
 /groups  ⟶  app/(app)/groups/page.tsx
 /inboxtasks  ⟶  app/(app)/inboxtasks/page.tsx
 /inboxtasks/archive  ⟶  app/(app)/inboxtasks/archive/page.tsx
+/schedule  ⟶  app/(app)/schedule/page.tsx
 /settings  ⟶  app/(app)/settings/page.tsx
 /sign-in  ⟶  app/(auth)/sign-in/page.tsx
 /teachers  ⟶  app/(app)/teachers/page.tsx

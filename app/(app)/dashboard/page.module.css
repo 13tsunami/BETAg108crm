@@ -1,21 +1,52 @@
-.page { display:grid; gap:12px; }
-.head { padding:14px 16px; border-radius:16px; }
-.title { margin:0; font-weight:900; font-size:22px; letter-spacing:.2px; color:#0f172a; }
-.subtitle { margin:6px 0 0; font-size:14px; color:#374151; text-decoration:none; }
+.dashboardRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
-.grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
 .card {
-  border-radius:16px; padding:14px; border:1px solid rgba(229,231,235,.8); background:#fff;
-  box-shadow:0 4px 12px rgba(0,0,0,.04);
-}
-.cardTitle { font-weight:800; color:#0f172a; margin:0 0 6px; text-transform:none; }
-.cardText { color:#374151; font-size:14px; }
-
-.glass{
-  background:linear-gradient(180deg,rgba(255,255,255,.68),rgba(255,255,255,.4));
-  backdrop-filter:saturate(180%) blur(10px);
-  -webkit-backdrop-filter:saturate(180%) blur(10px);
-  border:1px solid rgba(229,231,235,.8);
-  box-shadow:0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);
+  border: 1px solid var(--glass-brd);
+  border-radius: 16px;
+  background: linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: saturate(160%) blur(8px);
+  -webkit-backdrop-filter: saturate(160%) blur(8px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
+.cardTitle {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.cardBody {
+  font-size: 14px;
+  color: #374151;
+}

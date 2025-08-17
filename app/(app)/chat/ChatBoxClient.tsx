@@ -1,4 +1,3 @@
-// app/(app)/chat/ChatBoxClient.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -14,6 +13,8 @@ type Msg = {
   createdAt: string;        // ISO
   editedAt?: string | null; // ISO | null
   deletedAt?: string | null;// ISO | null
+  clientId?: string;        // для дедупа
+  pending?: boolean;        // оптимистичное сообщение
 };
 
 type PushPayload = {
@@ -44,6 +45,9 @@ type DelPayload = {
 };
 type ReadPayload = { type: 'read'; threadId: string; at: number };
 
+// простой генератор clientId
+const genCid = () => Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
+
 export default function ChatBoxClient({
   meId,
   meName,
@@ -67,7 +71,6 @@ export default function ChatBoxClient({
   const endRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // ===== helpers =====
   const setBusy = (v: boolean) => {
     document.documentElement.dataset.chatBusy = v ? '1' : '0';
   };
@@ -86,12 +89,12 @@ export default function ChatBoxClient({
     return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
   };
 
-  // Автопрокрутка к концу
+  // автопрокрутка вниз при изменениях
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Регистрируем API, под которое шлёт live.tsx
+  // API для live.tsx — с дедупом по clientId
   useEffect(() => {
     if (!threadId) return;
 
@@ -99,21 +102,36 @@ export default function ChatBoxClient({
       threadId,
       push: (p: PushPayload) => {
         if (p.threadId !== threadId) return;
-        const m: Msg = {
-          id: p.messageId,
-          threadId: p.threadId,
-          authorId: p.authorId,
-          text: p.text,
-          createdAt: p.ts,
-        };
-        setMessages(prev => [...prev, m]);
+        setMessages(prev => {
+          if (p.clientId) {
+            const i = prev.findIndex(m => m.clientId && m.clientId === p.clientId);
+            if (i >= 0) {
+              const next = prev.slice();
+              next[i] = {
+                ...next[i],
+                id: p.messageId,
+                createdAt: p.ts,
+                text: p.text,
+                authorId: p.authorId,
+                threadId: p.threadId,
+                pending: false,
+                deletedAt: null,
+                editedAt: null,
+              };
+              return next;
+            }
+          }
+          // не нашли черновик — просто добавляем
+          return [
+            ...prev,
+            { id: p.messageId, threadId: p.threadId, authorId: p.authorId, text: p.text, createdAt: p.ts },
+          ];
+        });
       },
       edit: (p: EditPayload) => {
         if (p.threadId !== threadId) return;
         setMessages(prev =>
-          prev.map(m =>
-            m.id === p.messageId ? { ...m, text: p.text, editedAt: new Date().toISOString() } : m
-          )
+          prev.map(m => (m.id === p.messageId ? { ...m, text: p.text, editedAt: new Date().toISOString() } : m))
         );
       },
       del: (p: DelPayload) => {
@@ -121,16 +139,11 @@ export default function ChatBoxClient({
         setMessages(prev =>
           p.scope === 'self'
             ? prev.filter(m => m.id !== p.messageId)
-            : prev.map(m =>
-                m.id === p.messageId
-                  ? { ...m, text: '', deletedAt: new Date().toISOString() }
-                  : m
-              )
+            : prev.map(m => (m.id === p.messageId ? { ...m, text: '', deletedAt: new Date().toISOString() } : m))
         );
       },
       read: (p: ReadPayload) => {
         if (p.threadId !== threadId) return;
-        // событие read приходит обоим участникам; считаем это отметкой собеседника
         setPeerReadAt(new Date().toISOString());
       },
       onThreadDeleted: () => {
@@ -144,19 +157,39 @@ export default function ChatBoxClient({
     };
   }, [threadId]);
 
-  // Отправка через server action
+  // ===== отправка с оптимистичным пушем и clientId =====
   async function send() {
     const txt = text.trim();
     if (!txt || !threadId) return;
+
+    const cid = genCid();
+    const optimistic: Msg = {
+      id: `tmp-${cid}`,
+      threadId,
+      authorId: meId,
+      text: txt,
+      createdAt: new Date().toISOString(),
+      clientId: cid,
+      pending: true,
+    };
+
+    // сразу показываем локально
+    setMessages(prev => [...prev, optimistic]);
+
     setBusy(true);
     try {
       const fd = new FormData();
       fd.set('threadId', threadId);
       fd.set('text', txt);
+      fd.set('clientId', cid);
       await sendMessageAction(fd);
       setText('');
-      // фокус обратно в инпут
       inputRef.current?.focus();
+      // дальше придёт SSE с тем же clientId и заменит «tmp» на реальный id
+    } catch (e) {
+      // откатим черновик при ошибке
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+      alert('Не удалось отправить сообщение');
     } finally {
       setBusy(false);
     }
@@ -199,10 +232,9 @@ export default function ChatBoxClient({
   let lastDateLabel: string | null = null;
 
   return (
-    <div className={s.pane}>
-
+    <div className={s.paneBody}>
       {/* Лента сообщений */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 12, minHeight: 0 }}>
         {messages.map((m) => {
           const created = new Date(m.createdAt);
           const label = labelForDate(created);
@@ -214,13 +246,14 @@ export default function ChatBoxClient({
 
           return (
             <div key={m.id}>
-              {showDivider && (
-                <div className={s.dayDivider}><span>{label}</span></div>
-              )}
+              {showDivider && <div className={s.dayDivider}><span>{label}</span></div>}
 
               <div className={`${s.msgRow} ${mine ? s.mine : s.other}`}>
-                <div className={`${s.msgCard} ${mine ? s.msgMineBg : s.msgOtherBg}`}>
-
+                <div
+                  className={`${s.msgCard} ${mine ? s.msgMineBg : s.msgOtherBg}`}
+                  style={m.pending ? { opacity: 0.6 } : undefined}
+                  title={m.pending ? 'Отправка…' : undefined}
+                >
                   {/* Текст / редактор */}
                   {editingId === m.id ? (
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -233,9 +266,7 @@ export default function ChatBoxClient({
                       <button onClick={() => { setEditingId(null); setEditText(''); setBusy(false); }} title="Отмена">Отмена</button>
                     </div>
                   ) : (
-                    <div>
-                      {m.deletedAt ? <i style={{ color: '#6b7280' }}>Сообщение удалено</i> : m.text}
-                    </div>
+                    <div>{m.deletedAt ? <i style={{ color: '#6b7280' }}>Сообщение удалено</i> : m.text}</div>
                   )}
 
                   {/* Метаданные */}
@@ -247,7 +278,7 @@ export default function ChatBoxClient({
                   </div>
 
                   {/* Кнопки действий для своих не удалённых сообщений */}
-                  {mine && !m.deletedAt && editingId !== m.id && (
+                  {mine && !m.deletedAt && editingId !== m.id && !m.pending && (
                     <div style={{ marginTop: 4, display: 'flex', gap: 8 }}>
                       <button onClick={() => startEdit(m)} title="Изменить">✏️</button>
                       <button onClick={() => deleteMsg(m.id, 'both')} title="Удалить у всех">🗑</button>

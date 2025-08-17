@@ -45,7 +45,7 @@
   -webkit-backdrop-filter: saturate(160%) blur(8px);
 
   height: 100%;
-  overflow: hidden; /* чтобы поиск и заголовок были сверху */
+  overflow: hidden; /* хедер+поиск сверху, список скроллится */
 }
 
 .threadsHeader {
@@ -58,6 +58,7 @@
 .threadsList {
   flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden; /* не даём раздувать колонку по ширине */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -99,19 +100,21 @@
 .ddItem:hover { background: #f8fafc; }
 
 /* ====== Список тредов ====== */
-.threadWrap { 
-  position: relative; 
+.threadWrap {
+  position: relative;
   display: flex;
   align-items: center;
+  min-width: 0; /* чтобы текст не раздувал строку */
 }
 
 .thread {
   flex: 1;
+  min-width: 0; /* позволяет ellipsis работать */
   display: block;
   border: 1px solid var(--glass-brd);
   background: #fff;
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 10px 36px 10px 12px; /* место под крестик справа */
   text-decoration: none;
   color: inherit;
   box-shadow: 0 4px 14px rgba(0,0,0,.04);
@@ -160,9 +163,11 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* Бэйдж */
+/* Бэйдж (не выходит за колонку) */
 .badge {
-  position: absolute; top: -6px; right: -6px;
+  position: absolute;
+  top: -6px;
+  right: 6px; /* было -6px */
   background: var(--brand);
   color: #fff;
   font-size: 11px; font-weight: 800;
@@ -171,9 +176,12 @@
   box-shadow: 0 4px 10px rgba(141,40,40,.35);
 }
 
-/* Кнопка удаления треда */
+/* Кнопка удаления треда — внутри карточки */
 .threadDeleteBtn {
-  margin-left: 6px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  margin: 0;
   font-weight: 700;
   font-size: 16px;
   line-height: 1;
@@ -192,7 +200,17 @@
   box-shadow: var(--glass-shadow);
   backdrop-filter: saturate(160%) blur(8px);
   -webkit-backdrop-filter: saturate(160%) blur(8px);
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;   /* критично для вложенного скролла */
+  overflow: hidden;
+}
+
+/* Внутренний каркас ChatBoxClient — без бордера/фона */
+.paneBody {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;   /* чтобы лента сообщений могла скроллиться */
 }
 
 /* ====== Сообщения ====== */
