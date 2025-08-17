@@ -39,20 +39,22 @@ export default function Live({ uid, activeThreadId }: { uid: string; activeThrea
     };
 
     // когда ChatBoxClient зарегистрировал __chatApi — применим накопленные события
-    const onApiReady = () => {
-      apiReadyRef.current = true;
-      const api = (window as any).__chatApi;
-      if (!api || api.threadId !== activeThreadId) return;
-      const queue = pendingRef.current;
-      pendingRef.current = [];
-      for (const p of queue) {
-        if (p.type === 'message')        api.push?.({ messageId: p.messageId, text: p.text, authorId: p.authorId, ts: p.ts, clientId: p.clientId });
-        else if (p.type === 'messageEdited')  api.edit?.({ messageId: p.messageId, text: p.text });
-        else if (p.type === 'messageDeleted') api.del?.({ messageId: p.messageId, scope: p.scope as 'self'|'both' });
-        else if (p.type === 'read')           api.read?.({ threadId: p.threadId });
-        else if (p.type === 'threadDeleted')  { api.onThreadDeleted?.({ byName: (p as any).byName }); startTransition(() => router.replace('/chat')); }
-      }
-    };
+   const onApiReady = () => {
+  apiReadyRef.current = true;
+  const api = (window as any).__chatApi;
+  if (!api || api.threadId !== activeThreadId) return;
+
+  const queue = pendingRef.current;
+  pendingRef.current = [];
+
+  for (const p of queue) {
+    if (p.type === 'message')         api.push?.(p);
+    else if (p.type === 'messageEdited')   api.edit?.(p);
+    else if (p.type === 'messageDeleted')  api.del?.(p as any);
+    else if (p.type === 'read')            api.read?.(p);
+    else if (p.type === 'threadDeleted') { api.onThreadDeleted?.(p); startTransition(() => router.replace('/chat')); }
+  }
+};
 
     window.addEventListener('chat:api-ready', onApiReady);
 
