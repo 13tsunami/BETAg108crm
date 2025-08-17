@@ -39,6 +39,14 @@ function uniqueStrings(input: unknown): string[] {
   return Array.from(set);
 }
 
+function revalidateAll() {
+  // список страниц, которым нужен пересчёт после любых CRUD по задачам
+  revalidatePath('/inboxtasks');
+  revalidatePath('/inboxtasks/archive');
+  revalidatePath('/calendar');
+  revalidatePath('/'); // Sidebar (unreadTasks)
+}
+
 export async function createTaskAction(fd: FormData): Promise<void> {
   const session = await auth();
   const meId = session?.user?.id ?? null;
@@ -46,8 +54,7 @@ export async function createTaskAction(fd: FormData): Promise<void> {
   const role = normalizeRole(session?.user?.role);
 
   if (!meId || !canCreateTasks(role)) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/'); // обновление layout/Sidebar
+    revalidateAll();
     return;
   }
 
@@ -57,32 +64,14 @@ export async function createTaskAction(fd: FormData): Promise<void> {
   const priority = (String(fd.get('priority') ?? 'normal') === 'high') ? 'high' : 'normal';
   const noCalendar = String(fd.get('noCalendar') ?? '') === '1';
   const assigneeUserIdsJson = fd.get('assigneeUserIdsJson');
-
   const assigneeIds = uniqueStrings(assigneeUserIdsJson);
 
-  if (!title) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
-  if (!dueIso) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (!title || !dueIso) { revalidateAll(); return; }
   const dueDate = new Date(dueIso);
-  if (Number.isNaN(dueDate.getTime())) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (Number.isNaN(dueDate.getTime())) { revalidateAll(); return; }
 
   const todayStartUtc = todayStartUtcFromYekb();
-  if (dueDate.getTime() < todayStartUtc.getTime()) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (dueDate.getTime() < todayStartUtc.getTime()) { revalidateAll(); return; }
 
   try {
     const task = await prisma.task.create({
@@ -109,9 +98,7 @@ export async function createTaskAction(fd: FormData): Promise<void> {
       });
     }
   } finally {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/calendar');
-    revalidatePath('/'); // важно: для Sidebar unreadTasks
+    revalidateAll();
   }
 }
 
@@ -121,25 +108,13 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
   const role = normalizeRole(session?.user?.role);
 
   const taskId = String(fd.get('taskId') ?? '').trim();
-  if (!meId || !taskId) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (!meId || !taskId) { revalidateAll(); return; }
 
   const task = await prisma.task.findUnique({ where: { id: taskId }, select: { id: true, createdById: true } });
-  if (!task) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (!task) { revalidateAll(); return; }
 
   const canEdit = task.createdById === meId || hasFullAccess(role);
-  if (!canEdit) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (!canEdit) { revalidateAll(); return; }
 
   const archive = String(fd.get('archive') ?? '') === '1';
 
@@ -167,21 +142,14 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
     const dateStr = String(dueDateRaw ?? '').trim();
     if (dateStr) {
       const due = new Date(`${dateStr}T23:59:00+05:00`);
-      if (!Number.isNaN(due.getTime())) {
-        data.dueDate = due;
-      }
+      if (!Number.isNaN(due.getTime())) data.dueDate = due;
     }
   }
 
   try {
-    await prisma.task.update({
-      where: { id: taskId },
-      data,
-    });
+    await prisma.task.update({ where: { id: taskId }, data });
   } finally {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/calendar');
-    revalidatePath('/'); // Sidebar
+    revalidateAll();
   }
 }
 
@@ -191,32 +159,18 @@ export async function deleteTaskAction(fd: FormData): Promise<void> {
   const role = normalizeRole(session?.user?.role);
 
   const taskId = String(fd.get('taskId') ?? '').trim();
-  if (!meId || !taskId) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (!meId || !taskId) { revalidateAll(); return; }
 
   const task = await prisma.task.findUnique({ where: { id: taskId }, select: { id: true, createdById: true } });
-  if (!task) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (!task) { revalidateAll(); return; }
 
   const canEdit = task.createdById === meId || hasFullAccess(role);
-  if (!canEdit) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (!canEdit) { revalidateAll(); return; }
 
   try {
     await prisma.task.delete({ where: { id: taskId } }); // каскад удалит TaskAssignee
   } finally {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/calendar');
-    revalidatePath('/'); // Sidebar
+    revalidateAll();
   }
 }
 
@@ -225,11 +179,7 @@ export async function markAssigneeDoneAction(fd: FormData): Promise<void> {
   const meId = session?.user?.id ?? null;
   const taskId = String(fd.get('taskId') ?? '').trim();
 
-  if (!meId || !taskId) {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/');
-    return;
-  }
+  if (!meId || !taskId) { revalidateAll(); return; }
 
   try {
     await prisma.taskAssignee.updateMany({
@@ -237,8 +187,32 @@ export async function markAssigneeDoneAction(fd: FormData): Promise<void> {
       data: { status: 'done', completedAt: new Date() },
     });
   } finally {
-    revalidatePath('/inboxtasks');
-    revalidatePath('/calendar');
-    revalidatePath('/'); // Sidebar
+    revalidateAll();
+  }
+}
+
+// НОВОЕ: снять из архива своё назначение (done -> in_progress)
+export async function unarchiveAssigneeAction(fd: FormData): Promise<void> {
+  const session = await auth();
+  const meId = session?.user?.id ?? null;
+  const assigneeId = String(fd.get('assigneeId') ?? '').trim();
+  const taskId = String(fd.get('taskId') ?? '').trim(); // для revalidate целевых страниц
+
+  if (!meId || !assigneeId) { revalidateAll(); return; }
+
+  // Разрешаем правку только своей записи назначения
+  const ass = await prisma.taskAssignee.findUnique({
+    where: { id: assigneeId },
+    select: { id: true, userId: true },
+  });
+  if (!ass || ass.userId !== meId) { revalidateAll(); return; }
+
+  try {
+    await prisma.taskAssignee.update({
+      where: { id: assigneeId },
+      data: { status: 'in_progress', completedAt: null },
+    });
+  } finally {
+    revalidateAll();
   }
 }

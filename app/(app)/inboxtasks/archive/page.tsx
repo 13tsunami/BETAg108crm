@@ -3,6 +3,8 @@ import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
 import type { Prisma, TaskAssignee, Task } from '@prisma/client';
+import { deleteTaskAction, unarchiveAssigneeAction } from '../actions';
+
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 type TaskWithAssignees = Prisma.TaskGetPayload<{ include: { assignees: true } }>;
@@ -13,11 +15,7 @@ function fmtRuDate(d: Date | string | null | undefined): string {
   return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(dt);
 }
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const tabParam = typeof sp.tab === 'string' ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
 
@@ -123,9 +121,47 @@ export default async function Page({
                     <span>Выполнено: {fmtRuDate(a.completedAt as Date | undefined)}</span>
                   </div>
                 </summary>
-                <div style={{ padding: 10, borderTop: '1px solid #f3f4f6' }}>
-                  {t?.description && <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>}
+
+                <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 8 }}>
+                  {t?.description && <div style={{ whiteSpace: 'pre-wrap', color: '#111827' }}>{t.description}</div>}
                   <div style={{ fontSize: 12, color: '#6b7280' }}>Назначил: {t?.createdByName ?? '—'}</div>
+
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                    {/* Разархивировать = вернуть моё назначение из done в in_progress */}
+                    <form action={unarchiveAssigneeAction}>
+                      <input type="hidden" name="assigneeId" value={a.id} />
+                      <input type="hidden" name="taskId" value={t?.id ?? ''} />
+                      <button
+                        type="submit"
+                        style={{
+                          height: 32, padding: '0 12px', borderRadius: 10, border: '1px solid #e5e7eb',
+                          background: '#fff', cursor: 'pointer', fontSize: 13,
+                        }}
+                        title="Вернуть задачу во входящие"
+                      >
+                        Разархивировать
+                      </button>
+                    </form>
+
+                    {/* Удалить из базы — удаляет задачу целиком (требуются права автора/админа) */}
+                    {t?.id && (
+                      <form action={deleteTaskAction} onSubmit={(e) => {
+                        if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
+                      }}>
+                        <input type="hidden" name="taskId" value={t.id} />
+                        <button
+                          type="submit"
+                          style={{
+                            height: 32, padding: '0 12px', borderRadius: 10, border: '1px solid #e5e7eb',
+                            background: '#fff', cursor: 'pointer', fontSize: 13, color: '#8d2828',
+                          }}
+                          title="Удалить задачу (нужны права)"
+                        >
+                          Удалить из базы
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 </div>
               </details>
             );
@@ -140,15 +176,8 @@ export default async function Page({
 
           {byMeAllDone.map((t) => {
             const urgent = (t.priority ?? 'normal') === 'high';
-
-            const completedList = t.assignees
-              .map((ass) => ass.completedAt)
-              .filter((d): d is Date => !!d);
-
-            const lastCompletedAt =
-              completedList.length
-                ? completedList.sort((a: Date, b: Date) => b.getTime() - a.getTime())[0]
-                : null;
+            const completedList = t.assignees.map((ass) => ass.completedAt).filter((d): d is Date => !!d);
+            const lastCompletedAt = completedList.length ? completedList.sort((a: Date, b: Date) => b.getTime() - a.getTime())[0] : null;
 
             return (
               <details key={t.id} style={{ border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff' }}>
@@ -166,6 +195,7 @@ export default async function Page({
                     <span>Завершено: {fmtRuDate(lastCompletedAt)}</span>
                   </div>
                 </summary>
+
                 <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 6 }}>
                   {t.description && <div style={{ whiteSpace: 'pre-wrap', color: '#111827', marginBottom: 8 }}>{t.description}</div>}
                   <div style={{ fontSize: 13 }}>
@@ -187,6 +217,25 @@ export default async function Page({
                         </span>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Удалить из базы — доступно авторам/админам; форма одна и та же */}
+                  <div style={{ marginTop: 6 }}>
+                    <form action={deleteTaskAction} onSubmit={(e) => {
+                      if (!confirm('Удалить задачу из базы? Действие необратимо.')) e.preventDefault();
+                    }}>
+                      <input type="hidden" name="taskId" value={t.id} />
+                      <button
+                        type="submit"
+                        style={{
+                          height: 32, padding: '0 12px', borderRadius: 10, border: '1px solid #e5e7eb',
+                          background: '#fff', cursor: 'pointer', fontSize: 13, color: '#8d2828',
+                        }}
+                        title="Удалить задачу (нужны права)"
+                      >
+                        Удалить из базы
+                      </button>
+                    </form>
                   </div>
                 </div>
               </details>
