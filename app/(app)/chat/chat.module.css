@@ -324,3 +324,112 @@ hr.line { border: 0; border-top: 1px solid var(--line); margin: 8px 0; }
 
 .mine { letter-spacing: 0 }
 .other { letter-spacing: 0 }
+/* ====== Фиксированный размер правого окна чата ====== */
+
+/* Центруем и даём внешние отступы, чтобы окно смотрелось, как у тайлов сайдбара */
+.paneWrap {
+  display: grid;
+  place-items: start center;
+  /* учитываем общие отступы страницы */
+  padding: 0;
+}
+
+/* Фиксируем геометрию самого окна (ширина/высота) и сохраняем твой «glass» */
+.paneFixed {
+  /* ширина — как карточка/панель в стиле проекта */
+  width: 920px;                 /* фиксированная ширина */
+  max-width: calc(100vw - 360px); /* страховка на узких экранах (учтём лейаут + поля) */
+
+  /* фиксированная высота, при этом внутри продолжают скроллиться сообщения */
+  height: 640px;                /* фиксированная высота */
+  max-height: calc(100dvh - 48px); /* не упираемся в мобильные статус-бары */
+
+  /* стеклянная эстетика — уже есть в .pane, но тут подчёркиваем рамку */
+  border: 1px solid var(--glass-brd);
+  border-radius: 16px;
+  background: linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: saturate(160%) blur(8px);
+  -webkit-backdrop-filter: saturate(160%) blur(8px);
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* чтобы контент не выпирал за скругления */
+}
+
+/* Внутри по-прежнему скроллится лента (смотри .paneBody и inline-стили ChatBoxClient) */
+
+/* Адаптация: на очень узких экранах окно не вылезает за границы */
+@media (max-width: 1024px) {
+  .paneFixed {
+    width: min(920px, calc(100vw - 24px)); /* небольшие поля по краям */
+    height: min(640px, calc(100dvh - 24px));
+  }
+}
+
+/* Если чат-страницу открывают на телефоне — переходим к «растягиванию», но всё равно с аккуратной рамкой */
+@media (max-width: 768px) {
+  .paneWrap { padding: 0; }
+  .paneFixed {
+    width: 100%;
+    max-width: 100%;
+    height: calc(100dvh - 24px);
+    max-height: none;
+    border-radius: 14px;
+  }
+}
+/* ====== Пузырьки сообщений ====== */
+
+/* Базовая карточка */
+.msgCard {
+  max-width: 70%;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.35;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  border: 1px solid var(--glass-brd);
+  position: relative;
+  word-wrap: break-word;
+}
+
+/* Свои */
+.msgMineBg {
+  background: #e6f6e6;               /* мягкий зелёный */
+  border-top-right-radius: 4px;      /* уголок острый — как хвостик */
+  border-top-left-radius: 18px;
+  border-bottom-left-radius: 18px;
+}
+
+/* Чужие */
+.msgOtherBg {
+  background: #fdf6db;               /* мягкий жёлто-бежевый */
+  border-top-left-radius: 4px;       /* уголок острый — как хвостик */
+  border-top-right-radius: 18px;
+  border-bottom-right-radius: 18px;
+}
+
+/* Треугольные хвостики */
+.msgRow.mine .msgCard::after,
+.msgRow.other .msgCard::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+}
+
+.msgRow.mine .msgCard::after {
+  right: -8px;
+  border-left-color: #abffab; /* тот же цвет, что фон msgMineBg */
+  border-left-width: 8px;
+  border-bottom: 0;
+}
+
+.msgRow.other .msgCard::after {
+  left: -8px;
+  border-right-color: #fae590; /* тот же цвет, что фон msgOtherBg */
+  border-right-width: 8px;
+  border-bottom: 0;
+}
