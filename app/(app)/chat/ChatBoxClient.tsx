@@ -1,145 +1,146 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import s from './chat.module.css';
 
-/**
- * Локальный тип сообщения, не тянем ничего из ./live
- * Должен совпадать с форматом, который шлёт твой SSE эндпоинт /chat/live (GET)
- */
 type Msg = {
   id: string;
-  threadId: string;
-  authorId: string;
   text: string;
-  createdAt: string; // ISO
+  ts: string;        // ISO
+  authorId: string;
+  edited?: boolean;
+  deleted?: boolean;
 };
 
-export default function ChatBoxClient({
-  meId,
-  meName,
-  peerName,
-  threadId,
-  peerReadAtIso,
-  initial,
-}: {
+export default function ChatBoxClient(props: {
   meId: string;
   meName: string;
   peerName: string;
-  threadId: string;
-  peerReadAtIso: string | null;
+  threadId: string;                  // '' если тред не выбран
+  peerReadAtIso: string | null;      // для «прочитал собеседник»
   initial: Msg[];
 }) {
-  const [messages, setMessages] = useState<Msg[]>(initial || []);
-  const [text, setText] = useState('');
-  const endRef = useRef<HTMLDivElement | null>(null);
+  const { meId, peerName, threadId, initial } = props;
 
-  // Подписка на SSE напрямую (без ./broker)
+  const [msgs, setMsgs] = useState<Msg[]>(initial);
+  const [text, setText] = useState('');
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const esRef = useRef<EventSource | null>(null);
+
+  const canSend = threadId && text.trim().length > 0;
+
+  // автоскролл вниз
+  const scrollBottom = () => {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  };
+
   useEffect(() => {
-    // Предполагается, что GET /chat/live?threadId=... открывает SSE-стрим
-    const url = `/chat/live?threadId=${encodeURIComponent(threadId)}`;
-    const es = new EventSource(url);
-    const onMsg = (ev: MessageEvent) => {
-      try {
-        const payload: Msg = JSON.parse(ev.data);
-        if (payload?.threadId === threadId) {
-          setMessages((prev) => [...prev, payload]);
-        }
-      } catch {
-        // игнорим не-JSON
+    // при смене треда: сбрасываем поток и сообщения
+    setMsgs(initial);
+    scrollBottom();
+
+    if (!threadId) {
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
       }
-    };
-    es.addEventListener('message', onMsg);
-    es.addEventListener('error', () => {
-      // браузер сам переподключится; можно логировать при желании
+      return;
+    }
+
+    const es = new EventSource(`/chat/live?threadId=${encodeURIComponent(threadId)}`, {
+      withCredentials: true,
     });
+    esRef.current = es;
+
+    es.onmessage = (ev) => {
+      try {
+        const { type, payload } = JSON.parse(ev.data);
+        if (type === 'message' && payload) {
+          setMsgs((prev) => {
+            if (prev.some((m) => m.id === payload.id)) return prev;
+            const next = [...prev, payload as Msg];
+            // не даём разрастись бесконечно (на всякий случай)
+            if (next.length > 2000) next.splice(0, next.length - 2000);
+            return next;
+          });
+          // небольшой таймаут, чтобы DOM успел отрендериться
+          setTimeout(scrollBottom, 16);
+        }
+      } catch {}
+    };
+
+    es.onerror = () => {
+      // Браузер сам переподключится к SSE; если закрыли — попробуем открыть заново через небольшую паузу
+      // (без агрессивных ретраев)
+    };
 
     return () => {
-      es.removeEventListener('message', onMsg as any);
       es.close();
+      esRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
-  // Автопрокрутка вниз
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // при первом монтировании после initial — доскроллить
+    setTimeout(scrollBottom, 0);
+  }, []);
 
   async function send() {
-    const txt = text.trim();
-    if (!txt) return;
-    // POST в тот же эндпоинт, как у тебя и было
+    if (!canSend) return;
+    const payload = { text: text.trim() };
+    setText('');
+    // локальный эхо делать НЕ будем — ждём round-trip от сервера, чтобы не разъезжалась история
     const res = await fetch(`/chat/live?threadId=${encodeURIComponent(threadId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: txt }),
+      body: JSON.stringify(payload),
+      cache: 'no-store',
     });
-    if (res.ok) setText('');
+    if (!res.ok) {
+      // Вернём текст назад, чтобы пользователь не потерял его
+      setText(payload.text);
+      alert('Не удалось отправить сообщение');
+    }
+  }
+
+  function onKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      void send();
+    }
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Хедер чата */}
-      <div style={{ padding: '8px 12px', borderBottom: '1px solid #e5e7eb', fontWeight: 600 }}>
-        {peerName}
-      </div>
-
-      {/* Лента сообщений */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            style={{
-              marginBottom: 6,
-              display: 'flex',
-              justifyContent: m.authorId === meId ? 'flex-end' : 'flex-start',
-            }}
-          >
-            <div
-              title={new Date(m.createdAt).toLocaleString('ru-RU')}
-              style={{
-                padding: '6px 10px',
-                borderRadius: 12,
-                background: m.authorId === meId ? '#8d2828' : '#f3f4f6',
-                color: m.authorId === meId ? '#fff' : '#111827',
-                maxWidth: '75%',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}
-            >
-              {m.text}
+    <div className={s.chatPane}>
+      <div ref={listRef} className={s.msgList}>
+        {msgs.map((m) => {
+          const mine = m.authorId === meId;
+          return (
+            <div key={m.id} className={`${s.msg} ${mine ? s.msgMine : s.msgPeer}`}>
+              <div className={s.msgBubble}>
+                <div className={s.msgText}>{m.text}</div>
+                <div className={s.msgMeta}>
+                  <span suppressHydrationWarning>{new Date(m.ts).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-        <div ref={endRef} />
+          );
+        })}
       </div>
 
-      {/* Поле ввода */}
-      <div style={{ padding: 8, borderTop: '1px solid #e5e7eb', display: 'flex', gap: 8 }}>
-        <input
+      <div className={s.composer}>
+        <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
+          onKeyDown={onKey}
           placeholder="Напишите сообщение…"
-          style={{
-            flex: 1,
-            border: '1px solid #e5e7eb',
-            borderRadius: 12,
-            padding: '6px 10px',
-            outline: 'none',
-          }}
+          className={s.input}
+          rows={2}
         />
-        <button
-          onClick={send}
-          style={{
-            border: 'none',
-            borderRadius: 12,
-            background: '#8d2828',
-            color: '#fff',
-            padding: '0 16px',
-            cursor: 'pointer',
-            height: 36,
-          }}
-        >
+        <button className={s.sendBtn} onClick={() => void send()} disabled={!canSend}>
           Отправить
         </button>
       </div>

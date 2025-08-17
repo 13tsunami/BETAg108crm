@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-17T11:29:05.249Z
+Generated: 2025-08-17T15:19:08.353Z
 ## UI hints
 ```json
 {
@@ -18,9 +18,11 @@ Generated: 2025-08-17T11:29:05.249Z
    │  ├─ (app)
    │  │  ├─ calendar
    │  │  │  ├─ CalendarBoard.tsx
+   │  │  │  ├─ CalendarModals.tsx
    │  │  │  └─ page.tsx
    │  │  ├─ chat
    │  │  │  ├─ ChatBoxClient.tsx
+   │  │  │  ├─ DeleteThreadButton.tsx
    │  │  │  ├─ SearchBox.tsx
    │  │  │  ├─ actions.ts
    │  │  │  ├─ chat.module.css
@@ -71,8 +73,11 @@ Generated: 2025-08-17T11:29:05.249Z
    │  │  ├─ page.module.css
    │  │  └─ page.tsx
    │  ├─ api
-   │  │  └─ auth
-   │  │     └─ [...nextauth]
+   │  │  ├─ auth
+   │  │  │  └─ [...nextauth]
+   │  │  │     └─ route.ts
+   │  │  └─ tasks
+   │  │     └─ mark-done
    │  │        └─ route.ts
    │  ├─ layout.tsx
    │  ├─ page.tsx
@@ -166,6 +171,7 @@ Generated: 2025-08-17T11:29:05.249Z
 /admin  ⟶  app/admin/page.tsx
 /admin/db-status  ⟶  app/admin/db-status/page.tsx
 /api/auth/[...nextauth]  ⟶  app/api/auth/[...nextauth]/route.ts
+/api/tasks/mark-done  ⟶  app/api/tasks/mark-done/route.ts
 /calendar  ⟶  app/(app)/calendar/page.tsx
 /chat  ⟶  app/(app)/chat/page.tsx
 /chat/sse  ⟶  app/(app)/chat/sse/route.ts
