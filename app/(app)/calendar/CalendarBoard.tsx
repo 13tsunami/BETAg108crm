@@ -13,10 +13,9 @@ type Props = {
 };
 
 const BRAND = '#8d2828';
-// Цвет «назначенные мне»: сочный жёлтый
-const BG_MY = '#FEF3C7';       // фон карточки
-const BD_MY = '#F59E0B';       // рамка карточки
-const URGENT = BRAND;          // срочное — красная рамка
+const BG_MY = '#FEF3C7';
+const BD_MY = '#F59E0B';
+const URGENT = BRAND;
 
 function ymd(d: Date): string {
   const y = d.getFullYear();
@@ -26,7 +25,7 @@ function ymd(d: Date): string {
 }
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
-  const day = (d.getDay() + 6) % 7; // понедельник
+  const day = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - day);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -57,16 +56,20 @@ export default function CalendarBoard({
   initialTasks,
   initialGrouped,
 }: Props) {
-  // Представление
   const [view, setView] = useState<'week' | 'month'>('week');
   const [cursor, setCursor] = useState<Date>(startOfWeek(new Date()));
 
-  // Данные (только «назначенные мне»)
   const [tasks, setTasks] = useState<TaskLite[]>(initialTasks);
 
-  // Модалки
   const [dayModal, setDayModal] = useState<{ open: boolean; key: string | null }>({ open: false, key: null });
   const [taskModal, setTaskModal] = useState<{ open: boolean; task: TaskLite | null }>({ open: false, task: null });
+
+  // закрыть модалки + оптимистично убрать задачу
+  function handleDoneSubmit(taskId: string) {
+    setTaskModal({ open: false, task: null });
+    setDayModal({ open: false, key: null });
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+  }
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(cursor);
@@ -79,14 +82,12 @@ export default function CalendarBoard({
   }, [cursor]);
 
   const grouped = useMemo(() => {
-    // Пересчёт на клиенте (после mutate)
     const g = new Map<string, TaskLite[]>();
     for (const t of tasks) {
       const key = ymd(new Date(t.dueDate));
       if (!g.has(key)) g.set(key, []);
       g.get(key)!.push(t);
     }
-    // Сортировка в дне: срочные выше, далее по заголовку
     for (const [k, arr] of g) {
       arr.sort((a, b) => {
         const ap = a.priority === 'high' ? 0 : 1;
@@ -99,13 +100,10 @@ export default function CalendarBoard({
     return g;
   }, [tasks]);
 
-  // Инициал наполнение из сервера (чтобы SSR=CSR)
   useEffect(() => {
-    // Перекладываем initialGrouped в grouped не нужно – grouped строим из tasks
     setTasks(initialTasks);
   }, [initialTasks]);
 
-  // Навигация
   const next = () =>
     setCursor((d) =>
       view === 'week' ? addDays(d, 7) : new Date(d.getFullYear(), d.getMonth() + 1, d.getDate())
@@ -116,7 +114,6 @@ export default function CalendarBoard({
     );
   const today = () => setCursor(startOfWeek(new Date()));
 
-  // Рендер карточки задачи (в ячейке дня)
   const TaskChip: React.FC<{ t: TaskLite }> = ({ t }) => {
     const urgent = (t.priority ?? 'normal') === 'high';
     return (
@@ -143,7 +140,6 @@ export default function CalendarBoard({
     );
   };
 
-  // Модалка дня — только «мои» задачи, с теми же цветами
   const DayModal = () => {
     if (!dayModal.open || !dayModal.key) return null;
     const list = grouped.get(dayModal.key) || [];
@@ -173,7 +169,6 @@ export default function CalendarBoard({
                       gap: 8,
                     }}
                   >
-                    {/* Заголовок + метаданные */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
                         <div style={{ fontWeight: 800, fontSize: 14, wordBreak: 'break-word' }}>{t.title}</div>
@@ -189,7 +184,6 @@ export default function CalendarBoard({
                       </div>
                     </div>
 
-                    {/* Описание (автоподстройка, но в пределах карточки) */}
                     {t.description && (
                       <div style={{
                         whiteSpace: 'pre-wrap',
@@ -202,9 +196,8 @@ export default function CalendarBoard({
                       </div>
                     )}
 
-                    {/* Действия: только «Выполнить» (без редактирования) */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <form action={markAssigneeDoneAction}>
+                      <form action={markAssigneeDoneAction} onSubmit={() => handleDoneSubmit(t.id)}>
                         <input type="hidden" name="taskId" value={t.id} />
                         <button
                           type="submit"
@@ -218,7 +211,7 @@ export default function CalendarBoard({
                       <button
                         onClick={() => setTaskModal({ open: true, task: t })}
                         style={btnGhost()}
-                        title="Открыть задачу"
+                        title="Открыть"
                       >
                         Открыть
                       </button>
@@ -233,7 +226,6 @@ export default function CalendarBoard({
     );
   };
 
-  // Модалка одной задачи — те же цвета, те же метаданные
   const TaskModal = () => {
     if (!taskModal.open || !taskModal.task) return null;
     const t = taskModal.task;
@@ -283,7 +275,7 @@ export default function CalendarBoard({
               )}
 
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-start', alignItems: 'center' }}>
-                <form action={markAssigneeDoneAction}>
+                <form action={markAssigneeDoneAction} onSubmit={() => handleDoneSubmit(t.id)}>
                   <input type="hidden" name="taskId" value={t.id} />
                   <button type="submit" style={btnPrimaryGreen()}>Выполнить</button>
                 </form>
@@ -298,7 +290,6 @@ export default function CalendarBoard({
 
   return (
     <section style={{ display: 'grid', gap: 12 }}>
-      {/* Панель управления */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button onClick={prev} style={btn()}>←</button>
@@ -312,7 +303,6 @@ export default function CalendarBoard({
         </div>
       </div>
 
-      {/* Сетка календаря */}
       <div
         style={{
           display: 'grid',
@@ -368,7 +358,6 @@ export default function CalendarBoard({
         })}
       </div>
 
-      {/* Модалки */}
       <DayModal />
       <TaskModal />
     </section>
