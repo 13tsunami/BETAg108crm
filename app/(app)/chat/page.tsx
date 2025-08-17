@@ -4,11 +4,10 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-
 import Live from './live';
 import ChatBoxClient from './ChatBoxClient';
 import SearchBox from './SearchBox';
-import ThreadDeleteButton from './ThreadDeleteButton'; // ← новый клиентский контрол
+import { deleteThreadAction } from './actions';
 import s from './chat.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -161,6 +160,7 @@ export default async function ChatPage({
           editedAt: true,
           deletedAt: true,
           threadId: true,
+          author: { select: { name: true } },
           hides: { where: { userId: meId }, select: { userId: true } },
         },
       })
@@ -172,21 +172,14 @@ export default async function ChatPage({
       id: m.id,
       threadId: m.threadId,
       authorId: m.authorId,
+      authorName: m.author?.name ?? null,
       text: m.text,
       createdAt: m.createdAt.toISOString(),
+      editedAt: m.editedAt ? m.editedAt.toISOString() : null,
+      deletedAt: m.deletedAt ? m.deletedAt.toISOString() : null,
     }));
 
-  // ==== ПРОЧИТАНО ====
-  // Берём МОЮ отметку прочтения ДО апдейта — чтобы отскроллить к первому непрочитанному
-  let meReadAt: Date | null = null;
   if (threadId && active) {
-    const meMark = await prisma.readMark.findUnique({
-      where: { threadId_userId: { threadId, userId: meId } },
-      select: { readAt:true },
-    });
-    meReadAt = meMark?.readAt ?? null;
-
-    // И сразу помечаем «прочитано сейчас»
     await prisma.readMark.upsert({
       where: { threadId_userId: { threadId, userId: meId } },
       update: { readAt: now() },
@@ -205,7 +198,6 @@ export default async function ChatPage({
   return (
     <main style={{ padding:12, fontFamily:'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial' }}>
       <div className={s.chatRoot}>
-        {/* ЛЕВАЯ КОЛОНКА */}
         <aside className={s.threads}>
           <div className={s.blockTitle}>чаты</div>
 
@@ -215,9 +207,7 @@ export default async function ChatPage({
             </div>
             {!!q && (
               <div className={s.dd}>
-                {users.length === 0 && (
-                  <div className={s.ddItem} style={{ color:'#6b7280' }}>ничего не найдено</div>
-                )}
+                {users.length === 0 && <div className={s.ddItem} style={{ color:'#6b7280' }}>ничего не найдено</div>}
                 {users.map(u => (
                   <form key={u.id} action="/chat" method="get">
                     <input type="hidden" name="start" value={u.id} />
@@ -251,23 +241,25 @@ export default async function ChatPage({
                       <div className={s.avatar}>{initials || '•'}</div>
                       <div className={s.threadName}>{t.peerName}</div>
                     </div>
-                    <div className={s.threadDate}>
-                      {t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}
-                    </div>
+                    <div className={s.threadDate}>{t.lastMessageAt ? fmt(t.lastMessageAt) : '—'}</div>
                   </div>
                   {t.lastMessageText ? <div className={s.threadLast}>{t.lastMessageText}</div> : null}
                 </Link>
-
                 {t.unreadCount > 0 && <div className={s.badge}>{t.unreadCount}</div>}
-
-                {/* Кнопка удаления диалога (клиентская, с confirm) */}
-                <ThreadDeleteButton threadId={t.id} />
+                <form
+                  action={async () => {
+                    const ok = globalThis.confirm?.('Удалить диалог?');
+                    if (!ok) return;
+                    await deleteThreadAction(t.id);
+                  }}
+                >
+                  <button type="submit" className={s.threadDeleteBtn} title="Удалить диалог">×</button>
+                </form>
               </div>
             );
           })}
         </aside>
 
-        {/* ПРАВАЯ КОЛОНКА */}
         <section className={s.pane} style={{ display:'grid', gridTemplateRows:'auto 1fr', gap:12 }}>
           <header style={{ padding:'10px 12px', borderBottom:'1px solid rgba(229,231,235,.85)' }}>
             {threadId ? (
@@ -275,9 +267,7 @@ export default async function ChatPage({
                 <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>{peerName}</div>
               </div>
             ) : (
-              <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>
-                выберите диалог или найдите собеседника
-              </div>
+              <div style={{ fontWeight:900, fontSize:18, color:'#0f172a' }}>выберите диалог или найдите собеседника</div>
             )}
           </header>
 
@@ -286,7 +276,6 @@ export default async function ChatPage({
             meName={meName}
             peerName={peerName}
             threadId={threadId || ''}
-            meReadAtIso={meReadAt ? meReadAt.toISOString() : null}     // ← ВАЖНО для первичного скролла
             peerReadAtIso={peerReadAt ? peerReadAt.toISOString() : null}
             initial={messages}
           />

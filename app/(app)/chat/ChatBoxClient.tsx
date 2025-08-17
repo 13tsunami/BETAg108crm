@@ -1,9 +1,9 @@
+// app/(app)/chat/ChatBoxClient.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import s from './chat.module.css';
-import { editMessageAction, deleteMessageAction } from './actions';
+import { sendMessageAction, editMessageAction, deleteMessageAction } from './actions';
 
 type Msg = {
   id: string;
@@ -11,17 +11,44 @@ type Msg = {
   authorId: string;
   authorName?: string | null;
   text: string;
-  createdAt: string; // ISO
-  editedAt?: string | null;
-  deletedAt?: string | null;
+  createdAt: string;        // ISO
+  editedAt?: string | null; // ISO | null
+  deletedAt?: string | null;// ISO | null
 };
+
+type PushPayload = {
+  type: 'message';
+  threadId: string;
+  at: number;
+  messageId: string;
+  authorId: string;
+  text: string;
+  ts: string;
+  clientId?: string;
+};
+type EditPayload = {
+  type: 'messageEdited';
+  threadId: string;
+  at: number;
+  messageId: string;
+  byId: string;
+  text: string;
+};
+type DelPayload = {
+  type: 'messageDeleted';
+  threadId: string;
+  at: number;
+  messageId: string;
+  byId: string;
+  scope: 'self' | 'both';
+};
+type ReadPayload = { type: 'read'; threadId: string; at: number };
 
 export default function ChatBoxClient({
   meId,
   meName,
   peerName,
   threadId,
-  meReadAtIso,
   peerReadAtIso,
   initial,
 }: {
@@ -29,165 +56,152 @@ export default function ChatBoxClient({
   meName: string;
   peerName: string;
   threadId: string;
-  meReadAtIso?: string | null;
   peerReadAtIso: string | null;
   initial: Msg[];
 }) {
   const [messages, setMessages] = useState<Msg[]>(initial || []);
+  const [peerReadAt, setPeerReadAt] = useState<string | null>(peerReadAtIso);
   const [text, setText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const endRef = useRef<HTMLDivElement | null>(null);
-  const firstUnreadRef = useRef<HTMLDivElement | null>(null);
-  const didInitScrollRef = useRef(false);
-  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // SSE подписка
-  useEffect(() => {
-    const url = `/chat/live?threadId=${encodeURIComponent(threadId)}`;
-    const es = new EventSource(url);
+  // ===== helpers =====
+  const setBusy = (v: boolean) => {
+    document.documentElement.dataset.chatBusy = v ? '1' : '0';
+  };
 
-    const onMsg = (ev: MessageEvent) => {
-      try {
-        const data = JSON.parse(ev.data);
-        if (data?.threadId !== threadId) return;
+  const sameDay = (d1: Date, d2: Date) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
 
-        switch (data?.type) {
-          case 'message': {
-            const m: Msg = {
-              id: data.messageId,
-              threadId,
-              authorId: data.authorId,
-              text: data.text,
-              createdAt: data.ts,
-            };
-            setMessages((prev) => [...prev, m]);
-            break;
-          }
-          case 'messageEdited': {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === data.messageId
-                  ? { ...m, text: data.text, editedAt: new Date().toISOString() }
-                  : m
-              )
-            );
-            break;
-          }
-          case 'messageDeleted': {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === data.messageId
-                  ? { ...m, text: '', deletedAt: new Date().toISOString() }
-                  : m
-              )
-            );
-            break;
-          }
-          case 'read': {
-            // галочки обновятся при следующем заходе; можно игнорировать
-            break;
-          }
-          case 'threadDeleted': {
-            if (data.threadId === threadId) router.push('/chat');
-            break;
-          }
-          default: {
-            if (data?.id && data?.text) {
-              setMessages((prev) => [...prev, data]);
-            }
-          }
-        }
-      } catch {}
-    };
-
-    es.addEventListener('message', onMsg);
-    return () => {
-      es.removeEventListener('message', onMsg as any);
-      es.close();
-    };
-  }, [threadId, router]);
-
-  // автопрокрутка: первичный скролл к первому непрочитанному
-  useEffect(() => {
-    if (!didInitScrollRef.current) {
-      const anchor = firstUnreadRef.current || endRef.current;
-      anchor?.scrollIntoView({ behavior: 'auto', block: 'nearest' });
-      didInitScrollRef.current = true;
-      return;
-    }
-    const scroller = endRef.current?.parentElement;
-    if (scroller) {
-      const nearBottom =
-        scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 64;
-      if (nearBottom) endRef.current?.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      endRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  async function send() {
-    const txt = text.trim();
-    if (!txt) return;
-    const res = await fetch(`/chat/live?threadId=${encodeURIComponent(threadId)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: txt }),
-    });
-    if (res.ok) setText('');
-  }
-
-  async function saveEdit(id: string) {
-    const fd = new FormData();
-    fd.set('messageId', id);
-    fd.set('text', editText.trim());
-    await editMessageAction(fd);
-    setEditingId(null);
-    setEditText('');
-  }
-
-  async function deleteMsg(id: string, scope: 'self' | 'both') {
-    if (!confirm('Удалить сообщение?')) return;
-    const fd = new FormData();
-    fd.set('messageId', id);
-    fd.set('scope', scope);
-    await deleteMessageAction(fd);
-  }
-
-  function sameDay(d1: Date, d2: Date) {
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    );
-  }
-  function labelForDate(d: Date) {
+  const labelForDate = (d: Date) => {
     const now = new Date();
     const yesterday = new Date();
     yesterday.setDate(now.getDate() - 1);
     if (sameDay(d, now)) return 'Сегодня';
     if (sameDay(d, yesterday)) return 'Вчера';
-    return d.toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    });
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+  };
+
+  // Автопрокрутка к концу
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Регистрируем API, под которое шлёт live.tsx
+  useEffect(() => {
+    if (!threadId) return;
+
+    const api = {
+      threadId,
+      push: (p: PushPayload) => {
+        if (p.threadId !== threadId) return;
+        const m: Msg = {
+          id: p.messageId,
+          threadId: p.threadId,
+          authorId: p.authorId,
+          text: p.text,
+          createdAt: p.ts,
+        };
+        setMessages(prev => [...prev, m]);
+      },
+      edit: (p: EditPayload) => {
+        if (p.threadId !== threadId) return;
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === p.messageId ? { ...m, text: p.text, editedAt: new Date().toISOString() } : m
+          )
+        );
+      },
+      del: (p: DelPayload) => {
+        if (p.threadId !== threadId) return;
+        setMessages(prev =>
+          p.scope === 'self'
+            ? prev.filter(m => m.id !== p.messageId)
+            : prev.map(m =>
+                m.id === p.messageId
+                  ? { ...m, text: '', deletedAt: new Date().toISOString() }
+                  : m
+              )
+        );
+      },
+      read: (p: ReadPayload) => {
+        if (p.threadId !== threadId) return;
+        // событие read приходит обоим участникам; считаем это отметкой собеседника
+        setPeerReadAt(new Date().toISOString());
+      },
+      onThreadDeleted: () => {
+        setMessages([]);
+      },
+    };
+
+    (window as any).__chatApi = api;
+    return () => {
+      if ((window as any).__chatApi?.threadId === threadId) (window as any).__chatApi = null;
+    };
+  }, [threadId]);
+
+  // Отправка через server action
+  async function send() {
+    const txt = text.trim();
+    if (!txt || !threadId) return;
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.set('threadId', threadId);
+      fd.set('text', txt);
+      await sendMessageAction(fd);
+      setText('');
+      // фокус обратно в инпут
+      inputRef.current?.focus();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startEdit(m: Msg) {
+    setEditingId(m.id);
+    setEditText(m.text);
+    setBusy(true);
+  }
+
+  async function saveEdit(id: string) {
+    const newText = editText.trim();
+    if (!newText) return;
+    try {
+      const fd = new FormData();
+      fd.set('messageId', id);
+      fd.set('text', newText);
+      await editMessageAction(fd);
+    } finally {
+      setEditingId(null);
+      setEditText('');
+      setBusy(false);
+    }
+  }
+
+  async function deleteMsg(id: string, scope: 'self' | 'both') {
+    if (!confirm(scope === 'both' ? 'Удалить сообщение у всех?' : 'Скрыть сообщение только для вас?')) return;
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.set('messageId', id);
+      fd.set('scope', scope);
+      await deleteMessageAction(fd);
+    } finally {
+      setBusy(false);
+    }
   }
 
   let lastDateLabel: string | null = null;
 
   return (
     <div className={s.pane}>
-      <div
-        style={{
-          padding: '8px 12px',
-          borderBottom: '1px solid #e5e7eb',
-          fontWeight: 600,
-        }}
-      >
-        {peerName}
-      </div>
 
+      {/* Лента сообщений */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
         {messages.map((m) => {
           const created = new Date(m.createdAt);
@@ -196,73 +210,47 @@ export default function ChatBoxClient({
           lastDateLabel = label;
 
           const mine = m.authorId === meId;
-          const isRead =
-            peerReadAtIso && new Date(m.createdAt) <= new Date(peerReadAtIso);
-          const isAfterMyRead = meReadAtIso
-            ? created > new Date(meReadAtIso)
-            : false;
-          const isFirstUnreadAnchor =
-            !firstUnreadRef.current && isAfterMyRead && !mine;
+          const isRead = !!peerReadAt && new Date(m.createdAt) <= new Date(peerReadAt);
 
           return (
-            <div
-              key={m.id}
-              ref={isFirstUnreadAnchor ? firstUnreadRef : undefined}
-            >
+            <div key={m.id}>
               {showDivider && (
-                <div className={s.dayDivider}>
-                  <span>{label}</span>
-                </div>
+                <div className={s.dayDivider}><span>{label}</span></div>
               )}
+
               <div className={`${s.msgRow} ${mine ? s.mine : s.other}`}>
-                <div
-                  className={`${s.msgCard} ${
-                    mine ? s.msgMineBg : s.msgOtherBg
-                  }`}
-                >
+                <div className={`${s.msgCard} ${mine ? s.msgMineBg : s.msgOtherBg}`}>
+
+                  {/* Текст / редактор */}
                   {editingId === m.id ? (
                     <div style={{ display: 'flex', gap: 6 }}>
                       <input
                         value={editText}
                         onChange={(e) => setEditText(e.target.value)}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, border: '1px solid #e5e7eb', borderRadius: 10, padding: '6px 8px' }}
                       />
-                      <button onClick={() => saveEdit(m.id)}>OK</button>
-                      <button onClick={() => setEditingId(null)}>Отмена</button>
+                      <button onClick={() => saveEdit(m.id)} title="Сохранить">OK</button>
+                      <button onClick={() => { setEditingId(null); setEditText(''); setBusy(false); }} title="Отмена">Отмена</button>
                     </div>
                   ) : (
                     <div>
-                      {m.deletedAt ? (
-                        <i style={{ color: '#6b7280' }}>Сообщение удалено</i>
-                      ) : (
-                        m.text
-                      )}
+                      {m.deletedAt ? <i style={{ color: '#6b7280' }}>Сообщение удалено</i> : m.text}
                     </div>
                   )}
+
+                  {/* Метаданные */}
                   <div className={s.msgMeta}>
                     <span>{m.authorName || (mine ? meName : peerName)}</span>
-                    <span>
-                      {created.toLocaleTimeString('ru-RU', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                    {mine && !m.deletedAt && (
-                      <span>{isRead ? '✔✔' : '✔'}</span>
-                    )}
+                    <span>{created.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                    {mine && !m.deletedAt && <span>{isRead ? '✔✔' : '✔'}</span>}
                     {m.editedAt && !m.deletedAt && <span>(изм.)</span>}
                   </div>
+
+                  {/* Кнопки действий для своих не удалённых сообщений */}
                   {mine && !m.deletedAt && editingId !== m.id && (
                     <div style={{ marginTop: 4, display: 'flex', gap: 8 }}>
-                      <button
-                        onClick={() => {
-                          setEditingId(m.id);
-                          setEditText(m.text);
-                        }}
-                      >
-                        ✏️
-                      </button>
-                      <button onClick={() => deleteMsg(m.id, 'both')}>🗑</button>
+                      <button onClick={() => startEdit(m)} title="Изменить">✏️</button>
+                      <button onClick={() => deleteMsg(m.id, 'both')} title="Удалить у всех">🗑</button>
                     </div>
                   )}
                 </div>
@@ -273,42 +261,41 @@ export default function ChatBoxClient({
         <div ref={endRef} />
       </div>
 
-      <div
-        style={{
-          padding: 8,
-          borderTop: '1px solid #e5e7eb',
-          display: 'flex',
-          gap: 8,
-        }}
-      >
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
-          placeholder="Напишите сообщение…"
-          style={{
-            flex: 1,
-            border: '1px solid #e5e7eb',
-            borderRadius: 12,
-            padding: '6px 10px',
-            outline: 'none',
-          }}
-        />
-        <button
-          onClick={send}
-          style={{
-            border: 'none',
-            borderRadius: 12,
-            background: '#8d2828',
-            color: '#fff',
-            padding: '0 16px',
-            cursor: 'pointer',
-            height: 36,
-          }}
-        >
-          Отправить
-        </button>
-      </div>
+      {/* Поле ввода */}
+      {threadId && (
+        <div style={{ padding: 8, borderTop: '1px solid #e5e7eb', display: 'flex', gap: 8 }}>
+          <input
+            ref={inputRef}
+            value={text}
+            onFocus={() => setBusy(true)}
+            onBlur={() => setBusy(false)}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && send()}
+            placeholder="Напишите сообщение…"
+            style={{
+              flex: 1,
+              border: '1px solid #e5e7eb',
+              borderRadius: 12,
+              padding: '6px 10px',
+              outline: 'none',
+            }}
+          />
+          <button
+            onClick={send}
+            style={{
+              border: 'none',
+              borderRadius: 12,
+              background: '#8d2828',
+              color: '#fff',
+              padding: '0 16px',
+              cursor: 'pointer',
+              height: 36,
+            }}
+          >
+            Отправить
+          </button>
+        </div>
+      )}
     </div>
   );
 }
