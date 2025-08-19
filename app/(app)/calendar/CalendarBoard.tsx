@@ -34,10 +34,11 @@ function mmdd(d: Date): string {
   const dd = String(d.getDate()).padStart(2, '0');
   return `${m}-${dd}`;
 }
-// Ключ по UTC — для дат рождения (исключаем влияние локального TZ)
-function mmddUTC(d: Date): string {
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
+// Ключ MM-DD в переданном часовом поясе (для ДР)
+function mmddInTz(d: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('ru-RU', { timeZone, month: '2-digit', day: '2-digit' }).formatToParts(d);
+  const m = parts.find(p => p.type === 'month')!.value;
+  const dd = parts.find(p => p.type === 'day')!.value;
   return `${m}-${dd}`;
 }
 function startOfWeek(date: Date): Date {
@@ -54,8 +55,8 @@ function addDays(date: Date, days: number): Date {
 }
 function fmtRuDateShort(d: Date | string) {
   const dt = typeof d === 'string' ? new Date(d) : d;
-  // «1 июня»
-  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' })
+  // «1 июня» — считаем в Екатеринбурге
+  return new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Yekaterinburg', day: 'numeric', month: 'long' })
     .format(dt)
     .replace('.', '');
 }
@@ -368,8 +369,8 @@ export default function CalendarBoard({
 
           const isHoliday = isWeekend(day) || isRuHoliday(day);
           const weekday = WEEKDAYS[day.getDay()];
-          const mmddKeyUTC = mmddUTC(day); // используем UTC для ДР
-          const bdays = birthdaysMap?.[mmddKeyUTC] || [];
+          const mmddKey = mmddInTz(day, 'Asia/Yekaterinburg'); // ключ в Екб для ДР
+          const bdays = birthdaysMap?.[mmddKey] || [];
 
           return (
             <div

@@ -27,9 +27,12 @@ function ymd(d: Date) {
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 }
-function mmddUTC(d: Date) {
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
+
+// MM-DD в заданном часовом поясе (Екатеринбург) — для корректного сопоставления дней рождения
+function mmddInTz(d: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('ru-RU', { timeZone, month: '2-digit', day: '2-digit' }).formatToParts(d);
+  const m = parts.find(p => p.type === 'month')!.value;
+  const dd = parts.find(p => p.type === 'day')!.value;
   return `${m}-${dd}`;
 }
 
@@ -79,17 +82,17 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     (grouped[key] ||= []).push(t);
   }
 
-  // ДР: БЕРЁМ ВСЕХ пользователей с birthday != null (без фильтра по роли)
+  // ДР: все пользователи с birthday != null
   const usersWithBirthday = await prisma.user.findMany({
     where: { birthday: { not: null } },
     select: { name: true, birthday: true },
   });
 
-  // Карта MM-DD (UTC) → список имён
+  // Карта MM-DD (Екатеринбург) → список имён
   const birthdaysMap: Record<string, string[]> = {};
   for (const u of usersWithBirthday) {
     const d = u.birthday as Date;
-    const key = mmddUTC(d);
+    const key = mmddInTz(d, 'Asia/Yekaterinburg');
     (birthdaysMap[key] ||= []).push((u.name ?? 'Без имени').trim());
   }
 
@@ -104,7 +107,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         roleSlug={roleSlug}
         initialTasks={initialTasks}
         initialGrouped={grouped}
-        birthdaysMap={birthdaysMap}  // ← передаём в клиент
+        birthdaysMap={birthdaysMap}
       />
     </main>
   );
