@@ -1,4 +1,4 @@
-// components/Sidebar.tsx
+﻿// components/Sidebar.tsx
 'use client';
 
 import Link from 'next/link';
@@ -9,17 +9,17 @@ import { useEffect, useState } from 'react';
 const BRAND = '#8d2828';
 
 const ROLE_RU: Record<string, string> = {
-  admin: 'Администратор',
-  director: 'Директор',
-  deputy_plus: 'Заместитель +',
-  deputy: 'Заместитель',
-  teacher_plus: 'Педагог +',
-  teacher: 'Педагог',
+  admin: 'РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ',
+  director: 'Р”РёСЂРµРєС‚РѕСЂ',
+  deputy_plus: 'Р—Р°РјРµСЃС‚РёС‚РµР»СЊ +',
+  deputy: 'Р—Р°РјРµСЃС‚РёС‚РµР»СЊ',
+  teacher_plus: 'РџРµРґР°РіРѕРі +',
+  teacher: 'РџРµРґР°РіРѕРі',
 };
 
 function splitFio(full?: string | null) {
   const s = (full || '').trim();
-  if (!s) return { last: 'ГОСТЬ', rest: '' };
+  if (!s) return { last: 'Р“РћРЎРўР¬', rest: '' };
   const p = s.split(/\s+/);
   if (p.length >= 2) return { last: (p[0] || '').toUpperCase(), rest: p.slice(1).join(' ') };
   return { last: s.toUpperCase(), rest: '' };
@@ -65,7 +65,7 @@ function Tile({
 
 export default function Sidebar({
   unreadChats = 0,
-  // НОВОЕ: счётчик задач по образцу сообщений
+  // РќРћР’РћР•: СЃС‡С‘С‚С‡РёРє Р·Р°РґР°С‡ РїРѕ РѕР±СЂР°Р·С†Сѓ СЃРѕРѕР±С‰РµРЅРёР№
   unreadTasks = 0,
 }: {
   unreadChats?: number;
@@ -76,10 +76,10 @@ export default function Sidebar({
   const authed = Boolean(data?.user);
   const roleSlug = (data?.user as any)?.role as string | null;
   const roleRu = roleSlug ? (ROLE_RU[roleSlug] ?? roleSlug) : null;
-  const hasAdminBlock = ['director', 'deputy_plus', 'Директор', 'Заместитель +'].includes(roleSlug || '');
+  const hasAdminBlock = ['director', 'deputy_plus', 'Р”РёСЂРµРєС‚РѕСЂ', 'Р—Р°РјРµСЃС‚РёС‚РµР»СЊ +'].includes(roleSlug || '');
   const fio = splitFio((data?.user?.name as string) || null);
 
-  // ===== чаты (как было) =====
+  // ===== С‡Р°С‚С‹ (РєР°Рє Р±С‹Р»Рѕ) =====
   const [unread, setUnread] = useState(unreadChats);
   useEffect(() => setUnread(unreadChats), [unreadChats]);
   useEffect(() => {
@@ -88,11 +88,11 @@ export default function Sidebar({
     return () => window.removeEventListener('app:unread-bump', onBump as any);
   }, []);
 
-  // ===== задачи (НОВОЕ, аналогично чатам) =====
+  // ===== Р·Р°РґР°С‡Рё (РќРћР’РћР•, Р°РЅР°Р»РѕРіРёС‡РЅРѕ С‡Р°С‚Р°Рј) =====
   const [tasksUnread, setTasksUnread] = useState(unreadTasks);
   useEffect(() => setTasksUnread(unreadTasks), [unreadTasks]);
   useEffect(() => {
-    // универсальные события для задач: можно дергать из любого места клиента
+    // СѓРЅРёРІРµСЂСЃР°Р»СЊРЅС‹Рµ СЃРѕР±С‹С‚РёСЏ РґР»СЏ Р·Р°РґР°С‡: РјРѕР¶РЅРѕ РґРµСЂРіР°С‚СЊ РёР· Р»СЋР±РѕРіРѕ РјРµСЃС‚Р° РєР»РёРµРЅС‚Р°
     const onSet = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (typeof detail === 'number') setTasksUnread(detail);
@@ -110,12 +110,12 @@ export default function Sidebar({
   return (
     <aside className="wrap">
       <div className="head glass">
-        <div className="who" title={(data?.user?.name as string) || 'Гость'}>
+        <div className="who" title={(data?.user?.name as string) || 'Р“РѕСЃС‚СЊ'}>
           <div className="fio">
             <div className="last" style={{ display:'flex', alignItems:'center', gap:8 }}>
               {fio.last}
               {authed && (
-                <Link href="/settings" aria-label="Настройки" className="gear">
+                <Link href="/settings" aria-label="РќР°СЃС‚СЂРѕР№РєРё" className="gear">
                   <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
                     <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" fill="none" strokeWidth="2"/>
                     <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.05.06a2 2 0 1 1-3-.01l-.05-.05a1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.06-.05a2 2 0 1 1 .01-3l.05-.05a1.7 1.7 0 0 0 .6-1A1.7 1.7 0 0 0 4.6 4.6l-.06-.06A2 2 0 1 1 7.37 1.7l.06.06A1.7 1.7 0 0 0 9 2.6a1.7 1.7 0 0 0 1-.6l.05-.06a2 2 0 1 1 3 .01l.05.05a1.7 1.7 0 0 0 1 .6 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.6 1c0 .38.2.74.6 1.13.22.22.41.47.56.74.15.27.26.56.31.86Z" stroke="currentColor" fill="none" strokeWidth="1.5"/>
@@ -128,9 +128,9 @@ export default function Sidebar({
           <div className="metaRow">
             {roleRu && <div className="rolePill">{roleRu}</div>}
             {authed ? (
-              <button className="exit" onClick={() => signOut({ callbackUrl: '/sign-in' })}>выйти</button>
+              <button className="exit" onClick={() => signOut({ callbackUrl: '/sign-in' })}>РІС‹Р№С‚Рё</button>
             ) : (
-              <Link className="exit" href="/sign-in">войти</Link>
+              <Link className="exit" href="/sign-in">РІРѕР№С‚Рё</Link>
             )}
           </div>
         </div>
@@ -140,25 +140,25 @@ export default function Sidebar({
         {authed && (
           <>
             <div className="grid">
-              <Tile href="/dashboard"   label="Главное"     active={pathname === '/dashboard'} />
-              <Tile href="/teachers"    label="Педагоги"    active={pathname === '/teachers'} />
-              <Tile href="/chat"        label="Чаты"        active={pathname === '/chat'} unread={pathname === '/chat' ? 0 : unread} />
-              {/* НОВОЕ: счётчик задач по образцу чатов */}
-              <Tile href="/inboxtasks"  label="Задачи"      active={pathname === '/inboxtasks'} unread={pathname === '/inboxtasks' ? 0 : tasksUnread} />
-              <Tile href="/calendar"    label="Календарь"   active={pathname === '/calendar'} />
-              <Tile href="/schedule"    label="Расписание"  active={pathname === '/schedule'} />
-              <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
-              <Tile href="/discussions" label="Обсуждения"  active={pathname === '/discussions'} />
+              <Tile href="/dashboard"   label="Р“Р»Р°РІРЅРѕРµ"     active={pathname === '/dashboard'} />
+              <Tile href="/teachers"    label="РџРµРґР°РіРѕРіРё"    active={pathname === '/teachers'} />
+              {/* Чаты отключены */}
+              {/* РќРћР’РћР•: СЃС‡С‘С‚С‡РёРє Р·Р°РґР°С‡ РїРѕ РѕР±СЂР°Р·С†Сѓ С‡Р°С‚РѕРІ */}
+              <Tile href="/inboxtasks"  label="Р—Р°РґР°С‡Рё"      active={pathname === '/inboxtasks'} unread={pathname === '/inboxtasks' ? 0 : tasksUnread} />
+              <Tile href="/calendar"    label="РљР°Р»РµРЅРґР°СЂСЊ"   active={pathname === '/calendar'} />
+              <Tile href="/schedule"    label="Р Р°СЃРїРёСЃР°РЅРёРµ"  active={pathname === '/schedule'} />
+              <Tile href="/inboxtasks/archive" label="РђСЂС…РёРІ Р·Р°РґР°С‡" active={pathname === '/inboxtasks/archive'} />
+              <Tile href="/discussions" label="РћР±СЃСѓР¶РґРµРЅРёСЏ"  active={pathname === '/discussions'} />
             </div>
 
-            {['director','deputy_plus','Директор','Заместитель +'].includes(roleSlug || '') && (
+            {['director','deputy_plus','Р”РёСЂРµРєС‚РѕСЂ','Р—Р°РјРµСЃС‚РёС‚РµР»СЊ +'].includes(roleSlug || '') && (
               <>
-                <div className="adminTitle">Администрирование</div>
+                <div className="adminTitle">РђРґРјРёРЅРёСЃС‚СЂРёСЂРѕРІР°РЅРёРµ</div>
                 <div className="grid">
-                  <Tile href="/admin"           label="Админ-панель" active={pathname === '/admin'} />
-                  <Tile href="/admin/db-status" label="Статус БД"    active={pathname === '/admin/db-status'} />
-                  <Tile href="/groups"          label="Кафедры"      active={pathname === '/groups'} />
-                  <Tile href="/admin/cleanup"   label="Очистка базы" active={pathname === '/admin/cleanup'} />
+                  <Tile href="/admin"           label="РђРґРјРёРЅ-РїР°РЅРµР»СЊ" active={pathname === '/admin'} />
+                  <Tile href="/admin/db-status" label="РЎС‚Р°С‚СѓСЃ Р‘Р”"    active={pathname === '/admin/db-status'} />
+                  <Tile href="/groups"          label="РљР°С„РµРґСЂС‹"      active={pathname === '/groups'} />
+                  <Tile href="/admin/cleanup"   label="РћС‡РёСЃС‚РєР° Р±Р°Р·С‹" active={pathname === '/admin/cleanup'} />
                 </div>
               </>
             )}
