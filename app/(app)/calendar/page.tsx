@@ -3,6 +3,8 @@ import { normalizeRole } from '@/lib/roles';
 import { prisma } from '@/lib/prisma';
 import CalendarBoard from './CalendarBoard';
 import { unstable_noStore as noStore } from 'next/cache';
+import NewNoteButton from './NewNoteButton';
+import CalendarModals from './CalendarModals';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,24 +23,64 @@ export type TaskLite = {
   myStatus: 'in_progress' | 'done' | null;
 };
 
+export type NoteLite = {
+  id: string;
+  at: string;       // ISO
+  allDay: boolean;
+  title: string | null;
+  text: string;     // усечённая для плитки версия
+};
+
 function ymd(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 }
-
-// MM-DD в заданном часовом поясе (Екатеринбург) — для корректного сопоставления дней рождения
 function mmddInTz(d: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('ru-RU', { timeZone, month: '2-digit', day: '2-digit' }).formatToParts(d);
   const m = parts.find(p => p.type === 'month')!.value;
   const dd = parts.find(p => p.type === 'day')!.value;
   return `${m}-${dd}`;
 }
+function currentYearMonthInTz(timeZone: string): { year: number; month: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit' }).formatToParts(new Date());
+  const y = Number(parts.find(p => p.type === 'year')!.value);
+  const m = Number(parts.find(p => p.type === 'month')!.value);
+  return { year: y, month: m };
+}
+function parseMonthParam(mParam: string | string[] | undefined, timeZone: string): { year: number; month: number } {
+  const raw = Array.isArray(mParam) ? mParam[0] : mParam;
+  if (raw && /^\d{4}-\d{2}$/.test(raw)) {
+    const [y, m] = raw.split('-').map(Number);
+    if (m >= 1 && m <= 12) return { year: y, month: m };
+  }
+  return currentYearMonthInTz(timeZone);
+}
+function monthUtcRange(year: number, month1to12: number, tzOffsetMinutes: number): { startUTC: Date; endUTC: Date } {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const offSign = tzOffsetMinutes >= 0 ? '+' : '-';
+  const abs = Math.abs(tzOffsetMinutes);
+  const offHH = pad(Math.floor(abs / 60));
+  const offMM = pad(abs % 60);
+  const offset = `${offSign}${offHH}:${offMM}`;
+  const startIsoLocal = `${year}-${pad(month1to12)}-01T00:00:00${offset}`;
+  const nextYear = month1to12 === 12 ? year + 1 : year;
+  const nextMonth = month1to12 === 12 ? 1 : month1to12 + 1;
+  const nextIsoLocal = `${nextYear}-${pad(nextMonth)}-01T00:00:00${offset}`;
+  const startUTC = new Date(startIsoLocal);
+  const nextUTC = new Date(nextIsoLocal);
+  const endUTC = new Date(nextUTC.getTime() - 1);
+  return { startUTC, endUTC };
+}
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   noStore();
-  await searchParams;
+
+  const sp = await searchParams;
+  const TZ = 'Asia/Yekaterinburg';
+  const { year, month } = parseMonthParam(sp.m, TZ);
+  const { startUTC, endUTC } = monthUtcRange(year, month, 5 * 60);
 
   const session = await auth();
   const meId = session?.user?.id ?? '';
@@ -53,9 +95,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     );
   }
 
-  // Мои активные задачи
-  const raw = await prisma.task.findMany({
-    where: { hidden: false, assignees: { some: { userId: meId, status: 'in_progress' } } },
+  const rawTasks = await prisma.task.findMany({
+    where: {
+      hidden: false,
+      assignees: { some: { userId: meId, status: 'in_progress' } },
+      dueDate: { gte: startUTC, lte: endUTC },
+    },
     select: {
       id: true, title: true, description: true, dueDate: true, priority: true, hidden: true,
       createdById: true, createdByName: true,
@@ -64,7 +109,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
   });
 
-  const initialTasks: TaskLite[] = raw.map(t => ({
+  const initialTasks: TaskLite[] = rawTasks.map(t => ({
     id: t.id,
     title: t.title,
     description: t.description,
@@ -82,24 +127,37 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     (grouped[key] ||= []).push(t);
   }
 
-  // ДР: все пользователи с birthday != null
   const usersWithBirthday = await prisma.user.findMany({
     where: { birthday: { not: null } },
     select: { name: true, birthday: true },
   });
 
-  // Карта MM-DD (Екатеринбург) → список имён
   const birthdaysMap: Record<string, string[]> = {};
   for (const u of usersWithBirthday) {
     const d = u.birthday as Date;
-    const key = mmddInTz(d, 'Asia/Yekaterinburg');
+    const key = mmddInTz(d, TZ);
     (birthdaysMap[key] ||= []).push((u.name ?? 'Без имени').trim());
   }
+
+  const notesRaw = await prisma.note.findMany({
+    where: { userId: meId, at: { gte: startUTC, lte: endUTC } },
+    select: { id: true, at: true, allDay: true, title: true, text: true },
+    orderBy: [{ at: 'asc' }, { id: 'asc' }],
+  });
+
+  const initialNotes: NoteLite[] = notesRaw.map(n => ({
+    id: n.id,
+    at: (n.at as Date).toISOString(),
+    allDay: !!n.allDay,
+    title: n.title ?? null,
+    text: truncateForTile(n.text ?? ''),
+  }));
 
   return (
     <main style={{ padding: 16, display: 'grid', gap: 12 }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 style={{ margin: 0 }}>Календарь</h1>
+        <NewNoteButton />
       </header>
 
       <CalendarBoard
@@ -108,7 +166,17 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         initialTasks={initialTasks}
         initialGrouped={grouped}
         birthdaysMap={birthdaysMap}
+        initialNotes={initialNotes}
       />
+
+      <CalendarModals tasks={initialTasks as any} meId={meId} notes={initialNotes} />
     </main>
   );
+}
+
+function truncateForTile(s: string): string {
+  const max = 180;
+  const clean = s.trim().replace(/\s+/g, ' ');
+  if (clean.length <= max) return clean;
+  return clean.slice(0, max - 1).trimEnd() + '…';
 }

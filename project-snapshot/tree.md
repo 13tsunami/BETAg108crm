@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-19T15:39:48.077Z
+Generated: 2025-08-19T18:40:42.485Z
 ## UI hints
 ```json
 {
@@ -22,8 +22,6 @@ Generated: 2025-08-19T15:39:48.077Z
    │  │  │  └─ page.tsx
    │  │  ├─ dashboard
    │  │  │  ├─ page.module.css
-   │  │  │  └─ page.tsx
-   │  │  ├─ discussions
    │  │  │  └─ page.tsx
    │  │  ├─ groups
    │  │  │  ├─ actions.ts
@@ -86,6 +84,7 @@ Generated: 2025-08-19T15:39:48.077Z
    │  ├─ Providers.tsx
    │  ├─ Sidebar.tsx
    │  ├─ TaskPopover.tsx
+   │  ├─ Tooltip.tsx
    │  ├─ UnreadBadgeClient.tsx
    │  ├─ UserForm.tsx
    │  ├─ UserMenu.tsx
@@ -166,7 +165,6 @@ Generated: 2025-08-19T15:39:48.077Z
 /api/tasks/mark-done  ⟶  app/api/tasks/mark-done/route.ts
 /calendar  ⟶  app/(app)/calendar/page.tsx
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
-/discussions  ⟶  app/(app)/discussions/page.tsx
 /groups  ⟶  app/(app)/groups/page.tsx
 /inboxtasks  ⟶  app/(app)/inboxtasks/page.tsx
 /inboxtasks/archive  ⟶  app/(app)/inboxtasks/archive/page.tsx

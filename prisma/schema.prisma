@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL") // pooled (…-pooler…)
-  directUrl = env("DIRECT_URL")   // direct (без -pooler), нужен только для dev-команд
+  directUrl = env("DIRECT_URL") // direct (без -pooler), нужен только для dev-команд
 }
 
 model User {
@@ -35,8 +35,9 @@ model User {
   taskAssignments    TaskAssignee[]
   subjectMemberships SubjectMember[]
   createdTasks       Task[]          @relation("TaskCreatedBy")
-  // обратная сторона связи для MessageHide
-  messageHides MessageHide[]
+  messageHides       MessageHide[]
+
+  notes Note[] // ← добавили обратную сторону связи
 }
 
 model Group {
@@ -103,43 +104,43 @@ model MessageHide {
 }
 
 model Task {
-  id            String   @id @default(uuid())
-  title         String
-  description   String
-  dueDate       DateTime
-  hidden        Boolean  @default(false)
-  priority      String   @default("normal")
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  dueDate     DateTime
+  hidden      Boolean  @default(false)
+  priority    String   @default("normal")
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now()) @updatedAt
   createdById   String?
   createdByName String?
 
-  createdBy     User?    @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy User? @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
-  assignees     TaskAssignee[]
-  tags          TaskTag[]
+  assignees TaskAssignee[]
+  tags      TaskTag[]
 
   @@index([createdById])
   @@index([dueDate])
 }
 
 model TaskAssignee {
-  id          String   @id @default(uuid())
-  taskId      String
-  userId      String
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  taskId String
+  userId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // статусы исполнителя (соответствует прод-миграции)
-  status      String   @default("in_progress") // 'in_progress' | 'done'
-  assignedAt  DateTime @default(now())
+  status      String    @default("in_progress") // 'in_progress' | 'done'
+  assignedAt  DateTime  @default(now())
   completedAt DateTime?
 
   @@unique([taskId, userId]) // TaskAssignee_taskId_userId_key
-  @@index([userId])          // TaskAssignee_userId_idx
-  @@index([taskId])          // TaskAssignee_taskId_idx
-  @@index([status])          // TaskAssignee_status_idx
+  @@index([userId]) // TaskAssignee_userId_idx
+  @@index([taskId]) // TaskAssignee_taskId_idx
+  @@index([status]) // TaskAssignee_status_idx
 }
 
 model Tag {
@@ -198,4 +199,20 @@ model SubjectMember {
   subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@unique([userId, subjectId])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  userId    String
+  at        DateTime // сохраняем в UTC, группируем по локали на уровне UI
+  allDay    Boolean  @default(true)
+  title     String?
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, at])
+  @@index([at])
 }
