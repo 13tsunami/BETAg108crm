@@ -185,10 +185,7 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                       <Field label="телефон" value={clean(u.phone)} />
                       <Field label="классное руководство" value={clean(u.classroom)} />
                       <Field label="telegram" value={clean(u.telegram)} />
-                      <Field label="дата рождения" value={u.birthday ? formatRuDate(new Date(u.birthday as any)) : '—'} />
-                      <Field label="уведомления email" value={u.notifyEmail ? 'вкл' : 'выкл'} />
-                      <Field label="уведомления telegram" value={u.notifyTelegram ? 'вкл' : 'выкл'} />
-                    </div>
+                     </div>
                   </div>
 
                   <div style={{ ...glassTile, padding: 12 }}>

@@ -11,15 +11,20 @@ export const revalidate = 0;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-// Дата->строка YYYY-MM-DD (локально, без TZ сдвигов)
+// Дата -> YYYY-MM-DD (без TZ-сдвигов)
 function ymd(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 }
+function mmdd(d: Date) {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${m}-${dd}`;
+}
 
-// Что отдаём в клиент (строки и простые типы)
+// Что отдаём в клиент
 export type TaskLite = {
   id: string;
   title: string;
@@ -29,17 +34,12 @@ export type TaskLite = {
   hidden: boolean | null;
   createdById: string | null;
   createdByName: string | null;
-  // для «мои задачи» нам достаточно знать, что среди assignees есть я и статус
   myStatus: 'in_progress' | 'done' | null;
 };
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   noStore();
-  await searchParams; // нам параметры пока не нужны
+  await searchParams;
 
   const session = await auth();
   const meId = session?.user?.id ?? '';
@@ -54,31 +54,18 @@ export default async function Page({
     );
   }
 
-  // Берём ТОЛЬКО «назначенные мне» активные задачи (для календаря мы показываем
-  // исключительно их, согласно ТЗ), без скрытых (hidden = false/null).
+  // Мои активные задачи
   const raw = await prisma.task.findMany({
-    where: {
-      hidden: false,
-      assignees: { some: { userId: meId, status: 'in_progress' } },
-    },
+    where: { hidden: false, assignees: { some: { userId: meId, status: 'in_progress' } } },
     select: {
-      id: true,
-      title: true,
-      description: true,
-      dueDate: true,
-      priority: true,
-      hidden: true,
-      createdById: true,
-      createdByName: true,
-      assignees: {
-        where: { userId: meId },
-        select: { status: true },
-      },
+      id: true, title: true, description: true, dueDate: true, priority: true, hidden: true,
+      createdById: true, createdByName: true,
+      assignees: { where: { userId: meId }, select: { status: true } },
     },
     orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
   });
 
-  const initialTasks: TaskLite[] = raw.map((t) => ({
+  const initialTasks: TaskLite[] = raw.map(t => ({
     id: t.id,
     title: t.title,
     description: t.description,
@@ -90,26 +77,39 @@ export default async function Page({
     myStatus: (t.assignees[0]?.status as 'in_progress' | 'done' | undefined) ?? null,
   }));
 
-  // Грубо сгруппируем на сервере по дню — чтобы клиенту меньше считать при первом рендере
   const grouped: Record<string, TaskLite[]> = {};
   for (const t of initialTasks) {
     const key = ymd(new Date(t.dueDate));
     (grouped[key] ||= []).push(t);
   }
 
+  // ДР педагогов: поле называется `birthday`
+  const teachers = await prisma.user.findMany({
+    where: { role: { in: ['teacher', 'teacher_plus'] }, birthday: { not: null } },
+    select: { name: true, birthday: true },
+  });
+
+  // Карта MM-DD → список имён
+  const birthdaysMap: Record<string, string[]> = {};
+  for (const u of teachers) {
+    const d = u.birthday as Date | null;
+    if (!d) continue;
+    const key = mmdd(d);
+    (birthdaysMap[key] ||= []).push((u.name ?? 'Без имени').trim());
+  }
+
   return (
     <main style={{ padding: 16, display: 'grid', gap: 12 }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 style={{ margin: 0 }}>Календарь</h1>
-        {/* кнопки периода/фильтры при необходимости – оставляем место */}
       </header>
 
-      {/* Клиентский календарь. Передаём только мои задачи. */}
       <CalendarBoard
         meId={meId}
         roleSlug={roleSlug}
         initialTasks={initialTasks}
         initialGrouped={grouped}
+        birthdaysMap={birthdaysMap}
       />
     </main>
   );

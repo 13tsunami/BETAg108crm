@@ -1,27 +1,52 @@
 /* app/(app)/layout.module.css */
+
 .appShell {
+  --sbw: 280px;
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr); /* ширина = ширине Sidebar */
+  grid-template-columns: var(--sbw) minmax(0, 1fr);
   min-height: 100dvh;
   background: #f7f7f8;
+}
+
+/* Модификатор через data-атрибут, а не класс */
+.appShell[data-collapsed="true"] {
+  --sbw: 56px;
 }
 
 .appSidebar {
   position: sticky;
   top: 0;
   height: 100dvh;
-  overflow: hidden;             /* сайдбар без скроллов */
+  overflow: hidden;
   background: #ffffff;
-  width: 280px;                 /* фиксируем ширину контейнера */
-  flex: 0 0 280px;              /* не даём колонке сжиматься/расти */
   border-right: 1px solid #e5e7eb;
+  /* ширина берётся из grid по --sbw */
 }
 
 .appMain {
   min-width: 0;
   height: 100dvh;
-  overflow: auto;               /* прокрутка — только у контента */
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 16px;
+  padding: 12px;
   background: #f7f7f8;
+}
+.appSidebar {
+  position: sticky;
+  top: 0;
+  z-index: 10;            /* поднимаем слой сайдбара над main */
+  height: 100dvh;
+  overflow: visible;      /* важно: позволяем кнопке выходить за пределы */
+  background: #ffffff;
+  border-right: 1px solid var(--brand); /* тонкая бордовая рамка */
+}
+
+
+.appMain {
+  min-width: 0;
+  height: 100dvh;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px;
+  background: #ffffff;   /* ← фон как у сайдбара */
 }

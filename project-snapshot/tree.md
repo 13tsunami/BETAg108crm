@@ -1,5 +1,5 @@
 # Project snapshot: BETAg108crm.clean
-Generated: 2025-08-17T20:55:35.749Z
+Generated: 2025-08-19T15:39:48.077Z
 ## UI hints
 ```json
 {
@@ -20,20 +20,6 @@ Generated: 2025-08-17T20:55:35.749Z
    │  │  │  ├─ CalendarBoard.tsx
    │  │  │  ├─ CalendarModals.tsx
    │  │  │  └─ page.tsx
-   │  │  ├─ chat
-   │  │  │  ├─ ChatBoxClient.tsx
-   │  │  │  ├─ ChatSearchByName.tsx
-   │  │  │  ├─ SearchBox.tsx
-   │  │  │  ├─ ThreadDeleteButton.tsx
-   │  │  │  ├─ actions.ts
-   │  │  │  ├─ chat.module.css
-   │  │  │  ├─ live.tsx
-   │  │  │  ├─ page.tsx
-   │  │  │  ├─ search-name
-   │  │  │  │  └─ route.ts
-   │  │  │  └─ sse
-   │  │  │     ├─ broker.ts
-   │  │  │     └─ route.ts
    │  │  ├─ dashboard
    │  │  │  ├─ page.module.css
    │  │  │  └─ page.tsx
@@ -108,7 +94,6 @@ Generated: 2025-08-17T20:55:35.749Z
    │     └─ UniversalSearchInput.tsx
    ├─ lib
    │  ├─ auth.ts
-   │  ├─ chatSSE.ts
    │  ├─ db.ts
    │  ├─ dbInfo.ts
    │  ├─ edu.ts
@@ -180,9 +165,6 @@ Generated: 2025-08-17T20:55:35.749Z
 /api/auth/[...nextauth]  ⟶  app/api/auth/[...nextauth]/route.ts
 /api/tasks/mark-done  ⟶  app/api/tasks/mark-done/route.ts
 /calendar  ⟶  app/(app)/calendar/page.tsx
-/chat  ⟶  app/(app)/chat/page.tsx
-/chat/search-name  ⟶  app/(app)/chat/search-name/route.ts
-/chat/sse  ⟶  app/(app)/chat/sse/route.ts
 /dashboard  ⟶  app/(app)/dashboard/page.tsx
 /discussions  ⟶  app/(app)/discussions/page.tsx
 /groups  ⟶  app/(app)/groups/page.tsx

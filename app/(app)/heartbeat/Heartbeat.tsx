@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 export default function Heartbeat({
   action,
-  intervalMs = 60_000,     // раз в минуту
+  intervalMs = 600_000,     // раз в 10 минут
 }: {
   action: (fd: FormData) => Promise<void>;
   intervalMs?: number;

@@ -8,6 +8,7 @@ import Heartbeat from './heartbeat/Heartbeat';
 import { heartbeat } from './heartbeat/actions';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getUnreadTasksCount } from '@/lib/tasks/getUnreadTasks';
+import styles from './layout.module.css';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -43,9 +44,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   ]);
 
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'280px 1fr', minHeight:'100vh' }}>
-      <Sidebar unreadChats={unreadChats} unreadTasks={unreadTasks} />
-      <main style={{ padding:12 }}>
+    <div id="app-shell" className={styles.appShell}>
+      <aside className={styles.appSidebar}>
+        <Sidebar unreadChats={unreadChats} unreadTasks={unreadTasks} />
+      </aside>
+      <main className={styles.appMain}>
         {children}
         <Heartbeat action={heartbeat} />
       </main>

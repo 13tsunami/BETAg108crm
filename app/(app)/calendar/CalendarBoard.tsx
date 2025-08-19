@@ -10,6 +10,8 @@ type Props = {
   roleSlug: string | null;
   initialTasks: TaskLite[];
   initialGrouped: Record<string, TaskLite[]>;
+  // опционально: карта ДР (MM-DD -> имена). Если не придёт — просто не показываем 🎉
+  birthdaysMap?: Record<string, string[]>;
 };
 
 const BRAND = '#8d2828';
@@ -17,11 +19,19 @@ const BG_MY = '#FEF3C7';
 const BD_MY = '#F59E0B';
 const URGENT = BRAND;
 
+// короткие названия дней (вс от 0 до 6)
+const WEEKDAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+
 function ymd(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
+}
+function mmdd(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${m}-${dd}`;
 }
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -35,11 +45,12 @@ function addDays(date: Date, days: number): Date {
   d.setDate(d.getDate() + days);
   return d;
 }
-function fmtRuDate(d: Date | string) {
+function fmtRuDateShort(d: Date | string) {
   const dt = typeof d === 'string' ? new Date(d) : d;
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  }).format(dt);
+  // «1 июня»
+  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' })
+    .format(dt)
+    .replace('.', '');
 }
 function fmtRuDateTimeYekb(d: Date | string) {
   const dt = typeof d === 'string' ? new Date(d) : d;
@@ -49,14 +60,36 @@ function fmtRuDateTimeYekb(d: Date | string) {
     hour: '2-digit', minute: '2-digit',
   }).format(dt);
 }
+function fmtMonthYearRu(d: Date) {
+  // «Май 2025»
+  return new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
+    .format(d)
+    .replace(/^./, s => s.toUpperCase());
+}
+function isWeekend(d: Date) {
+  const wd = d.getDay();
+  return wd === 0 || wd === 6;
+}
+function isRuHoliday(d: Date) {
+  // Базовый фиксированный набор
+  const md = mmdd(d);
+  return (
+    md === '01-01' || md === '01-02' || md === '01-03' || md === '01-04' ||
+    md === '01-05' || md === '01-06' || md === '01-07' || md === '01-08' ||
+    md === '02-23' || md === '03-08' || md === '05-01' || md === '05-09' ||
+    md === '06-12' || md === '11-04'
+  );
+}
 
 export default function CalendarBoard({
   meId,
   roleSlug,
   initialTasks,
   initialGrouped,
+  birthdaysMap,
 }: Props) {
-  const [view, setView] = useState<'week' | 'month'>('week');
+  // ДЕФОЛТ — МЕСЯЦ (сохраняю твои модалки без изменений)
+  const [view, setView] = useState<'week' | 'month'>('month');
   const [cursor, setCursor] = useState<Date>(startOfWeek(new Date()));
 
   const [tasks, setTasks] = useState<TaskLite[]>(initialTasks);
@@ -64,7 +97,6 @@ export default function CalendarBoard({
   const [dayModal, setDayModal] = useState<{ open: boolean; key: string | null }>({ open: false, key: null });
   const [taskModal, setTaskModal] = useState<{ open: boolean; task: TaskLite | null }>({ open: false, task: null });
 
-  // закрыть модалки + оптимистично убрать задачу
   function handleDoneSubmit(taskId: string) {
     setTaskModal({ open: false, task: null });
     setDayModal({ open: false, key: null });
@@ -105,12 +137,12 @@ export default function CalendarBoard({
   }, [initialTasks]);
 
   const next = () =>
-    setCursor((d) =>
-      view === 'week' ? addDays(d, 7) : new Date(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    setCursor(d =>
+      view === 'week' ? addDays(d, 7) : new Date(d.getFullYear(), d.getMonth() + 1, d.getDate()),
     );
   const prev = () =>
-    setCursor((d) =>
-      view === 'week' ? addDays(d, -7) : new Date(d.getFullYear(), d.getMonth() - 1, d.getDate())
+    setCursor(d =>
+      view === 'week' ? addDays(d, -7) : new Date(d.getFullYear(), d.getMonth() - 1, d.getDate()),
     );
   const today = () => setCursor(startOfWeek(new Date()));
 
@@ -134,7 +166,7 @@ export default function CalendarBoard({
           {t.title}
         </div>
         <div style={{ fontSize: 12, color: '#374151' }}>
-          {fmtRuDate(t.dueDate)}
+          {fmtRuDateShort(t.dueDate)}
         </div>
       </button>
     );
@@ -288,22 +320,33 @@ export default function CalendarBoard({
     );
   };
 
+  // выберем месяца для заголовка по центру
+  const headerMonthForCenter = view === 'week'
+    ? new Date(cursor) // для недели берём месяц курсора
+    : new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+
   return (
     <section style={{ display: 'grid', gap: 12 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      {/* Шапка: слева ← [Неделя][Месяц], по центру «Май 2025», справа → Сегодня */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button onClick={prev} style={btn()}>←</button>
-          <button onClick={today} style={btn()}>Сегодня</button>
-          <button onClick={next} style={btn()}>→</button>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button onClick={() => setView('week')} style={pill(view === 'week')}>Неделя</button>
           <button onClick={() => setView('month')} style={pill(view === 'month')}>Месяц</button>
+        </div>
+
+        <div style={{ textAlign: 'center', fontWeight: 800 }}>
+          {fmtMonthYearRu(headerMonthForCenter)}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={next} style={btn()}>→</button>
+          <button onClick={today} style={btn()}>Сегодня</button>
         </div>
       </div>
 
       <div
+        className="grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
@@ -316,23 +359,21 @@ export default function CalendarBoard({
           const list = grouped.get(key) || [];
           const isToday = ymd(new Date()) === key;
 
+          const isHoliday = isWeekend(day) || isRuHoliday(day);
+          const weekday = WEEKDAYS[day.getDay()];
+          const mmddKey = mmdd(day);
+          const bdays = birthdaysMap?.[mmddKey] || [];
+          const tooltip = bdays.length ? `Дни рождения:\n- ${bdays.join('\n- ')}` : undefined;
+
           return (
             <div
               key={key}
-              style={{
-                border: '1px solid #e5e7eb',
-                borderRadius: 12,
-                background: isToday ? '#fff5f5' : '#ffffff',
-                padding: 8,
-                minHeight: 120,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 6,
-              }}
+              className={`day ${isToday ? 'day--today' : ''}`}
+              title={tooltip}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div style={{ fontWeight: 600 }}>{day.getDate()}</div>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>{key}</div>
+                <div className={`daydate ${isHoliday ? 'red' : ''}`}>{fmtRuDateShort(day)}</div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>{/* можно доп.мета */}</div>
               </div>
 
               <div style={{ display: 'grid', gap: 6 }}>
@@ -344,7 +385,10 @@ export default function CalendarBoard({
                 )}
               </div>
 
-              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className={`weekday ${isHoliday ? 'red' : ''}`}>
+                  {bdays.length ? '🥳 ' : ''}{weekday}
+                </div>
                 <button
                   onClick={() => setDayModal({ open: true, key })}
                   style={btnGhostSmall()}
@@ -360,11 +404,41 @@ export default function CalendarBoard({
 
       <DayModal />
       <TaskModal />
+
+      {/* Ховер как в сайдбаре + «сегодня» бледно‑зелёный */}
+      <style jsx>{`
+        .day {
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          background: #ffffff;
+          padding: 8px;
+          min-height: 120px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+        }
+        .day:hover {
+          transform: translateY(-1px);
+          border-color: rgba(141,40,40,.35);
+          box-shadow: 0 8px 18px rgba(0,0,0,.06);
+          background:
+            linear-gradient(180deg, rgba(141,40,40,.08), rgba(141,40,40,.03)),
+            linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7));
+        }
+        .day--today {
+          background: #ecfdf5; /* бледно-зелёный фон */
+          border-color: #a7f3d0; /* бледно-зелёная рамка */
+        }
+        .daydate { font-weight: 800; }
+        .weekday { font-size: 12px; color: #374151; }
+        .red { color: #b91c1c; }
+      `}</style>
     </section>
   );
 }
 
-/* ===== UI helpers ===== */
+/* ===== UI helpers (без изменений по логике модалок) ===== */
 function btn(): React.CSSProperties {
   return {
     height: 32,
