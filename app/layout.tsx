@@ -5,7 +5,7 @@ import '@/styles/globals.css';
 
 export const metadata = { title: 'G108 CRM' };
 
-// Р“Р»РѕР±Р°Р»СЊРЅС‹Р№ SSE-РєР»РёРµРЅС‚
+// Глобальный SSE-клиент
 
 import { auth } from '@/auth.config';
 
@@ -25,3 +25,4 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     </html>
   );
 }
+

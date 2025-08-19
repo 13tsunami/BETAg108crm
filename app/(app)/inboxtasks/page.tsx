@@ -44,12 +44,12 @@ function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): str
 function TeacherGuide() {
   return (
     <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff', fontSize: 14, lineHeight: 1.5 }}>
-      <h3 style={{ marginTop: 0, marginBottom: 8 }}>РљР°Рє СЂР°Р±РѕС‚Р°С‚СЊ СЃ Р·Р°РґР°С‡Р°РјРё</h3>
+      <h3 style={{ marginTop: 0, marginBottom: 8 }}>Как работать с задачами</h3>
       <ul style={{ margin: 0, paddingLeft: 18 }}>
-        <li>Р’Рѕ РІРєР»Р°РґРєРµ В«РќР°Р·РЅР°С‡РµРЅРЅС‹Рµ РјРЅРµВ» РІС‹ РІРёРґРёС‚Рµ Р°РєС‚СѓР°Р»СЊРЅС‹Рµ Р·Р°РґР°С‡Рё, РЅР°Р·РЅР°С‡РµРЅРЅС‹Рµ РІР°Рј СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏРјРё.</li>
-        <li>РћС‚РєСЂРѕР№С‚Рµ Р·Р°РґР°С‡Сѓ Рё РЅР°Р¶РјРёС‚Рµ В«Р’С‹РїРѕР»РЅРёС‚СЊВ», РєРѕРіРґР° Р·Р°РєРѕРЅС‡РёС‚Рµ СЂР°Р±РѕС‚Сѓ вЂ” РѕРЅР° СѓР№РґС‘С‚ РІ Р°СЂС…РёРІ.</li>
-        <li>РљРЅРѕРїРєР° В«РЈС‚РѕС‡РЅРёС‚СЊ Р·Р°РґР°С‡СѓВ» РѕС‚РєСЂС‹РІР°РµС‚ С‡Р°С‚ СЃ РЅР°Р·РЅР°С‡РёРІС€РёРј Р·Р°РґР°С‡Сѓ РґР»СЏ РІРѕРїСЂРѕСЃРѕРІ Рё СѓС‚РѕС‡РЅРµРЅРёР№.</li>
-        <li>Р”РµРґР»Р°Р№РЅ РѕС‚РѕР±СЂР°Р¶Р°РµС‚СЃСЏ СЃ РґР°С‚РѕР№ Рё, РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё, РІСЂРµРјРµРЅРµРј.</li>
+        <li>Во вкладке «Назначенные мне» вы видите актуальные задачи, назначенные вам руководителями.</li>
+        <li>Откройте задачу и нажмите «Выполнить», когда закончите работу — она уйдёт в архив.</li>
+        <li>Кнопка «Уточнить задачу» открывает чат с назначившим задачу для вопросов и уточнений.</li>
+        <li>Дедлайн отображается с датой и, при необходимости, временем.</li>
       </ul>
     </div>
   );
@@ -71,15 +71,15 @@ export default async function Page({
   if (!meId) {
     return (
       <main style={{ padding: 16 }}>
-        <h1>Р—Р°РґР°С‡Рё</h1>
-        <p>РќРµ Р°РІС‚РѕСЂРёР·РѕРІР°РЅРѕ.</p>
+        <h1>Задачи</h1>
+        <p>Не авторизовано.</p>
       </main>
     );
   }
 
   const activeTab = mayCreate ? (tabParam === 'byme' ? 'byme' : 'mine') : 'mine';
 
-  // Р”Р°РЅРЅС‹Рµ РґР»СЏ TaskForm
+  // Данные для TaskForm
   let users: Array<{ id: string; name: string | null; role?: string | null; methodicalGroups?: string | null; subjects?: any }> = [];
   let groups: Array<{ id: string; name: string }> = [];
   let subjects: Array<{ name: string; count?: number }> = [];
@@ -119,7 +119,7 @@ export default async function Page({
     subjectMembers = subjectMembersRaw.map((sm) => ({ userId: sm.userId, subjectName: sm.subject.name }));
   }
 
-  // РЎРїРёСЃРєРё Р·Р°РґР°С‡
+  // Списки задач
   const [assignedToMe, createdByMe]: [TaskWithAssignees[], TaskWithAssignees[]] = await Promise.all([
     prisma.task.findMany({
       where: {
@@ -142,10 +142,10 @@ export default async function Page({
   return (
     <main style={{ padding: 16 }}>
       <div className="gridWrap">
-        {/* Р›РµРІР°СЏ РєРѕР»РѕРЅРєР°: С„РѕСЂРјР° (РёР»Рё РіРёРґ РґР»СЏ Teacher) */}
+        {/* Левая колонка: форма (или гид для Teacher) */}
         <aside className="leftCol">
           {mayCreate ? (
-            <section aria-label="РЎРѕР·РґР°С‚СЊ Р·Р°РґР°С‡Сѓ" className="card">
+            <section aria-label="Создать задачу" className="card">
               <Suspense fallback={null}>
                 <TaskForm
                   users={users}
@@ -162,7 +162,7 @@ export default async function Page({
           )}
         </aside>
 
-        {/* РџСЂР°РІР°СЏ РєРѕР»РѕРЅРєР°: СЃРїРёСЃРѕРє Р·Р°РґР°С‡ СЃ С‚Р°Р±Р°РјРё */}
+        {/* Правая колонка: список задач с табами */}
         <section className="rightCol">
           <header className="tabsWrap">
             {mayCreate ? (
@@ -172,27 +172,27 @@ export default async function Page({
                   className={`tab ${activeTab === 'mine' ? 'tab--active' : ''}`}
                   aria-current={activeTab === 'mine' ? 'page' : undefined}
                 >
-                  РќР°Р·РЅР°С‡РµРЅРЅС‹Рµ РјРЅРµ ({assignedToMe.length})
+                  Назначенные мне ({assignedToMe.length})
                 </a>
                 <a
                   href="/inboxtasks?tab=byme"
                   className={`tab ${activeTab === 'byme' ? 'tab--active' : ''}`}
                   aria-current={activeTab === 'byme' ? 'page' : undefined}
                 >
-                  РќР°Р·РЅР°С‡РµРЅРЅС‹Рµ РјРЅРѕР№ ({createdByMe.length})
+                  Назначенные мной ({createdByMe.length})
                 </a>
               </nav>
             ) : (
               <div style={{ fontSize: 13, color: '#6b7280' }}>
-                Р РѕР»СЊ: РїСЂРµРїРѕРґР°РІР°С‚РµР»СЊ вЂ” РґРѕСЃС‚СѓРїРЅР° С‚РѕР»СЊРєРѕ РІРєР»Р°РґРєР° В«РќР°Р·РЅР°С‡РµРЅРЅС‹Рµ РјРЅРµВ»
+                Роль: преподаватель — доступна только вкладка «Назначенные мне»
               </div>
             )}
           </header>
 
-          {/* Р’РєР»Р°РґРєР°: РќР°Р·РЅР°С‡РµРЅРЅС‹Рµ РјРЅРµ вЂ” РџР•Р Р•Р’РЃР РЎРўРђРќРћ */}
+          {/* Вкладка: Назначенные мне — ПЕРЕВЁРСТАНО */}
           {activeTab === 'mine' && (
-            <section aria-label="РќР°Р·РЅР°С‡РµРЅРЅС‹Рµ РјРЅРµ" style={{ display: 'grid', gap: 8 }}>
-              {assignedToMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>РџРѕРєР° РЅРµС‚ Р°РєС‚РёРІРЅС‹С… Р·Р°РґР°С‡.</div>}
+            <section aria-label="Назначенные мне" style={{ display: 'grid', gap: 8 }}>
+              {assignedToMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет активных задач.</div>}
               {assignedToMe.map((t) => {
                 const myAssn = t.assignees.find((a) => a.userId === meId);
                 const urgent = (t.priority ?? 'normal') === 'high';
@@ -202,12 +202,12 @@ export default async function Page({
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <span style={{ fontWeight: 600 }}>{t.title}</span>
                         {urgent && (
-                          <span className="pillUrgent">РЎСЂРѕС‡РЅРѕ</span>
+                          <span className="pillUrgent">Срочно</span>
                         )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#374151' }}>
                         <span>{fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
-                        <span>РќР°Р·РЅР°С‡РёР»: {t.createdByName ?? 'вЂ”'}</span>
+                        <span>Назначил: {t.createdByName ?? '—'}</span>
                       </div>
                     </summary>
                     <div className="taskBody">
@@ -232,7 +232,7 @@ export default async function Page({
                             className="btnPrimaryGreen"
                             disabled={!myAssn || myAssn.status === 'done'}
                           >
-                            Р’С‹РїРѕР»РЅРёС‚СЊ
+                            Выполнить
                           </button>
                         </form>
                         {t.createdById && (
@@ -240,7 +240,7 @@ export default async function Page({
                             href="#"
                             className="btnGhost"
                           >
-                            РЈС‚РѕС‡РЅРёС‚СЊ Р·Р°РґР°С‡Сѓ
+                            Уточнить задачу
                           </a>
                         )}
                       </div>
@@ -251,10 +251,10 @@ export default async function Page({
             </section>
           )}
 
-          {/* Р’РєР»Р°РґРєР°: РќР°Р·РЅР°С‡РµРЅРЅС‹Рµ РјРЅРѕР№ (РєР°Рє Р±С‹Р»Рѕ РІ РїСЂРµРґС‹РґСѓС‰РµР№ РІРµСЂСЃРёРё) */}
+          {/* Вкладка: Назначенные мной (как было в предыдущей версии) */}
           {activeTab === 'byme' && mayCreate && (
-            <section aria-label="РќР°Р·РЅР°С‡РµРЅРЅС‹Рµ РјРЅРѕР№" style={{ display: 'grid', gap: 8 }}>
-              {createdByMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Р’С‹ РїРѕРєР° РЅРµ СЃРѕР·РґР°РІР°Р»Рё Р·Р°РґР°С‡.</div>}
+            <section aria-label="Назначенные мной" style={{ display: 'grid', gap: 8 }}>
+              {createdByMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Вы пока не создавали задач.</div>}
               {createdByMe.map((t) => {
                 const urgent = (t.priority ?? 'normal') === 'high';
                 const total = t.assignees.length;
@@ -275,18 +275,18 @@ export default async function Page({
                     <summary className="taskSummary">
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <span style={{ fontWeight: 600 }}>{t.title}</span>
-                        {urgent && <span className="pillUrgent">РЎСЂРѕС‡РЅРѕ</span>}
+                        {urgent && <span className="pillUrgent">Срочно</span>}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#374151' }}>
                         <span>{fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
-                        <span style={{ color: '#111827', fontWeight: 600 }}>{done}/{total} РІС‹РїРѕР»РЅРµРЅРѕ</span>
+                        <span style={{ color: '#111827', fontWeight: 600 }}>{done}/{total} выполнено</span>
                       </div>
                     </summary>
 
                     <div className="taskBody" style={{ display: 'grid', gap: 10 }}>
-                      {/* РљРѕРјСѓ РЅР°Р·РЅР°С‡РµРЅРѕ (СЃРІРѕСЂР°С‡РёРІР°РµРјС‹Р№ СЃРїРёСЃРѕРє) */}
+                      {/* Кому назначено (сворачиваемый список) */}
                       <div style={{ fontSize: 13 }}>
-                        <div style={{ color: '#6b7280', marginBottom: 4 }}>РљРѕРјСѓ РЅР°Р·РЅР°С‡РµРЅРѕ:</div>
+                        <div style={{ color: '#6b7280', marginBottom: 4 }}>Кому назначено:</div>
 
                         {hasMore ? (
                           <details>
@@ -295,7 +295,7 @@ export default async function Page({
                                 {preview.map((a) => (
                                   <span
                                     key={a.id}
-                                    title={a.status === 'done' ? 'Р’С‹РїРѕР»РЅРµРЅРѕ' : 'Р’ СЂР°Р±РѕС‚Рµ'}
+                                    title={a.status === 'done' ? 'Выполнено' : 'В работе'}
                                     style={{
                                       border: '1px solid #e5e7eb',
                                       borderRadius: 999,
@@ -304,17 +304,17 @@ export default async function Page({
                                       background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                     }}
                                   >
-                                    {(a.user?.name ?? `${a.userId.slice(0,8)}вЂ¦`)} {a.status === 'done' ? 'вњ“' : ''}
+                                    {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
                                   </span>
                                 ))}
                               </div>
-                              <div style={{ marginTop: 6, fontSize: 12, color: '#374151' }}>РџРѕРєР°Р·Р°С‚СЊ РІСЃРµС…</div>
+                              <div style={{ marginTop: 6, fontSize: 12, color: '#374151' }}>Показать всех</div>
                             </summary>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
                               {sorted.map((a) => (
                                 <span
                                   key={a.id}
-                                  title={a.status === 'done' ? 'Р’С‹РїРѕР»РЅРµРЅРѕ' : 'Р’ СЂР°Р±РѕС‚Рµ'}
+                                  title={a.status === 'done' ? 'Выполнено' : 'В работе'}
                                   style={{
                                     border: '1px solid #e5e7eb',
                                     borderRadius: 999,
@@ -323,7 +323,7 @@ export default async function Page({
                                     background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                   }}
                                 >
-                                  {(a.user?.name ?? `${a.userId.slice(0,8)}вЂ¦`)} {a.status === 'done' ? 'вњ“' : ''}
+                                  {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
                                 </span>
                               ))}
                             </div>
@@ -333,7 +333,7 @@ export default async function Page({
                             {sorted.map((a) => (
                               <span
                                 key={a.id}
-                                title={a.status === 'done' ? 'Р’С‹РїРѕР»РЅРµРЅРѕ' : 'Р’ СЂР°Р±РѕС‚Рµ'}
+                                title={a.status === 'done' ? 'Выполнено' : 'В работе'}
                                 style={{
                                   border: '1px solid #e5e7eb',
                                   borderRadius: 999,
@@ -342,21 +342,21 @@ export default async function Page({
                                   background: a.status === 'done' ? '#ecfdf5' : '#fff',
                                 }}
                               >
-                                {(a.user?.name ?? `${a.userId.slice(0,8)}вЂ¦`)} {a.status === 'done' ? 'вњ“' : ''}
+                                {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
                               </span>
                             ))}
                           </div>
                         )}
                       </div>
 
-                      {/* Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РѕСЃРЅРѕРІРЅС‹С… РїРѕР»РµР№ */}
+                      {/* Редактирование основных полей */}
                       <form action={updateTaskAction} style={{ display: 'grid', gap: 8 }}>
                         <input type="hidden" name="taskId" value={t.id} />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 140px', gap: 8 }}>
                           <input
                             name="title"
                             defaultValue={t.title}
-                            placeholder="РќР°Р·РІР°РЅРёРµ"
+                            placeholder="Название"
                             style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
                           />
                           <input
@@ -366,33 +366,33 @@ export default async function Page({
                             style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
                           />
                           <select name="priority" defaultValue={t.priority ?? 'normal'} style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}>
-                            <option value="normal">РѕР±С‹С‡РЅС‹Р№</option>
-                            <option value="high">СЃСЂРѕС‡РЅРѕ</option>
+                            <option value="normal">обычный</option>
+                            <option value="high">срочно</option>
                           </select>
                         </div>
                         <textarea
                           name="description"
                           defaultValue={t.description ?? ''}
                           rows={3}
-                          placeholder="РћРїРёСЃР°РЅРёРµ"
+                          placeholder="Описание"
                           style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, resize: 'vertical' }}
                         />
                         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                          <input type="checkbox" name="hidden" defaultChecked={t['hidden'] ?? false} /> РЅРµ СЂР°Р·РјРµС‰Р°С‚СЊ РІ РєР°Р»РµРЅРґР°СЂРµ
+                          <input type="checkbox" name="hidden" defaultChecked={t['hidden'] ?? false} /> не размещать в календаре
                         </label>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <button type="submit" className="btnPrimary">
-                            РЎРѕС…СЂР°РЅРёС‚СЊ РёР·РјРµРЅРµРЅРёСЏ
+                            Сохранить изменения
                           </button>
                         </div>
                       </form>
 
-                      {/* РљРЅРѕРїРєРё РЈРґР°Р»РёС‚СЊ / Р’ Р°СЂС…РёРІ */}
+                      {/* Кнопки Удалить / В архив */}
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <form action={deleteTaskAction}>
                           <input type="hidden" name="taskId" value={t.id} />
                           <button type="submit" className="btnDanger">
-                            РЈРґР°Р»РёС‚СЊ
+                            Удалить
                           </button>
                         </form>
                         {(() => {
@@ -417,7 +417,7 @@ export default async function Page({
         </section>
       </div>
 
-      {/* РѕР±С‹С‡РЅС‹Р№ <style>, РќР• styled-jsx */}
+      {/* обычный <style>, НЕ styled-jsx */}
       <style>{`
         .gridWrap {
           display: grid;
