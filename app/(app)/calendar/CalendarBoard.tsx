@@ -283,7 +283,7 @@ export default function CalendarBoard({
                   <Tooltip
                     content={
                       <div style={{ display: 'grid', gap: 4 }}>
-                        <div style={{ fontWeight: 800, marginBottom: 2 }}>🥳</div>
+                        <div style={{ fontWeight: 800, marginBottom: 2 }}>Дни рождения</div>
                         {bdays.map((n, i) => (
                           <div key={i} style={{ whiteSpace: 'nowrap' }}>• {n}</div>
                         ))}
@@ -291,7 +291,7 @@ export default function CalendarBoard({
                     }
                   >
                     <div className={`weekday ${isHoliday ? 'red' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Дни рождения · {weekday}
+                      🥳 · {weekday}
                     </div>
                   </Tooltip>
                 ) : (
