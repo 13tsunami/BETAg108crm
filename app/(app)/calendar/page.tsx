@@ -1,8 +1,6 @@
-// app/(app)/calendar/page.tsx
 import { auth } from '@/auth.config';
 import { normalizeRole } from '@/lib/roles';
 import { prisma } from '@/lib/prisma';
-import type { Prisma } from '@prisma/client';
 import CalendarBoard from './CalendarBoard';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -11,20 +9,6 @@ export const revalidate = 0;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-// Дата -> YYYY-MM-DD (без TZ-сдвигов)
-function ymd(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
-}
-function mmdd(d: Date) {
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${m}-${dd}`;
-}
-
-// Что отдаём в клиент
 export type TaskLite = {
   id: string;
   title: string;
@@ -36,6 +20,18 @@ export type TaskLite = {
   createdByName: string | null;
   myStatus: 'in_progress' | 'done' | null;
 };
+
+function ymd(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+function mmddUTC(d: Date) {
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${m}-${dd}`;
+}
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   noStore();
@@ -83,18 +79,17 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     (grouped[key] ||= []).push(t);
   }
 
-  // ДР педагогов: поле называется `birthday`
-  const teachers = await prisma.user.findMany({
-    where: { role: { in: ['teacher', 'teacher_plus'] }, birthday: { not: null } },
+  // ДР: БЕРЁМ ВСЕХ пользователей с birthday != null (без фильтра по роли)
+  const usersWithBirthday = await prisma.user.findMany({
+    where: { birthday: { not: null } },
     select: { name: true, birthday: true },
   });
 
-  // Карта MM-DD → список имён
+  // Карта MM-DD (UTC) → список имён
   const birthdaysMap: Record<string, string[]> = {};
-  for (const u of teachers) {
-    const d = u.birthday as Date | null;
-    if (!d) continue;
-    const key = mmdd(d);
+  for (const u of usersWithBirthday) {
+    const d = u.birthday as Date;
+    const key = mmddUTC(d);
     (birthdaysMap[key] ||= []).push((u.name ?? 'Без имени').trim());
   }
 
@@ -109,7 +104,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         roleSlug={roleSlug}
         initialTasks={initialTasks}
         initialGrouped={grouped}
-        birthdaysMap={birthdaysMap}
+        birthdaysMap={birthdaysMap}  // ← передаём в клиент
       />
     </main>
   );

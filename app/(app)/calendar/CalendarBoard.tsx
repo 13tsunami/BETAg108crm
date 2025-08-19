@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { TaskLite } from './page';
 import { markAssigneeDoneAction } from '@/app/(app)/inboxtasks/actions';
+import Tooltip from '@/components/Tooltip';
 
 type Props = {
   meId: string;
@@ -31,6 +32,12 @@ function ymd(d: Date): string {
 function mmdd(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
+  return `${m}-${dd}`;
+}
+// Ключ по UTC — для дат рождения (исключаем влияние локального TZ)
+function mmddUTC(d: Date): string {
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
   return `${m}-${dd}`;
 }
 function startOfWeek(date: Date): Date {
@@ -361,19 +368,17 @@ export default function CalendarBoard({
 
           const isHoliday = isWeekend(day) || isRuHoliday(day);
           const weekday = WEEKDAYS[day.getDay()];
-          const mmddKey = mmdd(day);
-          const bdays = birthdaysMap?.[mmddKey] || [];
-          const tooltip = bdays.length ? `Дни рождения:\n- ${bdays.join('\n- ')}` : undefined;
+          const mmddKeyUTC = mmddUTC(day); // используем UTC для ДР
+          const bdays = birthdaysMap?.[mmddKeyUTC] || [];
 
           return (
             <div
               key={key}
               className={`day ${isToday ? 'day--today' : ''}`}
-              title={tooltip}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                 <div className={`daydate ${isHoliday ? 'red' : ''}`}>{fmtRuDateShort(day)}</div>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>{/* можно доп.мета */}</div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>{/* место под доп. мету */}</div>
               </div>
 
               <div style={{ display: 'grid', gap: 6 }}>
@@ -386,9 +391,27 @@ export default function CalendarBoard({
               </div>
 
               <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div className={`weekday ${isHoliday ? 'red' : ''}`}>
-                  {bdays.length ? '🥳 ' : ''}{weekday}
-                </div>
+                {/* День недели + опциональная 🎉 с красивым тултипом */}
+                {bdays.length ? (
+                  <Tooltip
+                    content={
+                      <div style={{ display: 'grid', gap: 4 }}>
+                        <div style={{ fontWeight: 800, marginBottom: 2 }}>Дни рождения</div>
+                        {bdays.map((n, i) => (
+                          <div key={i} style={{ whiteSpace: 'nowrap' }}>• {n}</div>
+                        ))}
+                      </div>
+                    }
+                  >
+                    <div className={`weekday ${isHoliday ? 'red' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span role="img" aria-label="день рождения">🥳</span>
+                      {weekday}
+                    </div>
+                  </Tooltip>
+                ) : (
+                  <div className={`weekday ${isHoliday ? 'red' : ''}`}>{weekday}</div>
+                )}
+
                 <button
                   onClick={() => setDayModal({ open: true, key })}
                   style={btnGhostSmall()}
