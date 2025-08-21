@@ -57,20 +57,32 @@ function parseMonthParam(mParam: string | string[] | undefined, timeZone: string
   }
   return currentYearMonthInTz(timeZone);
 }
-function monthUtcRange(year: number, month1to12: number, tzOffsetMinutes: number): { startUTC: Date; endUTC: Date } {
+
+// новая функция: берем диапазон ±2 месяца вокруг выбранного месяца
+function aroundMonthUtcRange(year: number, month1to12: number, tzOffsetMinutes: number): { startUTC: Date; endUTC: Date } {
   const pad = (n: number) => String(n).padStart(2, '0');
   const offSign = tzOffsetMinutes >= 0 ? '+' : '-';
   const abs = Math.abs(tzOffsetMinutes);
   const offHH = pad(Math.floor(abs / 60));
   const offMM = pad(abs % 60);
   const offset = `${offSign}${offHH}:${offMM}`;
-  const startIsoLocal = `${year}-${pad(month1to12)}-01T00:00:00${offset}`;
-  const nextYear = month1to12 === 12 ? year + 1 : year;
-  const nextMonth = month1to12 === 12 ? 1 : month1to12 + 1;
-  const nextIsoLocal = `${nextYear}-${pad(nextMonth)}-01T00:00:00${offset}`;
+
+  // старт: два месяца ДО выбранного
+  const startMonthIndex = month1to12 - 2;
+  const startYear = startMonthIndex <= 0 ? year - 1 : year;
+  const startMonth = startMonthIndex <= 0 ? 12 + startMonthIndex : startMonthIndex;
+
+  // конец: начало месяца, который на три месяца ПОСЛЕ выбранного
+  const endMonthIndex = month1to12 + 3;
+  const endYear = endMonthIndex > 12 ? year + 1 : year;
+  const endMonth = endMonthIndex > 12 ? endMonthIndex - 12 : endMonthIndex;
+
+  const startIsoLocal = `${startYear}-${pad(startMonth)}-01T00:00:00${offset}`;
+  const endIsoLocal   = `${endYear}-${pad(endMonth)}-01T00:00:00${offset}`;
+
   const startUTC = new Date(startIsoLocal);
-  const nextUTC = new Date(nextIsoLocal);
-  const endUTC = new Date(nextUTC.getTime() - 1);
+  const endUTC = new Date(new Date(endIsoLocal).getTime() - 1);
+
   return { startUTC, endUTC };
 }
 
@@ -80,7 +92,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const sp = await searchParams;
   const TZ = 'Asia/Yekaterinburg';
   const { year, month } = parseMonthParam(sp.m, TZ);
-  const { startUTC, endUTC } = monthUtcRange(year, month, 5 * 60);
+  const { startUTC, endUTC } = aroundMonthUtcRange(year, month, 5 * 60);
 
   const session = await auth();
   const meId = session?.user?.id ?? '';

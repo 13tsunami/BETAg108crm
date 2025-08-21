@@ -1,35 +1,26 @@
-/** Точка для линейного графика «создано / выполнено» */
-export interface DayPoint {
-  d: string;       // YYYY-MM-DD
-  created: number;
-  done: number;
-}
+// Типы строго под текущее ТЗ
 
-/** Срез задач «сегодня / просрочено / ожидает» */
-export interface TodaySlice {
-  today: number;
-  overdue: number;
-  upcoming: number;
-}
+export type DayPoint = {
+  d: string;        // YYYY-MM-DD (в целевой TZ)
+  created: number;  // сколько задач я создал в этот день
+  done: number;     // сколько задач я выполнил в этот день
+};
 
-/** Структура приоритетов */
-export interface Priorities {
-  high: number;
-  normal: number;
-}
+export type TodaySlice = {
+  today: number;    // мои активные задачи на сегодня
+  overdue: number;  // мои активные просроченные
+  upcoming: number; // мои активные в будущем
+};
 
-/** Нагрузка по дням недели */
-export interface WeekdayLoad {
-  /** День недели (0 = пн, 6 = вс) */
-  dow: number;
-  /** Количество задач */
-  count: number;
-}
+export type WeekdayItem = {
+  dow: number;      // 0..6 (пн..вс)
+  count: number;    // количество моих активных задач на этот день недели
+};
 
-/** Совокупная аналитика для дашборда */
-export interface Analytics {
-  createdDone: DayPoint[];
-  priorities: Priorities;
-  today: TodaySlice;
-  weekday: WeekdayLoad[];
-}
+export type WeekdayLoad = WeekdayItem[];
+
+export type Analytics = {
+  createdDone: DayPoint[]; // линия «создано/выполнено» по дням
+  today: TodaySlice;       // срез «сегодня/просрочено/ожидает»
+  weekday: WeekdayLoad;    // нагрузка по дням недели
+};
