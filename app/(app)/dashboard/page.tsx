@@ -1,42 +1,42 @@
 // app/(app)/dashboard/page.tsx
 import { auth } from '@/auth.config';
+import { normalizeRole } from '@/lib/roles';
 import s from './page.module.css';
+
+import Widgets from './widgets';
+import { getAnalytics } from './analytics';
+import type { Analytics } from './types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function DashboardPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function Page({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  const rangeDays = Number(params?.days ?? 14);
+
   const session = await auth();
-  const name = (session?.user as any)?.name ?? 'Пользователь';
+  const meId = (session?.user as any)?.id ?? null;
+  const roleSlug = (session?.user as any)?.role as string | undefined;
+  const role = normalizeRole(roleSlug || 'guest');
+
+  const showCreatedDone = role !== 'teacher';
+
+  const analytics: Analytics = await getAnalytics({
+    meId,
+    rangeDays: Number.isFinite(rangeDays) && rangeDays > 0 ? rangeDays : 14,
+    tz: 'Asia/Yekaterinburg',
+  });
 
   return (
-    <main className={s.dashboardRoot}>
+    <div className={s.dashboardRoot}>
       <header className={s.header}>
-        <h1 className={s.title}>Добро пожаловать, {name}</h1>
-        <p className={s.subtitle}>Ваш персональный дашбоард</p>
+        <div className={s.title}>Аналитика</div>
+        <div className={s.subtitle}>Сверните плитку для KPI, нажмите — развернётся график</div>
       </header>
 
-      <section className={s.widgets}>
-        <div className={s.card}>
-          <div className={s.cardTitle}>Новые задачи</div>
-          <div className={s.cardBody}>Здесь появятся ваши актуальные задачи</div>
-        </div>
-
-        <div className={s.card}>
-          <div className={s.cardTitle}>Чаты</div>
-          <div className={s.cardBody}>Быстрый доступ к последним сообщениям</div>
-        </div>
-
-        <div className={s.card}>
-          <div className={s.cardTitle}>Календарь</div>
-          <div className={s.cardBody}>Ваши ближайшие события и встречи</div>
-        </div>
-
-        <div className={s.card}>
-          <div className={s.cardTitle}>Статистика</div>
-          <div className={s.cardBody}>Здесь будут аналитика и графики</div>
-        </div>
-      </section>
-    </main>
+      <Widgets analytics={analytics} showCreatedDone={showCreatedDone} />
+    </div>
   );
 }

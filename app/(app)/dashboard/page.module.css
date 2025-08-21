@@ -2,51 +2,111 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-height: 100dvh;
 }
 
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+.header { display: flex; flex-direction: column; gap: 4px; }
+.title { font-size: 24px; font-weight: 800; color: var(--text); }
+.subtitle { font-size: 14px; color: var(--muted); }
 
-.title {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.subtitle {
-  font-size: 14px;
-  color: var(--muted);
-}
-
+/* ГИБКАЯ СЕТКА: колонки 140–160px, добавляются по мере ширины экрана */
 .widgets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
+  grid-auto-flow: row dense;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 160px));
+  justify-content: start;        /* не растягивать плитки */
+  align-items: start;
 }
 
+/* Базовая карточка */
 .card {
-  border: 1px solid var(--glass-brd);
-  border-radius: 16px;
-  background: linear-gradient(180deg,var(--glass-top),var(--glass-bottom));
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: saturate(160%) blur(8px);
-  -webkit-backdrop-filter: saturate(160%) blur(8px);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(0,0,0,.04);
+  padding: 10px;
+  outline: 0;
+  transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
+  cursor: pointer;
+}
+.card:hover {
+  border-color: rgba(141,40,40,.35);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+  transform: translateY(-1px);
 }
 
+/* Заголовок */
 .cardTitle {
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+  text-align: center;
 }
 
-.cardBody {
-  font-size: 14px;
-  color: #374151;
+/* СВЕРНУТАЯ: квадрат как у плиток сайдбара, максимум ~160px */
+.collapsed {
+  aspect-ratio: 1 / 1;
+  width: 100%;              /* занимает свою колонку */
+  max-width: 160px;         /* верхняя граница размера плитки */
+  display: grid;
+  grid-auto-rows: min-content;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  margin: 0;                /* без автоцентрирования: сетка сама раскладывает плитки */
+}
+
+/* РАСКРЫТАЯ: занимает несколько колонок и тянется */
+.expanded {
+  grid-column: span 3;      /* на широких — примерно три узкие плитки */
+  aspect-ratio: auto;
+  width: 100%;
+  min-height: 260px;
+}
+
+/* Адаптация span для меньших экранов */
+@media (max-width: 1100px) {
+  .expanded { grid-column: span 2; min-height: 240px; }
+}
+@media (max-width: 560px) {
+  .expanded { grid-column: span 1; min-height: 220px; }
+}
+
+/* KPI в свернутой плитке */
+.tileKPI { display: grid; grid-auto-flow: row; gap: 8px; width: 100%; }
+.kpiItem { display: grid; grid-template-columns: 1fr auto; align-items: baseline; width: 100%; }
+.kpiLabel { font-size: 11px; line-height: 1.1; color: var(--muted); }
+
+.kpiValueBrand, .kpiValueMuted, .kpiValueDanger, .kpiValueStrong, .kpiValueMini {
+  font-weight: 800; line-height: 1.05;
+}
+.kpiValueBrand { color: var(--brand); font-size: 18px; }
+.kpiValueMuted { color: #111827; opacity: .7; font-size: 18px; }
+.kpiValueDanger { color: #b91c1c; font-size: 18px; }
+.kpiValueStrong { color: #111827; font-size: 18px; }
+.kpiValueMini   { color: #111827; font-size: 13px; }
+
+/* Контейнер под графики */
+.chartBox { width: 100%; height: 220px; position: relative; }
+
+/* Легенды/подсказки — без изменений */
+.legend { display: grid; grid-auto-flow: row; gap: 6px; font-size: 12px; color: #111827; }
+.legendRow { display: grid; grid-template-columns: 12px 1fr; gap: 8px; align-items: center; }
+.tooltip {
+  position: absolute; transform: translateX(-50%);
+  background: #fff; color: #111827; border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; box-shadow: 0 6px 16px rgba(0,0,0,.08);
+  pointer-events: none; font-size: 12px; min-width: 140px; z-index: 10;
+}
+.tipTitle { font-weight: 700; margin-bottom: 4px; color: var(--text); }
+
+/* На очень узких экранах — чуть ниже график */
+@media (max-width: 520px) {
+  .card { padding: 8px; }
+  .cardTitle { margin-bottom: 6px; }
+  .chartBox { height: 200px; }
 }

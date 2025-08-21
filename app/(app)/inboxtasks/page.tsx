@@ -438,7 +438,7 @@ export default async function Page({
         }
         .tab--active {
           background: #8d2828;
-          color: #fff;
+          color: #fff !important;
           border-color: #8d2828;
         }
 

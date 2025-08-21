@@ -56,16 +56,17 @@ export default function TaskForm({
 }) {
   const [title, setTitle] = useState('');
   const [description, setDesc] = useState('');
-  const [due, setDue] = useState('');
+  const todayStr = useMemo(() => todayYekbYMD(), []);
+  const [due, setDue] = useState(todayStr);
   const [dueTime, setDueTime] = useState(''); // опциональное время
   const [priority, setPriority] = useState<'normal'|'high'>('normal');
-  const [noCalendar, setNoCalendar] = useState(false);
+  // const [noCalendar, setNoCalendar] = useState(false);
 
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
-  const todayStr = useMemo(() => todayYekbYMD(), []);
+  // const todayStr = useMemo(() => todayYekbYMD(), []);
 
   useEffect(() => {
     const setR = new Set<string>();
@@ -177,13 +178,13 @@ export default function TaskForm({
     fd.set('description', description);
     fd.set('due', dueIso);
     fd.set('priority', priority);
-    fd.set('noCalendar', noCalendar ? '1' : '');
+  // fd.set('noCalendar', noCalendar ? '1' : '');
     fd.set('assigneeUserIdsJson', JSON.stringify(assigneeUserIds));
 
     await createAction(fd);
 
     try {
-      setTitle(''); setDesc(''); setDue(''); setDueTime(''); setPriority('normal'); setNoCalendar(false);
+      setTitle(''); setDesc(''); setDue(''); setDueTime(''); setPriority('normal');
       setAssignees([]); setQuery(''); setFound([]); setFiles([]); setPreviewTotal(0);
     } catch {}
   }
@@ -315,17 +316,10 @@ export default function TaskForm({
           <span style={{ fontSize:13, color:'#374151' }}>
             Предпросмотр: {previewLoading ? 'подсчёт…' : `${previewTotal} исполнител${previewTotal % 10 === 1 && previewTotal % 100 !== 11 ? 'ь' : 'ей'}`}
           </span>
-          <button type="button" onClick={()=>void recomputePreview()} style={{ height:28, padding:'0 10px', borderRadius:999, border:'1px solid #e5e7eb', background:'#fff', cursor:'pointer', fontSize:12 }}>
-            Обновить
-          </button>
         </div>
       </div>
 
-      {/* Календарь */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:2 }}>
-        <input id="noCal" type="checkbox" checked={noCalendar} onChange={(e)=>setNoCalendar(e.currentTarget.checked)} />
-        <label htmlFor="noCal">не размещать в календаре</label>
-      </div>
+  {/* Календарь (удалено по запросу) */}
 
       <div style={{ display:'flex', gap:8 }}>
         <button type="submit"

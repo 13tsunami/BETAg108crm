@@ -68,7 +68,7 @@ export default async function SettingsPage() {
             }}
             disabledFields={
               isRestricted
-                ? { name: true, username: true, classroom: true, role: true, birthday: true }
+                ? { name: true, username: true, classroom: true, role: true }
                 : undefined
             }
           />
