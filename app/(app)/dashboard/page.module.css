@@ -14,7 +14,8 @@
   display: grid;
   gap: 16px;
   grid-auto-flow: row dense;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 160px));
+  /* было: auto-fill → пустые колонки «толкали» сетку */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 160px));
   justify-content: start;        /* не растягивать плитки */
   align-items: start;
 }
@@ -51,7 +52,8 @@
 .collapsed {
   aspect-ratio: 1 / 1;
   width: 100%;              /* занимает свою колонку */
-  max-width: 160px;         /* верхняя граница размера плитки */
+  /* было: max-width:160px; мешало компоновке при auto-fit */
+  max-width: 100%;
   display: grid;
   grid-auto-rows: min-content;
   align-content: center;
@@ -73,7 +75,8 @@
   .expanded { grid-column: span 2; min-height: 240px; }
 }
 @media (max-width: 560px) {
-  .expanded { grid-column: span 1; min-height: 220px; }
+  /* на очень узких — растягиваем на всю строку, чтобы не «уезжало» */
+  .expanded { grid-column: 1 / -1; min-height: 220px; }
 }
 
 /* KPI в свернутой плитке */

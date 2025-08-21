@@ -20,6 +20,7 @@ export default function Widgets({ analytics, showCreatedDone }: Props) {
 
   const totalCreated = analytics.createdDone.reduce((sum, d) => sum + d.created, 0);
   const totalDone    = analytics.createdDone.reduce((sum, d) => sum + d.done, 0);
+  const totalToday   = analytics.today.today + analytics.today.overdue + analytics.today.upcoming;
 
   return (
     <div className={s.widgets}>
@@ -54,7 +55,13 @@ export default function Widgets({ analytics, showCreatedDone }: Props) {
         {expanded === 'today' ? (
           <TodayBars data={analytics.today} />
         ) : (
-          <TodayDonut data={analytics.today} />
+          // Свернутый вид — как в «Нагрузке по дням недели»: один KPI «всего»
+          <div className={s.tileKPI}>
+            <div className={s.kpiItem}>
+              <div className={s.kpiLabel}>всего</div>
+              <div className={s.kpiValueStrong}>{totalToday}</div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -67,18 +74,6 @@ export default function Widgets({ analytics, showCreatedDone }: Props) {
           <WeekdayBars data={analytics.weekday} />
         ) : (
           <div className={s.tileKPI}>
-            <div className={s.kpiItem}>
-              <div className={s.kpiLabel}>в рабочие</div>
-              <div className={s.kpiValueBrand}>
-                {analytics.weekday.slice(0,5).reduce((s, d) => s + d.count, 0)}
-              </div>
-            </div>
-            <div className={s.kpiItem}>
-              <div className={s.kpiLabel}>в выходные</div>
-              <div className={s.kpiValueMuted}>
-                {analytics.weekday.slice(5).reduce((s, d) => s + d.count, 0)}
-              </div>
-            </div>
             <div className={s.kpiItem}>
               <div className={s.kpiLabel}>всего</div>
               <div className={s.kpiValueStrong}>
