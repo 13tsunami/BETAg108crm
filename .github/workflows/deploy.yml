@@ -1,0 +1,32 @@
+name: Deploy to prod server
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Build and deploy
+        run: |
+          mkdir -p ~/g108crm
+
+          cd ~/g108crm
+
+          if [ -d .git ]; then
+            git fetch origin main
+            git reset --hard origin/main
+          else
+            git clone --depth=1 -b main https://github.com/${{ github.repository }} .
+          fi
+
+          docker compose up -d  --build --remove-orphans
+      - name: Run Prisma migrations
+        run: |
+          docker compose run --rm migrate
