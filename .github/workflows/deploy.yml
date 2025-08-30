@@ -27,6 +27,3 @@ jobs:
           fi
 
           docker compose up -d  --build --remove-orphans
-      - name: Run Prisma migrations
-        run: |
-          docker compose run --rm migrate
