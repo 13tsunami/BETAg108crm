@@ -8,13 +8,13 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      - ./.docker/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./.docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./.docker/postgres/certs/cert.pem:/var/lib/postgresql/cert.pem:ro
+      - ./.docker/postgres/certs/key.pem:/var/lib/postgresql/key.pem:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
