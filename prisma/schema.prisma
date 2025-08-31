@@ -7,6 +7,15 @@ datasource db {
   url       = env("DATABASE_URL")
 }
 
+/* ===== Новые типы ===== */
+enum TaskAssigneeStatus {
+  in_progress
+  submitted
+  done
+  rejected
+}
+
+/* ===== Пользователи и общие сущности ===== */
 model User {
   id               String    @id @default(uuid())
   name             String
@@ -36,7 +45,10 @@ model User {
   createdTasks       Task[]          @relation("TaskCreatedBy")
   messageHides       MessageHide[]
 
-  notes Note[] // ← добавили обратную сторону связи
+  notes Note[]
+
+  // обратная связь для ревьюера задач
+  reviewedAssignments TaskAssignee[] @relation("TaskReviewedBy")
 }
 
 model Group {
@@ -102,6 +114,7 @@ model MessageHide {
   @@index([userId])
 }
 
+/* ===== Задачи и исполнители ===== */
 model Task {
   id          String   @id @default(uuid())
   title       String
@@ -110,10 +123,14 @@ model Task {
   hidden      Boolean  @default(false)
   priority    String   @default("normal")
 
+  // audit
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now()) @updatedAt
   createdById   String?
   createdByName String?
+
+  // новый флаг для review-flow
+  reviewRequired Boolean @default(false)
 
   createdBy User? @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
@@ -131,15 +148,25 @@ model TaskAssignee {
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // статусы исполнителя (соответствует прод-миграции)
-  status      String    @default("in_progress") // 'in_progress' | 'done'
-  assignedAt  DateTime  @default(now())
-  completedAt DateTime?
+  // было String, теперь enum. миграция переведёт значения безопасно.
+  status        TaskAssigneeStatus @default(in_progress)
+  assignedAt    DateTime  @default(now())
+  completedAt   DateTime?
 
-  @@unique([taskId, userId]) // TaskAssignee_taskId_userId_key
-  @@index([userId]) // TaskAssignee_userId_idx
-  @@index([taskId]) // TaskAssignee_taskId_idx
-  @@index([status]) // TaskAssignee_status_idx
+  // новые поля для review-flow
+  submittedAt   DateTime?
+  reviewedAt    DateTime?
+  reviewedById  String?
+  reviewedBy    User?     @relation("TaskReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  // связь с попытками сдачи
+  submissions   Submission[]
+
+  @@unique([taskId, userId])
+  @@index([userId])
+  @@index([taskId])
+  @@index([status])
+  @@index([reviewedById])
 }
 
 model Tag {
@@ -155,9 +182,10 @@ model TaskTag {
   task   Task   @relation(fields: [taskId], references: [id])
   tag    Tag    @relation(fields: [tagId], references: [id])
 
-  // намеренно без каскадов и без @@unique([taskId, tagId]), чтобы точно соответствовать текущей БД
+  // без каскадов и без @@unique([taskId, tagId]) по текущей БД
 }
 
+/* ===== Read marks ===== */
 model ReadMark {
   threadId String
   userId   String
@@ -170,20 +198,30 @@ model ReadMark {
   @@index([userId])
 }
 
+/* ===== Файлы ===== */
 model Attachment {
-  id        String @id @default(uuid())
-  messageId String
-  name      String
-  mime      String
-  size      Int
-  data      Bytes
+  id        String  @id @default(uuid())
 
-  message Message @relation("MessageAttachments", fields: [messageId], references: [id], onDelete: Cascade)
+  // Привязка к сообщениям теперь опциональная
+  messageId String?
+  message   Message? @relation("MessageAttachments", fields: [messageId], references: [id], onDelete: Cascade)
+
+  // Метаданные
+  name         String               // текущее имя в системе хранения
+  originalName String?              // исходное имя файла
+  mime         String
+  size         Int
+  data         Bytes
+  sha256       String?  @db.VarChar(64)
+  createdAt    DateTime @default(now())
+
+  // связи со сдачами
+  submissionLinks SubmissionAttachment[]
 
   @@index([messageId])
 }
 
-// нормализованные предметы и их состав
+/* ===== Нормализованные предметы ===== */
 model Subject {
   id      String          @id @default(uuid())
   name    String          @unique
@@ -200,10 +238,11 @@ model SubjectMember {
   @@unique([userId, subjectId])
 }
 
+/* ===== Заметки ===== */
 model Note {
   id        String   @id @default(uuid())
   userId    String
-  at        DateTime // сохраняем в UTC, группируем по локали на уровне UI
+  at        DateTime
   allDay    Boolean  @default(true)
   title     String?
   text      String
@@ -214,4 +253,27 @@ model Note {
 
   @@index([userId, at])
   @@index([at])
+}
+
+/* ===== Новые сущности review-flow ===== */
+model Submission {
+  id             String   @id @default(uuid())
+  taskAssigneeId String
+  comment        String?
+  createdAt      DateTime @default(now())
+
+  assignee    TaskAssignee         @relation(fields: [taskAssigneeId], references: [id], onDelete: Cascade)
+  attachments SubmissionAttachment[]
+  @@index([taskAssigneeId])
+}
+
+model SubmissionAttachment {
+  submissionId String
+  attachmentId String
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  attachment Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@id([submissionId, attachmentId])
+  @@index([attachmentId])
 }

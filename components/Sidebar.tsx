@@ -105,7 +105,7 @@ export default function Sidebar({
     setCollapsed(preferCollapsed);
   }, []);
 
-  // вместо класса — data-атрибут на #app-shell (работает с CSS‑модулем)
+  // вместо класса — data-атрибут на #app-shell (работает с CSS-модулем)
   useEffect(() => {
     const shell = document.getElementById('app-shell');
     if (!shell) return;
@@ -137,6 +137,23 @@ export default function Sidebar({
     };
   }, []);
 
+  // ── НОВОЕ: счётчик для страницы проверки назначенных задач ─────────
+  const [reviewsUnread, setReviewsUnread] = useState(0);
+  useEffect(() => {
+    const onSet = (e: Event) => {
+      const d = (e as CustomEvent).detail;
+      if (typeof d === 'number') setReviewsUnread(d);
+    };
+    const onBump = () => setReviewsUnread(x => x + 1);
+    window.addEventListener('reviews:unread-set', onSet as any);
+    window.addEventListener('reviews:unread-bump', onBump as any);
+    return () => {
+      window.removeEventListener('reviews:unread-set', onSet as any);
+      window.removeEventListener('reviews:unread-bump', onBump as any);
+    };
+  }, []);
+  // ───────────────────────────────────────────────────────────────────
+
   const ArrowIcon = useMemo(() => (
     collapsed ? (
       <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
@@ -148,6 +165,10 @@ export default function Sidebar({
       </svg>
     )
   ), [collapsed]);
+
+  // ── НОВОЕ: кто видит плитку «Проверка задач» ───────────────────────
+  const canSeeReviewTile = authed && roleSlug !== 'teacher';
+  // ───────────────────────────────────────────────────────────────────
 
   return (
     <aside className={`wrap ${collapsed ? 'collapsed' : ''}`}>
@@ -197,6 +218,16 @@ export default function Sidebar({
               <Tile href="/calendar"    label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"    label="Расписание"  active={pathname === '/schedule'} />
               <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
+
+              {/* НОВОЕ: плитка "Проверка задач" — видна всем, кроме teacher */}
+              {canSeeReviewTile && (
+                <Tile
+                  href="/reviews"
+                  label="Проверка задач"
+                  active={pathname === '/reviews'}
+                  unread={pathname === '/reviews' ? 0 : reviewsUnread}
+                />
+              )}
             </div>
 
             {hasAdminBlock && (
@@ -251,18 +282,18 @@ export default function Sidebar({
         :global(.wrap a), :global(.wrap a *), .label { text-decoration:none !important; }
 
         .toggle {
-  position:absolute; top:50%; right:-16px; transform:translateY(-50%);
-  width:32px; height:32px; border-radius:9999px;
-  border:1px solid rgba(229,231,235,.9);
-  background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4));
-  backdrop-filter: saturate(180%) blur(10px);
-  -webkit-backdrop-filter: saturate(180%) blur(10px);
-  box-shadow: 0 8px 24px rgba(0,0,0,.08);
-  color:#0f172a; display:grid; place-items:center;
-  cursor:pointer;
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
-  z-index:1000;          /* ← увеличил, чтобы не перекрывалось контентом */
-}
+          position:absolute; top:50%; right:-16px; transform:translateY(-50%);
+          width:32px; height:32px; border-radius:9999px;
+          border:1px solid rgba(229,231,235,.9);
+          background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4));
+          backdrop-filter: saturate(180%) blur(10px);
+          -webkit-backdrop-filter: saturate(180%) blur(10px);
+          box-shadow: 0 8px 24px rgba(0,0,0,.08);
+          color:#0f172a; display:grid; place-items:center;
+          cursor:pointer;
+          transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+          z-index:1000;
+        }
 
         .toggle:hover {
           box-shadow: 0 10px 28px rgba(0,0,0,.10);

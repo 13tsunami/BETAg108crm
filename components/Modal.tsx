@@ -12,7 +12,6 @@ export default function Modal({
 
   return createPortal(
     <div
-      onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
         background: 'rgba(0,0,0,.44)',
@@ -21,7 +20,6 @@ export default function Modal({
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           width, maxWidth: '96vw',
           borderRadius: 18,

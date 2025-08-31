@@ -9,6 +9,7 @@ import {
   deleteTaskAction,
   markAssigneeDoneAction,
 } from './actions';
+import { submitForReviewAction } from './review-actions';
 import type { Prisma } from '@prisma/client';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -77,6 +78,7 @@ export default async function Page({
     );
   }
 
+  const reviewFlowOn = process.env.NEXT_PUBLIC_REVIEW_FLOW === '1';
   const activeTab = mayCreate ? (tabParam === 'byme' ? 'byme' : 'mine') : 'mine';
 
   // Данные для TaskForm
@@ -139,6 +141,12 @@ export default async function Page({
       : Promise.resolve([] as TaskWithAssignees[]),
   ]);
 
+  // helper: временная эвристика «требует проверки» по маркеру в тексте
+  const hasReviewMarker = (t: TaskWithAssignees) => {
+    const rx = /\[(review|проверка)\]/i;
+    return rx.test(t.title ?? '') || rx.test(t.description ?? '');
+  };
+
   return (
     <main style={{ padding: 16 }}>
       <div className="gridWrap">
@@ -154,11 +162,22 @@ export default async function Page({
                   groupMembers={groupMembers}
                   subjectMembers={subjectMembers}
                   createAction={createTaskAction}
+                  allowReviewControls={mayCreate}
                 />
               </Suspense>
             </section>
           ) : (
             <TeacherGuide />
+          )}
+
+          {/* Баннер перехода на страницу проверки — только для ролей выше teacher */}
+          {mayCreate && reviewFlowOn && (
+            <div className="card" style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 13, color: '#374151' }}>
+                Есть задачи на проверку? Откройте страницу проверки.
+              </div>
+              <a href="/reviews" className="btnGhost" style={{ textDecoration: 'none' }}>Перейти</a>
+            </div>
           )}
         </aside>
 
@@ -189,21 +208,21 @@ export default async function Page({
             )}
           </header>
 
-          {/* Вкладка: Назначенные мне — ПЕРЕВЁРСТАНО */}
+          {/* Вкладка: Назначенные мне — с макетом review-flow */}
           {activeTab === 'mine' && (
             <section aria-label="Назначенные мне" style={{ display: 'grid', gap: 8 }}>
               {assignedToMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет активных задач.</div>}
               {assignedToMe.map((t) => {
                 const myAssn = t.assignees.find((a) => a.userId === meId);
                 const urgent = (t.priority ?? 'normal') === 'high';
+                const requiresReview = reviewFlowOn && hasReviewMarker(t);
+
                 return (
                   <details key={t.id} className="taskCard">
                     <summary className="taskSummary">
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <span style={{ fontWeight: 600 }}>{t.title}</span>
-                        {urgent && (
-                          <span className="pillUrgent">Срочно</span>
-                        )}
+                        {urgent && <span className="pillUrgent">Срочно</span>}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#374151' }}>
                         <span>{fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
@@ -225,17 +244,32 @@ export default async function Page({
                         </div>
                       )}
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <form action={markAssigneeDoneAction}>
-                          <input type="hidden" name="taskId" value={t.id} />
-                          <button
-                            type="submit"
-                            className="btnPrimaryGreen"
-                            disabled={!myAssn || myAssn.status === 'done'}
-                          >
-                            Выполнить
-                          </button>
-                        </form>
-                       
+                        {requiresReview ? (
+                          <form action={submitForReviewAction}>
+                            <input type="hidden" name="taskId" value={t.id} />
+                            <button
+                              type="submit"
+                              className="btnGhost"
+                              // на макете блокируем только если уже done
+                              disabled={myAssn?.status === 'done'}
+                              title="Отправить на проверку (макет, без записи в БД)"
+                            >
+                              Отправить на проверку
+                            </button>
+                          </form>
+                        ) : (
+                          <form action={markAssigneeDoneAction}>
+                            <input type="hidden" name="taskId" value={t.id} />
+                            <button
+                              type="submit"
+                              className="btnPrimaryGreen"
+                              disabled={myAssn?.status === 'done'}
+                              title="Выполнить"
+                            >
+                              Выполнить
+                            </button>
+                          </form>
+                        )}
                       </div>
                     </div>
                   </details>
@@ -244,7 +278,7 @@ export default async function Page({
             </section>
           )}
 
-          {/* Вкладка: Назначенные мной (как было в предыдущей версии) */}
+          {/* Вкладка: Назначенные мной — без кнопок ревью (ревью на /reviews) */}
           {activeTab === 'byme' && mayCreate && (
             <section aria-label="Назначенные мной" style={{ display: 'grid', gap: 8 }}>
               {createdByMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Вы пока не создавали задач.</div>}
@@ -252,7 +286,6 @@ export default async function Page({
                 const urgent = (t.priority ?? 'normal') === 'high';
                 const total = t.assignees.length;
                 const done = t.assignees.filter(a => a.status === 'done').length;
-                const allDone = total > 0 && done === total;
 
                 const sorted = [...t.assignees].sort((a, b) => {
                   const av = a.status === 'done' ? 1 : 0;
@@ -277,7 +310,6 @@ export default async function Page({
                     </summary>
 
                     <div className="taskBody" style={{ display: 'grid', gap: 10 }}>
-                      {/* Кому назначено (сворачиваемый список) */}
                       <div style={{ fontSize: 13 }}>
                         <div style={{ color: '#6b7280', marginBottom: 4 }}>Кому назначено:</div>
 
@@ -371,7 +403,7 @@ export default async function Page({
                           style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, resize: 'vertical' }}
                         />
                         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                          <input type="checkbox" name="hidden" defaultChecked={t['hidden'] ?? false} /> не размещать в календаре
+                          <input type="checkbox" name="hidden" defaultChecked={(t as any)['hidden'] ?? false} /> не размещать в календаре
                         </label>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <button type="submit" className="btnPrimary">
@@ -389,14 +421,16 @@ export default async function Page({
                           </button>
                         </form>
                         {(() => {
-                          const total = t.assignees.length;
-                          const done = t.assignees.filter(a => a.status === 'done').length;
-                          const allDone = total > 0 && done === total;
+                          const totalAssignees = t.assignees.length;
+                          const doneAssignees = t.assignees.filter(a => a.status === 'done').length;
+                          const allDone = totalAssignees > 0 && doneAssignees === totalAssignees;
                           return allDone ? (
                             <form action={updateTaskAction} style={{ marginLeft: 'auto' }}>
                               <input type="hidden" name="taskId" value={t.id} />
                               <input type="hidden" name="archive" value="1" />
-                              
+                              <button type="submit" className="btnGhost" title="Перенести задачу в архив">
+                                В архив
+                              </button>
                             </form>
                           ) : null;
                         })()}
@@ -410,7 +444,6 @@ export default async function Page({
         </section>
       </div>
 
-      {/* обычный <style>, НЕ styled-jsx */}
       <style>{`
         .gridWrap {
           display: grid;

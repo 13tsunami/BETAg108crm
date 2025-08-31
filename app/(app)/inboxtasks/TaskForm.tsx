@@ -13,7 +13,7 @@ type SubjectMember = { subjectName: string; userId: string };
 
 const BRAND = '#8d2828';
 
-// Получаем «сегодня» в зоне Asia/Yekaterinburg (UTC+5) в формате YYYY-MM-DD
+// Екатеринбург, YYYY-MM-DD
 const todayYekbYMD = () => {
   const fmt = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Yekaterinburg', year: 'numeric', month: '2-digit', day: '2-digit' });
   const [{ value: day }, , { value: month }, , { value: year }] = fmt.formatToParts(new Date());
@@ -46,6 +46,7 @@ export default function TaskForm({
   groupMembers,
   subjectMembers,
   createAction,
+  allowReviewControls = true, // показывать ли тумблер и файлы
 }: {
   users: SimpleUser[];
   groups: SimpleGroup[];
@@ -53,20 +54,21 @@ export default function TaskForm({
   groupMembers: GroupMember[];
   subjectMembers: SubjectMember[];
   createAction: (fd: FormData) => Promise<void>;
+  allowReviewControls?: boolean;
 }) {
   const [title, setTitle] = useState('');
   const [description, setDesc] = useState('');
   const todayStr = useMemo(() => todayYekbYMD(), []);
   const [due, setDue] = useState(todayStr);
-  const [dueTime, setDueTime] = useState(''); // опциональное время
+  const [dueTime, setDueTime] = useState(''); // опц. время
   const [priority, setPriority] = useState<'normal'|'high'>('normal');
-  // const [noCalendar, setNoCalendar] = useState(false);
 
+  // блок файлов и тумблер review
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [reviewRequired, setReviewRequired] = useState(false);
 
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
-  // const todayStr = useMemo(() => todayYekbYMD(), []);
 
   useEffect(() => {
     const setR = new Set<string>();
@@ -110,7 +112,7 @@ export default function TaskForm({
     setAssignees((prev) => prev.filter((x) => !(x.type === a.type && x.id === a.id)));
   }
 
-  // развёртка выбранных в userId (через groupMembers / subjectMembers)
+  // развёртка выбранных в userId
   async function expandAssigneesToUserIds(): Promise<string[]> {
     const userIds = new Set<string>();
 
@@ -161,31 +163,37 @@ export default function TaskForm({
   async function onSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
 
-    // Валидация: дата не раньше текущего дня в зоне Asia/Yekaterinburg
+    // дата не раньше сегодняшнего дня по Екатеринбургу
     const today = todayYekbYMD();
     if (!due || due < today) { alert('Срок не может быть раньше сегодняшнего дня (Екатеринбург).'); return; }
 
     const assigneeUserIds = await expandAssigneesToUserIds();
 
-    // Формируем ISO в зоне Екатеринбурга (+05:00). Если время не указано — 23:59.
+    // ISO в зоне +05:00. Если время не указано — 23:59.
     const datePart = due;
     const timePart = (dueTime && /^\d{2}:\d{2}$/.test(dueTime)) ? dueTime : '23:59';
     const dueDate = new Date(`${datePart}T${timePart}:00+05:00`);
     const dueIso = dueDate.toISOString();
 
     const fd = new FormData();
+
     fd.set('title', title);
-    fd.set('description', description);
+    fd.set('description', description); // БЕЗ маркера [review]
     fd.set('due', dueIso);
     fd.set('priority', priority);
-  // fd.set('noCalendar', noCalendar ? '1' : '');
     fd.set('assigneeUserIdsJson', JSON.stringify(assigneeUserIds));
+
+    // главный флаг review — ЯВНО
+    fd.set('reviewRequired', reviewRequired ? 'true' : 'false');
+
+    // файлы пока не отправляем — макет UX
 
     await createAction(fd);
 
     try {
       setTitle(''); setDesc(''); setDue(''); setDueTime(''); setPriority('normal');
-      setAssignees([]); setQuery(''); setFound([]); setFiles([]); setPreviewTotal(0);
+      setAssignees([]); setQuery(''); setFound([]); setPreviewTotal(0);
+      setFiles([]); setReviewRequired(false);
     } catch {}
   }
 
@@ -217,7 +225,7 @@ export default function TaskForm({
         />
       </div>
 
-      {/* Срок, время (опц.) и приоритет */}
+      {/* Срок, время и приоритет */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
         <div>
           <label style={{ display:'block', marginBottom:4 }}>Срок</label>
@@ -241,7 +249,6 @@ export default function TaskForm({
         </div>
         <div>
           <label style={{ display:'block', marginBottom:4 }}>Приоритет</label>
-          {/* ТУТ НОВЫЙ TOGGLE, растягивается на 100% ширины ячейки */}
           <div style={{ width:'100%', maxWidth:'100%' }}>
             <button
               type="button"
@@ -319,7 +326,86 @@ export default function TaskForm({
         </div>
       </div>
 
-  {/* Календарь (удалено по запросу) */}
+      {/* Тумблер review и блок файлов — только для ролей, кому можно назначать */}
+      {allowReviewControls && (
+        <>
+          <div>
+            <label style={{ display:'block', marginBottom:6 }}>Требует проверки</label>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={reviewRequired}
+              onClick={() => setReviewRequired(v => !v)}
+              style={{
+                width:'100%',
+                height:36,
+                position:'relative',
+                borderRadius:999,
+                border:`1px solid ${reviewRequired ? BRAND+'66' : '#e5e7eb'}`,
+                background: reviewRequired ? `${BRAND}1a` : '#f3f4f6',
+                padding:4,
+                display:'flex',
+                alignItems:'center',
+                justifyContent: reviewRequired ? 'flex-end' : 'flex-start',
+                cursor:'pointer'
+              }}
+              title={reviewRequired ? 'проверяемая' : 'обычная'}
+            >
+              <span
+                style={{
+                  position:'absolute',
+                  left:0, right:0,
+                  textAlign:'center',
+                  fontWeight:700,
+                  color: reviewRequired ? BRAND : '#111827',
+                  fontSize:13,
+                  pointerEvents:'none'
+                }}
+              >
+                {reviewRequired ? 'нужна проверка' : 'без проверки'}
+              </span>
+              <span aria-hidden style={{ width:28, height:28, borderRadius:'50%', background: reviewRequired ? BRAND : '#e5e7eb' }} />
+            </button>
+          </div>
+
+          {reviewRequired && (
+            <div>
+              <label style={{ display:'block', marginBottom:6 }}>Файлы для сдачи работы (опционально)</label>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
+                {files.map((f, idx) => (
+                  <span key={idx} style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid #e5e7eb', borderRadius:999, padding:'2px 8px', fontSize:12, background:'#fff' }}>
+                    {f.name}
+                    <button type="button" onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))} style={{ border:0, background:'transparent', cursor:'pointer', color:'#6b7280' }} aria-label="Удалить">×</button>
+                  </span>
+                ))}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={(e) => {
+                  const list = Array.from(e.target.files ?? []);
+                  if (!list.length) return;
+                  setFiles(prev => [...prev, ...list].slice(0, 12));
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                style={{ display:'none' }}
+              />
+              <button
+                type="button"
+                className="btnGhost"
+                onClick={() => fileInputRef.current?.click()}
+                style={{ height:36, padding:'0 14px', borderRadius:10, border:'1px solid #e5e7eb', background:'#fff', color:'#111827', cursor:'pointer' }}
+              >
+                Выбрать файлы
+              </button>
+              <div style={{ marginTop:6, fontSize:12, color:'#6b7280' }}>
+                На этом этапе файлы не загружаются. Это макет, чтобы утвердить UX.
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <div style={{ display:'flex', gap:8 }}>
         <button type="submit"

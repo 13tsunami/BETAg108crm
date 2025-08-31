@@ -1,12 +1,18 @@
 # Аудит репозитория (Next.js 15 + Prisma)
 
-Генерация: 2025-08-30T18:12:05.657Z
+Генерация: 2025-08-31T15:20:26.902Z
 
 ## Краткое дерево проекта
 ```
+.docker/
+  postgres
+  postgres/certs
+  postgres/pg_hba.conf
+  postgres/postgresql.conf
 .dockerignore/
 .env/
 .env.example/
+.env.local/
 .github/
   workflows
   workflows/deploy.yml
@@ -20,6 +26,7 @@ app/
   (app)/groups/page.tsx
   (app)/inboxtasks/page.tsx
   (app)/layout.tsx
+  (app)/reviews/page.tsx
   (app)/schedule/page.tsx
   (app)/settings/page.tsx
   (app)/teachers/page.tsx
@@ -34,6 +41,7 @@ app/
     (app)/groups/page.tsx
     (app)/inboxtasks/page.tsx
     (app)/layout.tsx
+    (app)/reviews/page.tsx
     (app)/schedule/page.tsx
     (app)/settings/page.tsx
     (app)/teachers/page.tsx
@@ -82,28 +90,16 @@ next.config.ts/
 package-lock.json/
 package.json/
 prisma/
-  dev.db
   migrations
-  migrations/000_init
-  migrations/2025-08-16_taskassignee_unique
-  migrations/20250814151727_init
-  migrations/20250816_002949_add_readmark_and_attachment
-  migrations/20250816_003914_add_readmark_and_attachment_take2
-  migrations/20250816_004527_require_thread_participants
-  migrations/20250816_182139_cascade_user_delete_fix
-  migrations/20250816_add_subjects
-  migrations/20250817_010445_sync_to_prisma
-  migrations/20250817_010821_sync_to_prisma
-  migrations/20250817_task_audit_and_status
-  migrations/20250820_000758_sync_to_prisma
-  migrations/20250820_001756_sync_to_prisma
-  migrations/init_baseline_20250811_225344
+  migrations/20250830203849_init
   migrations/migration_lock.toml
   schema.prisma
   seed.cjs
 project-snapshot/
   index.json
   tree.md
+public/
+  .gitkeep
 scripts/
   fix-admin.cjs
   list-endpoints.mjs
@@ -113,6 +109,7 @@ styles/
 tools/
   _audit-probe.txt
   audit-repo.cjs
+  audit-report.md
   snapshot.js
 tsconfig.json/
 tsconfig.tsbuildinfo/
@@ -124,6 +121,8 @@ tsconfig.tsbuildinfo/
 - app/(app)/groups/page.tsx — searchParams: MISMATCH, await MISSING
 - app/(app)/inboxtasks/archive/page.tsx — searchParams: OK, await MISSING
 - app/(app)/inboxtasks/page.tsx — searchParams: OK, await MISSING
+- app/(app)/reviews/[taskId]/page.tsx — searchParams: OK, await MISSING
+- app/(app)/reviews/page.tsx — searchParams: OK, await MISSING
 - app/(app)/schedule/page.tsx — searchParams: MISMATCH, await MISSING
 - app/(app)/settings/page.tsx — searchParams: MISMATCH, await MISSING
 - app/(app)/teachers/page.tsx — searchParams: MISMATCH, await MISSING
@@ -136,6 +135,7 @@ tsconfig.tsbuildinfo/
 - app/(app)/groups/actions.ts — use server; экспорт: createGroup: Promise<void>, renameGroup: Promise<void>, deleteGroup: Promise<void>, addUsersToGroup: Promise<void>, removeUserFromGroup: Promise<void>, fetchGroupMembers: Promise<void>, renameSubject: Promise<void>, deleteSubject: Promise<void>, addUsersToSubject: Promise<void>, removeUserFromSubject: Promise<void>, createSubject: ?, fetchSubjectMembers: ?
 - app/(app)/heartbeat/actions.ts — use server; экспорт: heartbeat: Promise<void>
 - app/(app)/inboxtasks/actions.ts — use server; экспорт: createTaskAction: Promise<void>, updateTaskAction: Promise<void>, deleteTaskAction: Promise<void>, markAssigneeDoneAction: Promise<void>, unarchiveAssigneeAction: Promise<void>
+- app/(app)/inboxtasks/review-actions.ts — use server; экспорт: submitForReviewAction: Promise<void>, approveSubmissionAction: Promise<void>, rejectSubmissionAction: Promise<void>
 - app/(app)/settings/actions.ts — use server; экспорт: updateSelfAction: Promise<void>
 - app/(app)/teachers/actions.ts — use server; экспорт: createUser: Promise<void>, updateUser: Promise<void>, deleteUser: Promise<void>
 - app/admin/db-status/actions.ts — use server; экспорт: upsertUser: Promise<void>, forceResetPassword: Promise<void>, deleteUser: Promise<void>
