@@ -47,8 +47,8 @@ model User {
 
   notes Note[]
 
-  // обратная связь для ревьюера задач
   reviewedAssignments TaskAssignee[] @relation("TaskReviewedBy")
+  reviewedSubmissions Submission[]   @relation("SubmissionReviewedBy")
 }
 
 model Group {
@@ -123,13 +123,11 @@ model Task {
   hidden      Boolean  @default(false)
   priority    String   @default("normal")
 
-  // audit
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now()) @updatedAt
   createdById   String?
   createdByName String?
 
-  // новый флаг для review-flow
   reviewRequired Boolean @default(false)
 
   createdBy User? @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -148,18 +146,15 @@ model TaskAssignee {
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // было String, теперь enum. миграция переведёт значения безопасно.
   status        TaskAssigneeStatus @default(in_progress)
   assignedAt    DateTime  @default(now())
   completedAt   DateTime?
 
-  // новые поля для review-flow
   submittedAt   DateTime?
   reviewedAt    DateTime?
   reviewedById  String?
   reviewedBy    User?     @relation("TaskReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
 
-  // связь с попытками сдачи
   submissions   Submission[]
 
   @@unique([taskId, userId])
@@ -181,8 +176,6 @@ model TaskTag {
   tagId  String
   task   Task   @relation(fields: [taskId], references: [id])
   tag    Tag    @relation(fields: [tagId], references: [id])
-
-  // без каскадов и без @@unique([taskId, tagId]) по текущей БД
 }
 
 /* ===== Read marks ===== */
@@ -200,22 +193,18 @@ model ReadMark {
 
 /* ===== Файлы ===== */
 model Attachment {
-  id        String  @id @default(uuid())
-
-  // Привязка к сообщениям теперь опциональная
+  id        String   @id @default(uuid())
   messageId String?
   message   Message? @relation("MessageAttachments", fields: [messageId], references: [id], onDelete: Cascade)
 
-  // Метаданные
-  name         String               // текущее имя в системе хранения
-  originalName String?              // исходное имя файла
+  name         String
+  originalName String?
   mime         String
   size         Int
-  data         Bytes
-  sha256       String?  @db.VarChar(64)
+  data         Bytes? // опциональное
+  sha256       String? @db.VarChar(64)
   createdAt    DateTime @default(now())
 
-  // связи со сдачами
   submissionLinks SubmissionAttachment[]
 
   @@index([messageId])
@@ -262,9 +251,18 @@ model Submission {
   comment        String?
   createdAt      DateTime @default(now())
 
-  assignee    TaskAssignee         @relation(fields: [taskAssigneeId], references: [id], onDelete: Cascade)
+  open            Boolean  @default(true)
+  reviewedAt      DateTime?
+  reviewedById    String?
+  reviewerComment String?
+
+  reviewedBy User? @relation("SubmissionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  assignee   TaskAssignee @relation(fields: [taskAssigneeId], references: [id], onDelete: Cascade)
   attachments SubmissionAttachment[]
+
   @@index([taskAssigneeId])
+  @@index([reviewedById])
+  @@index([taskAssigneeId, open])
 }
 
 model SubmissionAttachment {
