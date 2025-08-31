@@ -24,8 +24,8 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
   const [noteId, setNoteId] = useState<string | null>(null);
   const [newNote, setNewNote] = useState<{ atISO: string; allDay: boolean } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [allDay, setAllDay] = useState<boolean>(true);
   const [editNoteMode, setEditNoteMode] = useState<boolean>(false);
+  const [dayFilter, setDayFilter] = useState<'all' | 'tasks' | 'notes'>('all');
 
   const mapById = useMemo(() => {
     const m = new Map<string, Task>();
@@ -71,7 +71,12 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
     };
     const onOpenDay = (e: Event) => {
       const iso = (e as CustomEvent).detail?.ymd as string | undefined;
-      if (iso) { setDayIso(iso); setTaskId(null); setNoteId(null); setNewNote(null); setExpanded(new Set()); setEditNoteMode(false); }
+      if (iso) {
+        setDayIso(iso);
+        setTaskId(null); setNoteId(null); setNewNote(null);
+        setExpanded(new Set()); setEditNoteMode(false);
+        setDayFilter('all');
+      }
     };
     const onOpenNote = (e: Event) => {
       const id = (e as CustomEvent).detail?.noteId as string | undefined;
@@ -83,7 +88,6 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
       const atISO = detail?.atISO ?? new Date().toISOString();
       const alld = detail?.allDay ?? true;
       setNewNote({ atISO, allDay: alld });
-      setAllDay(alld);
       setTaskId(null); setDayIso(null); setNoteId(null); setExpanded(new Set()); setEditNoteMode(false);
     };
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAll(); };
@@ -92,7 +96,6 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
     window.addEventListener('calendar:open-day', onOpenDay as any);
     window.addEventListener('calendar:open-note', onOpenNote as any);
     window.addEventListener('calendar:open-new-note', onOpenNewNote as any);
-    // обратная совместимость
     window.addEventListener('open-task', onOpenTask as any);
     window.addEventListener('open-day', onOpenDay as any);
     window.addEventListener('open-note', onOpenNote as any);
@@ -117,17 +120,20 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
   const dayNotes = dayIso ? (notesByDay.get(dayIso) ?? []) : [];
   const note = noteId ? notes.find(n => n.id === noteId) ?? null : null;
 
+  const filteredDayTasks = dayFilter === 'all' || dayFilter === 'tasks' ? dayTasks : [];
+  const filteredDayNotes = dayFilter === 'all' || dayFilter === 'notes' ? dayNotes : [];
+
   if (typeof document === 'undefined') return null;
 
   return createPortal(
     <>
-      {/* ==== TASK MODAL ==== */}
+      {/* ==== TASK MODAL (glass-стиль) ==== */}
       {task && (
         <div role="dialog" aria-modal className="cal-modal__backdrop" onClick={() => setTaskId(null)}>
-          <div className="cal-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="cal-modal glass" onClick={(e) => e.stopPropagation()}>
             <header className="cal-modal__header">
               <div className="cal-modal__title">
-                <strong>{task.title}</strong>
+                <strong className="wb">{task.title}</strong>
                 {(task.priority ?? 'normal') === 'high' ? <span className="badge badge--urgent">Срочно</span> : null}
               </div>
               <button className="cal-close" onClick={() => setTaskId(null)} aria-label="Закрыть">×</button>
@@ -139,7 +145,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
             </div>
 
             {task.description ? (
-              <div className="cal-modal__desc">{task.description}</div>
+              <div className="cal-modal__desc scrollbox wb">{task.description}</div>
             ) : (
               <div className="cal-modal__desc cal-modal__desc--empty">Без описания</div>
             )}
@@ -160,29 +166,37 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         <div role="dialog" aria-modal className="cal-modal__backdrop" onClick={() => setDayIso(null)}>
           <div className="cal-modal" onClick={(e) => e.stopPropagation()}>
             <header className="cal-modal__header">
-              <div className="cal-modal__title"><strong>Задачи и заметки за {fmtRu(dayIso)}</strong></div>
+              <div className="cal-modal__title"><strong>За {fmtRu(dayIso)}</strong></div>
               <button className="cal-close" onClick={() => setDayIso(null)} aria-label="Закрыть">×</button>
             </header>
 
-            {dayTasks.length === 0 && dayNotes.length === 0 ? (
+            {/* Фильтр */}
+            <div className="day-filter" role="tablist" aria-label="Фильтр содержимого дня">
+              <button role="tab" aria-selected={dayFilter === 'all'}   className={tabCls(dayFilter === 'all')}   onClick={() => setDayFilter('all')}>Все</button>
+              <button role="tab" aria-selected={dayFilter === 'tasks'} className={tabCls(dayFilter === 'tasks')} onClick={() => setDayFilter('tasks')}>Задачи</button>
+              <button role="tab" aria-selected={dayFilter === 'notes'} className={tabCls(dayFilter === 'notes')} onClick={() => setDayFilter('notes')}>Заметки</button>
+            </div>
+
+            {filteredDayTasks.length === 0 && filteredDayNotes.length === 0 ? (
               <div className="muted">Пусто</div>
             ) : (
               <div className="day-list">
-                {[...dayTasks].sort(sortTasks).map(t => {
+                {/* задачи */}
+                {[...filteredDayTasks].sort(sortTasks).map(t => {
                   const urgent = (t.priority ?? 'normal') === 'high';
                   const isExp = expanded.has(`t:${t.id}`);
                   return (
                     <div key={t.id} className={`day-item day-item--task ${urgent ? 'day-item--urgent' : ''}`}>
                       <button
-                        className="day-item__main"
+                        className="day-item__main day-item__main--compact"
                         onClick={() => { setDayIso(null); setTaskId(t.id); }}
                         title={t.description || ''}
                       >
-                        <div className="day-item__title">
+                        <div className="day-item__title wb clamp1">
                           {t.title}
                           {urgent ? <span className="badge badge--urgent">Срочно</span> : null}
                         </div>
-                        <div className="day-item__kicker"><span>Моя задача</span>{t.createdByName ? <span>· {t.createdByName}</span> : null}</div>
+                        {t.createdByName ? <div className="day-item__kicker wb clamp1">Назначил(а): {t.createdByName}</div> : null}
                       </button>
 
                       <button
@@ -203,7 +217,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                       {isExp && (
                         <div className="day-item__details">
                           <div className="day-item__meta"><span>Дедлайн: {fmtRu(t.dueDate)}</span></div>
-                          {t.description && <div className="day-item__desc">{truncate(t.description, 200)}</div>}
+                          {t.description && <div className="day-item__desc scrollbox-inner wb">{t.description}</div>}
                           <div style={{ display:'flex', gap:8, marginTop:6 }}>
                             <form action={markMyTaskDoneAction}>
                               <input type="hidden" name="taskId" value={t.id} />
@@ -216,17 +230,18 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                   );
                 })}
 
-                {dayNotes.map(n => {
+                {/* заметки */}
+                {filteredDayNotes.map(n => {
                   const isExp = expanded.has(`n:${n.id}`);
                   return (
                     <div key={n.id} className="day-item day-item--note">
                       <button
-                        className="day-item__main"
+                        className="day-item__main day-item__main--compact"
                         onClick={() => { setDayIso(null); setEditNoteMode(false); setNoteId(n.id); }}
                         title={n.text || ''}
                       >
-                        <div className="day-item__title">{n.title ?? 'Заметка'}</div>
-                        {n.text ? <div className="day-item__kicker">{truncate(n.text, 120)}</div> : null}
+                        <div className="day-item__title wb clamp1">{n.title ?? 'Заметка'}</div>
+                        {n.text ? <div className="day-item__kicker wb clamp1">{truncate(n.text, 140)}</div> : null}
                       </button>
 
                       <button
@@ -250,7 +265,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                             <span>{n.allDay ? 'Весь день' : 'Время'}</span>
                             <span>· {fmtRu(n.at)}</span>
                           </div>
-                          {n.text && <div className="day-item__desc">{n.text}</div>}
+                          {n.text && <div className="day-item__desc scrollbox-inner wb">{n.text}</div>}
                           <div style={{ display:'flex', gap:8, marginTop:6 }}>
                             <button
                               type="button"
@@ -281,7 +296,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         <div role="dialog" aria-modal className="cal-modal__backdrop" onClick={() => setNoteId(null)}>
           <div className="cal-modal glass" onClick={(e) => e.stopPropagation()}>
             <header className="cal-modal__header">
-              <div className="cal-modal__title"><strong>{editNoteMode ? 'Редактировать заметку' : (note.title ?? 'Заметка')}</strong></div>
+              <div className="cal-modal__title"><strong className="wb">{editNoteMode ? 'Редактировать заметку' : (note.title ?? 'Заметка')}</strong></div>
               <button className="cal-close" onClick={() => setNoteId(null)} aria-label="Закрыть">×</button>
             </header>
 
@@ -290,7 +305,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                 <div className="cal-modal__meta">
                   <span>{note.allDay ? 'Весь день' : 'Время'} · {fmtRu(note.at)}</span>
                 </div>
-                {note.text ? <div className="cal-modal__desc">{note.text}</div> : <div className="cal-modal__desc cal-modal__desc--empty">Без текста</div>}
+                {note.text ? <div className="cal-modal__desc scrollbox wb">{note.text}</div> : <div className="cal-modal__desc cal-modal__desc--empty">Без текста</div>}
                 <div style={{ display:'flex', gap:8 }}>
                   <button type="button" className="btn btn--primary" onClick={() => setEditNoteMode(true)}>Редактировать</button>
                   <form action={deleteNoteAction}>
@@ -301,13 +316,19 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                 </div>
               </>
             ) : (
-              <NoteEditForm
-                noteId={note.id}
-                atISO={note.at}
-                allDayInit={note.allDay}
-                titleInit={note.title ?? ''}
-                textInit={note.text}
+              <NoteForm
+                mode="edit"
+                submitLabel="Сохранить"
+                action={updateNoteAction}
+                defaults={{
+                  noteId: note.id,
+                  dateISO: note.at,
+                  allDay: note.allDay,
+                  title: note.title ?? '',
+                  text: note.text ?? '',
+                }}
                 onCancel={() => setEditNoteMode(false)}
+                extraRightAction={{ action: deleteNoteAction, name: 'noteId', value: note.id, label: 'Удалить' }}
               />
             )}
           </div>
@@ -319,57 +340,27 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         <div role="dialog" aria-modal className="cal-modal__backdrop" onClick={() => setNewNote(null)}>
           <div className="cal-modal glass" onClick={(e) => e.stopPropagation()}>
             <header className="cal-modal__header">
-              <div className="cal-modal__title">
-                <strong>Новая заметка</strong>
-              </div>
+              <div className="cal-modal__title"><strong>Новая заметка</strong></div>
               <button className="cal-close" onClick={() => setNewNote(null)} aria-label="Закрыть">×</button>
             </header>
 
-            <form action={createNoteAction} className="form-root">
-              <div className="form-grid-2">
-                <label className="label">
-                  <span className="label__text">Дата</span>
-                  <input name="date" type="date" defaultValue={ymd(new Date(newNote.atISO))} required className="input" />
-                </label>
-
-                <div className="label">
-                  <span className="label__text">Время</span>
-                  <div className="time-row">
-                    <input name="time" type="time" disabled={allDay} placeholder="чч:мм" className="input" />
-                    <label className="label-inline">
-                      <input
-                        name="allDay"
-                        type="checkbox"
-                        defaultChecked={newNote.allDay}
-                        onChange={(e) => setAllDay(e.currentTarget.checked)}
-                        className="checkbox"
-                      />
-                      Весь день
-                    </label>
-                  </div>
-                </div>
-
-                <label className="label span-2">
-                  <span className="label__text">Заголовок</span>
-                  <input name="title" type="text" placeholder="необязательно" className="input" />
-                </label>
-
-                <label className="label span-2">
-                  <span className="label__text">Текст</span>
-                  <textarea name="text" rows={8} placeholder="Текст заметки..." className="textarea" />
-                </label>
-              </div>
-
-              <div className="actions">
-                <button type="submit" className="btn btn--primary">Сохранить</button>
-                <button type="button" className="btn btn--ghost" onClick={() => setNewNote(null)}>Отмена</button>
-              </div>
-            </form>
+            <NoteForm
+              mode="create"
+              submitLabel="Сохранить"
+              action={createNoteAction}
+              defaults={{
+                dateISO: newNote.atISO,
+                allDay: newNote.allDay,
+                title: '',
+                text: '',
+              }}
+              onCancel={() => setNewNote(null)}
+            />
           </div>
         </div>
       )}
 
-      {/* ===== СТИЛИ ===== */}
+      {/* ===== СТИЛИ (scoped) ===== */}
       <style jsx>{`
         .cal-modal__backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.32); display: grid; place-items: center; z-index: 1000; padding: 12px; }
         .cal-modal { width: min(880px, 96vw); max-width: 96vw; max-height: 92svh; overflow: auto; background:#fff; border:1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.18); padding: 12px; }
@@ -384,55 +375,47 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         .badge--urgent { color:#fff; background:#8d2828; }
 
         .cal-modal__meta { display:flex; gap:12px; font-size:12px; color:#374151; margin:6px 0 10px; flex-wrap:wrap; }
-        .cal-modal__desc { white-space:pre-wrap; background:#fafafa; border:1px solid #f3f4f6; border-radius:8px; padding:10px; margin-bottom:10px; }
+
+        .wb { word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .clamp1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .scrollbox       { max-height: 60vh; overflow: auto; padding: 10px; background:#fafafa; border:1px solid #f3f4f6; border-radius: 8px; }
+        .scrollbox-inner { max-height: 50vh; overflow: auto; padding: 10px; background: rgba(255,255,255,.65); border:1px solid rgba(0,0,0,.06); border-radius: 8px; }
+
+        .cal-modal__desc { margin-bottom:10px; }
         .cal-modal__desc--empty { color:#6b7280; font-style:italic; }
-
         .muted { color:#6b7280; font-size:12px; }
-        .day-list { display:grid; gap:8px; }
 
+        /* компактные карточки в модалке дня */
+        .day-list { display:grid; gap:8px; }
         .day-item { display: grid; grid-template-columns: 1fr auto; align-items: stretch; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff; overflow: hidden; transition: box-shadow .16s ease, border-color .16s ease, background .16s ease, transform .16s ease; }
         .day-item:hover { border-color: rgba(141,40,40,.35); box-shadow: 0 6px 16px rgba(0,0,0,.08); background: linear-gradient(180deg, rgba(141,40,40,.06), rgba(141,40,40,.02)), #fff; transform: translateY(-1px); }
         .day-item--task { background: #FEF9E7; border-color: #F59E0B; }
         .day-item--urgent { border-left: 3px solid #8d2828; }
         .day-item--note  { background: #F0F7FF; border-color: #60a5fa; }
+
         .day-item__main { text-align: left; padding: 8px 10px; background: transparent; border: 0; cursor: pointer; min-width: 0; }
-        .day-item__title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:2px; word-break: break-word; }
+        .day-item__main--compact { padding: 6px 8px; }
+        .day-item__title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:2px; }
         .day-item__kicker { font-size:12px; color:#374151; opacity:.9; }
         .day-item__disclosure { width: 40px; padding: 0 8px; border: 0; cursor: pointer; background: transparent; border-left: 1px solid rgba(0,0,0,.06); font-size: 14px; }
         .day-item__details { grid-column: 1 / -1; display: grid; gap: 6px; padding: 8px 10px 10px; background: rgba(255,255,255,.65); border-top: 1px solid rgba(0,0,0,.06); }
         .note-details { background: rgba(219,234,254,.45); }
         .day-item__meta { font-size:12px; color:#374151; display:flex; gap:8px; flex-wrap:wrap; }
-        .day-item__desc { font-size:12px; color:#111827; line-height:1.45; white-space: pre-wrap; }
+        .day-item__desc { font-size:12px; color:#111827; line-height:1.45; }
 
-        /* === Единый стиль форм/инпутов для календаря === */
+        /* локальные классы формы (на всякий случай) */
         .form-root { display: grid; gap: 10px; }
         .form-grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
         .span-2 { grid-column: 1 / -1; }
-
         .label { display:grid; gap:6px; font-size:12px; color:#374151; }
         .label__text { font-weight: 600; color:#111827; }
         .label-inline { display:flex; gap:8px; align-items:center; font-size:12px; color:#374151; }
-
-        .input, .textarea {
-          width: 100%;
-          padding: 8px 10px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          background: #fff;
-          color: #111827;
-          font-size: 13px;
-          outline: none;
-          transition: border-color .12s ease, box-shadow .12s ease;
-        }
+        .input, .textarea { width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #111827; font-size: 13px; outline: none; transition: border-color .12s ease, box-shadow .12s ease; }
         .textarea { resize: vertical; min-height: 140px; }
-        .input:focus, .textarea:focus {
-          border-color: #8d2828;
-          box-shadow: 0 0 0 3px rgba(141,40,40,.12);
-        }
+        .input:focus, .textarea:focus { border-color: #8d2828; box-shadow: 0 0 0 3px rgba(141,40,40,.12); }
         .input:disabled { background:#f3f4f6; color:#6b7280; cursor:not-allowed; }
-
         .time-row { display:flex; gap:10px; align-items:center; }
-
         .checkbox { width: 16px; height: 16px; accent-color: #8d2828; }
 
         .btn { height: 32px; padding: 0 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
@@ -440,10 +423,14 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         .btn--ghost { border: 1px solid #e5e7eb; background: #fff; color: #111827; }
         .btn--danger { border: 1px solid #ef4444; background: #ef4444; color: #fff; }
 
+        .day-filter { display:flex; gap:6px; margin: 4px 0 10px; }
+        .tab { height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid #e5e7eb; background:#fff; font-size:12px; cursor:pointer; }
+        .tab--active { background:#111827; border-color:#111827; color:#fff; }
+
         .actions { display:flex; gap:8px; margin-top: 4px; }
       `}</style>
 
-      {/* Глобальные стили — чтобы NoteEditForm (дочерний компонент) получил тот же визуал */}
+      {/* ===== ГЛОБАЛЬНЫЕ стили для NoteForm (чтобы работали внутри дочернего компонента) ===== */}
       <style jsx global>{`
         .cal-modal .form-root { display: grid; gap: 10px; }
         .cal-modal .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -471,17 +458,16 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
           border-color: #8d2828;
           box-shadow: 0 0 0 3px rgba(141,40,40,.12);
         }
-        .cal-modal .input:disabled { background: #f3f4f6; color: #6b7280; cursor: not-allowed; }
+        .cal-modal .input:disabled { background:#f3f4f6; color:#6b7280; cursor:not-allowed; }
 
         .cal-modal .time-row { display: flex; gap: 10px; align-items: center; }
         .cal-modal .checkbox { width: 16px; height: 16px; accent-color: #8d2828; }
 
-        .cal-modal .actions { display: flex; gap: 8px; margin-top: 4px; }
-
+        .cal-modal .actions { display:flex; gap:8px; margin-top:4px; }
         .cal-modal .btn { height: 32px; padding: 0 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
-        .cal-modal .btn--primary { border: 1px solid #111827; background: #111827; color: #fff; }
-        .cal-modal .btn--ghost { border: 1px solid #e5e7eb; background: #fff; color: #111827; }
-        .cal-modal .btn--danger { border: 1px solid #ef4444; background: #ef4444; color: #fff; }
+        .cal-modal .btn--primary { border:1px solid #111827; background:#111827; color:#fff; }
+        .cal-modal .btn--ghost { border:1px solid #e5e7eb; background:#fff; color:#111827; }
+        .cal-modal .btn--danger { border:1px solid #ef4444; background:#ef4444; color:#fff; }
       `}</style>
     </>,
     document.body
@@ -494,6 +480,11 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
     setNewNote(null);
     setExpanded(new Set());
     setEditNoteMode(false);
+    setDayFilter('all');
+  }
+
+  function tabCls(active: boolean) {
+    return `tab ${active ? 'tab--active' : ''}`;
   }
 }
 
@@ -511,40 +502,42 @@ function sortTasks(a: Task, b: Task) {
   return (a.title || '').localeCompare(b.title || '', 'ru');
 }
 
-/** ==== Форма редактирования заметки (как у "Новая заметка", без вложенных форм) ==== */
-function NoteEditForm(props: {
-  noteId: string;
-  atISO: string;
-  allDayInit: boolean;
-  titleInit: string;
-  textInit: string;
+/** ==== Универсальная форма заметки (без вложенных form) ==== */
+function NoteForm(props: {
+  mode: 'create' | 'edit';
+  submitLabel: string;
+  action: (formData: FormData) => Promise<void>;
+  defaults: {
+    noteId?: string;
+    dateISO: string;
+    allDay: boolean;
+    title: string;
+    text: string;
+  };
   onCancel: () => void;
+  extraRightAction?: { action: (formData: FormData) => Promise<void>, name: string, value: string, label: string };
 }) {
-  const at = new Date(props.atISO);
+  const at = new Date(props.defaults.dateISO);
   const y = at.getFullYear();
   const m = String(at.getMonth() + 1).padStart(2, '0');
   const d = String(at.getDate()).padStart(2, '0');
   const hh = String(at.getHours()).padStart(2, '0');
   const mm = String(at.getMinutes()).padStart(2, '0');
 
-  const [allDay, setAllDay] = useState<boolean>(props.allDayInit);
-  const formId = `note-edit-${props.noteId}`;
+  const [allDay, setAllDay] = useState<boolean>(props.defaults.allDay);
+  const formId = `note-form-${props.mode}-${props.defaults.noteId ?? 'new'}`;
 
   return (
     <>
-      <form id={formId} action={updateNoteAction} className="form-root">
-        <input type="hidden" name="noteId" value={props.noteId} />
+      <form id={formId} action={props.action} className="form-root">
+        {props.mode === 'edit' && (
+          <input type="hidden" name="noteId" value={props.defaults.noteId} />
+        )}
 
         <div className="form-grid-2">
           <label className="label">
             <span className="label__text">Дата</span>
-            <input
-              name="date"
-              type="date"
-              defaultValue={`${y}-${m}-${d}`}
-              required
-              className="input"
-            />
+            <input name="date" type="date" defaultValue={`${y}-${m}-${d}`} required className="input" />
           </label>
 
           <div className="label">
@@ -555,14 +548,14 @@ function NoteEditForm(props: {
                 type="time"
                 className="input"
                 disabled={allDay}
-                defaultValue={props.allDayInit ? '' : `${hh}:${mm}`}
+                defaultValue={props.defaults.allDay ? '' : `${hh}:${mm}`}
                 placeholder="чч:мм"
               />
               <label className="label-inline">
                 <input
                   name="allDay"
                   type="checkbox"
-                  defaultChecked={props.allDayInit}
+                  defaultChecked={props.defaults.allDay}
                   onChange={(e) => setAllDay(e.currentTarget.checked)}
                   className="checkbox"
                 />
@@ -576,7 +569,7 @@ function NoteEditForm(props: {
             <input
               name="title"
               type="text"
-              defaultValue={props.titleInit}
+              defaultValue={props.defaults.title}
               placeholder="необязательно"
               className="input"
             />
@@ -587,7 +580,7 @@ function NoteEditForm(props: {
             <textarea
               name="text"
               rows={8}
-              defaultValue={props.textInit}
+              defaultValue={props.defaults.text}
               placeholder="Текст заметки..."
               className="textarea"
             />
@@ -596,12 +589,15 @@ function NoteEditForm(props: {
       </form>
 
       <div className="actions">
-        <button form={formId} type="submit" className="btn btn--primary">Сохранить</button>
+        <button form={formId} type="submit" className="btn btn--primary">{props.submitLabel}</button>
         <button type="button" className="btn btn--ghost" onClick={props.onCancel}>Отмена</button>
-        <form action={deleteNoteAction} style={{ marginLeft: 'auto' }}>
-          <input type="hidden" name="noteId" value={props.noteId} />
-          <button type="submit" className="btn btn--danger">Удалить</button>
-        </form>
+
+        {props.extraRightAction && (
+          <form action={props.extraRightAction.action} style={{ marginLeft: 'auto' }}>
+            <input type="hidden" name={props.extraRightAction.name} value={props.extraRightAction.value} />
+            <button type="submit" className="btn btn--danger">{props.extraRightAction.label}</button>
+          </form>
+        )}
       </div>
     </>
   );

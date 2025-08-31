@@ -19,7 +19,8 @@
     "build:fast": "next build --no-lint",
     "prisma:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build"
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+     "repo:audit": "node tools/audit-repo.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",
@@ -35,8 +36,8 @@
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "prisma": "^6.14.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
   "postinstall": "prisma generate"
-  
 }

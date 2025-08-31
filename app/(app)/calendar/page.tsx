@@ -28,7 +28,7 @@ export type NoteLite = {
   at: string;       // ISO
   allDay: boolean;
   title: string | null;
-  text: string;     // усечённая для плитки версия
+  text: string;     // полный текст (без усечения)
 };
 
 function ymd(d: Date) {
@@ -158,12 +158,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   });
 
   const initialNotes: NoteLite[] = notesRaw.map(n => ({
-    id: n.id,
-    at: (n.at as Date).toISOString(),
-    allDay: !!n.allDay,
-    title: n.title ?? null,
-    text: truncateForTile(n.text ?? ''),
-  }));
+  id: n.id,
+  at: (n.at as Date).toISOString(),
+  allDay: !!n.allDay,
+  title: n.title ?? null,
+  text: n.text ?? '',           // ← отдаем полный текст
+}));
 
   return (
     <main style={{ padding: 16, display: 'grid', gap: 12 }}>

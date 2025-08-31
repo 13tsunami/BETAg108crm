@@ -164,28 +164,48 @@ export default function CalendarBoard({
     window.dispatchEvent(new CustomEvent('calendar:open-note', { detail: { noteId } }));
   }
 
+  /* =======================
+     Плитки: только заголовки
+     + безопасные переносы
+     + локальный скролл при переполнении
+  ======================= */
+  const chipBase: React.CSSProperties = {
+    textAlign: 'left',
+    borderRadius: 10,
+    padding: '6px 8px',
+    cursor: 'pointer',
+    minWidth: 0,
+    display: 'grid',
+    gridAutoRows: 'max-content',
+    alignItems: 'start',
+    maxHeight: 86,           // компактная плитка; если заголовок длинный — появится внутренний скролл
+    overflow: 'auto',
+  };
+  const titleBase: React.CSSProperties = {
+    fontSize: 13,
+    fontWeight: 700,
+    // переносы и «любой символ» для узких экранов
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+    whiteSpace: 'normal',
+    lineHeight: 1.15,
+  };
+
   const TaskChip: React.FC<{ t: TaskLite }> = ({ t }) => {
     const urgent = (t.priority ?? 'normal') === 'high';
     const dayKey = ymd(new Date(t.dueDate));
     return (
       <button
         onClick={(e) => { e.stopPropagation(); openDayModal(dayKey); }}
-        title={t.description || ''}
+        title={t.title}
         style={{
-          textAlign: 'left',
-          borderRadius: 10,
-          padding: '6px 8px',
+          ...chipBase,
           border: `1px solid ${urgent ? URGENT : BD_MY}`,
           background: BG_MY,
-          cursor: 'pointer',
-          minWidth: 0,
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2, wordBreak: 'break-word' }}>
+        <div style={{ ...titleBase }}>
           {t.title}
-        </div>
-        <div style={{ fontSize: 12, color: '#374151' }}>
-          {fmtRuDateShort(t.dueDate)}
         </div>
       </button>
     );
@@ -194,20 +214,16 @@ export default function CalendarBoard({
   const NoteChip: React.FC<{ n: NoteLite }> = ({ n }) => (
     <button
       onClick={(e) => { e.stopPropagation(); openNoteModal(n.id); }}
-      title={n.text || ''}
+      title={n.title ?? 'Заметка'}
       style={{
-        textAlign: 'left',
-        borderRadius: 10,
-        padding: '6px 8px',
+        ...chipBase,
         border: '1px solid #3b82f6',
         background: '#dbeafe',
-        minWidth: 0,
       }}
     >
-      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2, wordBreak: 'break-word', color: '#1e3a8a' }}>
+      <div style={{ ...titleBase, color: '#1e3a8a' }}>
         {n.title ?? 'Заметка'}
       </div>
-      {n.text && <div style={{ fontSize: 12, color: '#1e40af' }}>{n.text}</div>}
     </button>
   );
 
@@ -323,7 +339,7 @@ export default function CalendarBoard({
       </div>
 
      <style jsx>{`
-  /* Карточка дня теперь — grid: header / content / footer */
+  /* Карточка дня — grid: header / content / footer */
   .day {
     border: 1px solid #e5e7eb;
     border-radius: 12px;
@@ -332,8 +348,8 @@ export default function CalendarBoard({
     display: grid;
     grid-template-rows: auto 1fr auto; /* шапка / контент / футер */
     gap: 6px;
-    min-height: 120px;   /* базовая высота */
-    max-height: 240px;   /* максимум в 2 раза */
+    min-height: 120px;
+    max-height: 240px;
     transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
   }
   .day:hover { transform: translateY(-1px); border-color: rgba(141,40,40,.35); box-shadow: 0 8px 18px rgba(0,0,0,.06); background: linear-gradient(180deg, rgba(141,40,40,.08), rgba(141,40,40,.03)), linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7)); }
@@ -349,19 +365,15 @@ export default function CalendarBoard({
   .day__content {
     display: grid;
     gap: 6px;
-
-    /* исправление: не растягивать строки */
     grid-auto-rows: max-content;
     align-content: start;
     align-items: start;
-
-    min-height: 0;            /* нужно для корректного overflow в CSS grid */
-    overflow: auto;           /* появляется внутренний скролл */
-    padding-right: 2px;       /* чтобы скролл не прижимал контент */
+    min-height: 0;
+    overflow: auto;          /* внутренний скролл содержимого дня */
+    padding-right: 2px;
   }
   .day__content > * { align-self: start; }
 
-  /* Небольшой косметический стиль для скроллбара (где поддерживается) */
   .day__content::-webkit-scrollbar { width: 8px; }
   .day__content::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 8px; }
   .day__content:hover::-webkit-scrollbar-thumb { background: #d1d5db; }
@@ -376,17 +388,16 @@ export default function CalendarBoard({
 
 <style jsx>{`
   @media (max-width: 520px) {
-    /* На мобильных — те же пропорции: 2x от базовой */
     .day { min-height: 112px; max-height: 224px; }
   }
 `}</style>
 
 <style jsx>{`
-  .day:hover { /* сохранили твои эффекты */ }
+  .day:hover { /* эффект hover сохранён */ }
 `}</style>
 
 <style jsx>{`
-  /* оставшиеся исходные кнопки/помощники */
+  /* служебные стили */
 `}</style>
 
     </section>
