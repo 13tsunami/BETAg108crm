@@ -14,11 +14,11 @@ services:
       - ./.docker/postgres/certs/key.pem:/var/lib/postgresql/key.pem:ro
       - pgdata:/var/lib/postgresql/data
     command:
-        - postgres
-        - -c
-        - config_file=/etc/postgresql/postgresql.conf
-        - -c
-        - hba_file=/etc/postgresql/pg_hba.conf
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -40,11 +40,14 @@ services:
   web:
     build:
       context: .
+    env_file: .env
     environment:
       NODE_ENV: production
-    env_file: .env
+      UPLOADS_DIR: /app/uploads
     ports:
       - "80:3000"
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       migrate:
         condition: service_completed_successfully
