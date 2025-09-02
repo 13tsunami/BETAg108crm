@@ -184,11 +184,48 @@ export default function TaskForm({
     if (!input) return;
     const dt = new DataTransfer();
     next.forEach(ff => dt.items.add(ff));
-    input.files = dt.files;
+    // программно обновляем файлы элемента — это нужно, чтобы FormData(form) включал файлы
+    try {
+      input.files = dt.files;
+    } catch {
+      // в некоторых браузерах/сценариях это может бросать — но мы всё равно храним state taskFiles
+    }
   }, []);
 
+  // состояние отправки, чтобы блокировать кнопку при сохранении
+  const [submitting, setSubmitting] = useState(false);
+
+  // обработчик submit: гарантированно пересчитываем assignee ids, заполняем hidden и вызываем createAction(fd)
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const form = e.currentTarget as HTMLFormElement;
+      // пересчитываем список исполнителей (с учётом ролей/групп/предметов)
+      const ids = await expandAssigneesToUserIds();
+      const hidden = form.querySelector<HTMLInputElement>('input[name="assigneeUserIdsJson"]');
+      if (hidden) hidden.value = JSON.stringify(ids);
+
+      // ensure due field is set (hidden already bound to dueIso via state, but re-read from DOM)
+      const fd = new FormData(form);
+
+      // call server action directly with FormData
+      await createAction(fd);
+      // Примечание: не делаем автоматический редирект здесь, оставляем revalidation на сервере
+      // можно очищать форму или показывать уведомление, если нужно
+    } catch (err) {
+      console.error('TaskForm submit error', err);
+      // простое уведомление — можно заменить на ваш toast
+      // eslint-disable-next-line no-alert
+      alert('Ошибка при сохранении задачи. Посмотрите логи или повторите попытку.');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [createAction, submitting, expandAssigneesToUserIds]);
+
   return (
-    <form action={createAction} style={{ display: 'grid', gap: 10 }}>
+    <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 10 }}>
       <div>
         <label style={{ display: 'block', marginBottom: 4 }}>Название</label>
         <input
@@ -218,6 +255,7 @@ export default function TaskForm({
           <label style={{ display:'block', marginBottom:4 }}>Срок</label>
           <input
             type="date"
+            name="date"
             value={due}
             min={todayStr}
             onChange={(e)=>setDue(e.target.value)}
@@ -345,7 +383,7 @@ export default function TaskForm({
             if (!list.length) return;
             const next = [...taskFiles, ...list].slice(0, MAX_TASK_FILES);
             syncTaskInputFiles(next);
-            if (taskFileInputRef.current) taskFileInputRef.current.value = '';
+            // removed clearing input.value here — it would remove files that we've just set
           }}
           style={{ display:'none' }}
         />
@@ -451,8 +489,17 @@ export default function TaskForm({
       <div style={{ display:'flex', gap:8 }}>
         <button
           type="submit"
-          style={{ height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${BRAND}`, background:BRAND, color:'#fff', cursor:'pointer' }}>
-          Сохранить задачу
+          disabled={submitting}
+          style={{
+            height:36,
+            padding:'0 14px',
+            borderRadius:10,
+            border:`1px solid ${BRAND}`,
+            background: submitting ? '#b25050' : BRAND,
+            color:'#fff',
+            cursor: submitting ? 'default' : 'pointer'
+          }}>
+          {submitting ? 'Сохранение…' : 'Сохранить задачу'}
         </button>
       </div>
     </form>

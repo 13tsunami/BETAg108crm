@@ -1,4 +1,3 @@
-// app/(app)/inboxtasks/actions.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -132,6 +131,11 @@ export async function createTaskAction(fd: FormData): Promise<void> {
         await saveTaskFileToDiskAndDb({ file: f, taskId: task.id });
       }
     }
+  } catch (err) {
+    // логируем для отладки — revalidateAll выполнится в finally
+    // не подавляем ошибку, чтобы вызвать видимый 500 если это серверная неожиданность
+    console.error('createTaskAction error', err);
+    throw err;
   } finally {
     revalidateAll();
   }
@@ -157,7 +161,7 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
   const description = fd.get('description');
   const priorityRaw = fd.get('priority');
   const hiddenRaw = fd.get('hidden');
-  const dueDateRaw = fd.get('dueDate'); // YYYY-MM-DD
+  const dueDateRaw = fd.get('dueDate'); // YYYY-MM-DD or datetime-local
   const reviewRequiredRaw = fd.get('reviewRequired');
 
   const data: {
@@ -178,7 +182,9 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
   if (dueDateRaw !== null) {
     const dateStr = String(dueDateRaw ?? '').trim();
     if (dateStr) {
-      const due = new Date(`${dateStr}T23:59:00+05:00`);
+      // если формат YYYY-MM-DD (без времени) — считать 23:59 по Екб
+      const maybeIso = dateStr.length === 10 ? `${dateStr}T23:59:00+05:00` : dateStr;
+      const due = new Date(maybeIso);
       if (!Number.isNaN(due.getTime())) data.dueDate = due;
     }
   }
