@@ -9,37 +9,75 @@ import {
   deleteTaskAction,
   markAssigneeDoneAction,
 } from './actions';
-import { submitForReviewAction } from './review-actions';
 import type { Prisma } from '@prisma/client';
+import './inboxtasks.css';
+import ReviewSubmitForm from './ReviewSubmitForm';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+// Тип под наш select ниже (добавили number и attachments)
 type TaskWithAssignees = Prisma.TaskGetPayload<{
-  include: { assignees: { include: { user: { select: { id: true; name: true } } } } }
+  select: {
+    id: true;
+    number: true;
+    title: true;
+    description: true;
+    dueDate: true;
+    priority: true;
+    hidden: true;
+    createdById: true;
+    createdByName: true;
+    reviewRequired: true;
+    assignees: {
+      include: {
+        user: { select: { id: true; name: true } };
+        submissions: {
+          where: { open: false };
+          orderBy: { reviewedAt: 'desc' };
+          take: 1;
+          select: { reviewerComment: true; reviewedAt: true };
+        };
+      };
+    };
+    attachments: {
+      select: {
+        attachment: {
+          select: { id: true; name: true; originalName: true; size: true; mime: true }
+        }
+      }
+    };
+  };
 }>;
 
-function fmtRuDateWithOptionalTimeYekb(d: Date | string | null | undefined): string {
-  if (!d) return '';
-  const dt = typeof d === 'string' ? new Date(d) : d;
-  const parts = new Intl.DateTimeFormat('ru-RU', {
+function fmtRuDateTimeYekb(input: string | Date) {
+  const dt = typeof input === 'string' ? new Date(input) : input;
+
+  const dateParts = new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Asia/Yekaterinburg',
-    hour: '2-digit',
-    minute: '2-digit',
     day: '2-digit',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
-  }).formatToParts(dt);
-  const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-  const dd = `${map.day} ${map.month?.replace('.', '')}`;
-  const yyyy = map.year;
-  const hm = new Intl.DateTimeFormat('ru-RU', {
+  })
+    .formatToParts(dt)
+    .reduce<Record<string, string>>((acc, p) => {
+      acc[p.type] = p.value;
+      return acc;
+    }, {});
+
+  const dd = dateParts.day;
+  const month = dateParts.month;
+  const yyyy = dateParts.year;
+
+  const timeParts = new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Asia/Yekaterinburg',
     hour: '2-digit',
     minute: '2-digit',
   }).formatToParts(dt);
-  const hh = hm.find(p => p.type === 'hour')?.value ?? '00';
-  const mm = hm.find(p => p.type === 'minute')?.value ?? '00';
+  const hh = timeParts.find((p) => p.type === 'hour')?.value ?? '00';
+  const mm = timeParts.find((p) => p.type === 'minute')?.value ?? '00';
+
   const isDefaultEnd = hh === '23' && mm === '59';
-  return isDefaultEnd ? `${dd} ${yyyy}` : `${dd} ${yyyy}, ${hh}:${mm}`;
+  return isDefaultEnd ? `${dd} ${month} ${yyyy}` : `${dd} ${month} ${yyyy}, ${hh}:${mm}`;
 }
 
 function TeacherGuide() {
@@ -48,19 +86,14 @@ function TeacherGuide() {
       <h3 style={{ marginTop: 0, marginBottom: 8 }}>Как работать с задачами</h3>
       <ul style={{ margin: 0, paddingLeft: 18 }}>
         <li>Во вкладке «Назначенные мне» вы видите актуальные задачи, назначенные вам руководителями.</li>
-        <li>Откройте задачу и нажмите «Выполнить», когда закончите работу — она уйдёт в архив.</li>
-        <li>Для вопросов и уточнений свяжитесь с назначившим Вам задачу по телефону.</li>
-        <li>Дедлайн отображается с датой и, при необходимости, временем.</li>
+        <li>Нажмите «Выполнить», когда закончите работу — она уйдёт в архив.</li>
+        <li>Если задача с проверкой — отправьте на ревью с комментариями и файлами.</li>
       </ul>
     </div>
   );
 }
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const tabParam = typeof sp.tab === 'string' ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
 
@@ -79,78 +112,134 @@ export default async function Page({
   }
 
   const reviewFlowOn = process.env.NEXT_PUBLIC_REVIEW_FLOW === '1';
-  const activeTab = mayCreate ? (tabParam === 'byme' ? 'byme' : 'mine') : 'mine';
 
-  // Данные для TaskForm
-  let users: Array<{ id: string; name: string | null; role?: string | null; methodicalGroups?: string | null; subjects?: any }> = [];
-  let groups: Array<{ id: string; name: string }> = [];
-  let subjects: Array<{ name: string; count?: number }> = [];
-  let groupMembers: Array<{ groupId: string; userId: string }> = [];
-  let subjectMembers: Array<{ subjectName: string; userId: string }> = [];
+  const [users, groups, subjects] = await Promise.all([
+    prisma.user.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, role: true, methodicalGroups: true, subjects: true },
+    }),
+    prisma.group.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    prisma.subject.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+  ]);
 
-  if (mayCreate) {
-    const [usersRaw, groupsRaw, subjectsRaw, groupMembersRaw, subjectMembersRaw] = await Promise.all([
-      prisma.user.findMany({
+  const groupMembers = await prisma.groupMember.findMany({ select: { groupId: true, userId: true } });
+
+  const rawSubjectMembers = await prisma.subjectMember.findMany({
+    select: { userId: true, subject: { select: { name: true } } },
+  });
+  const subjectMembers = rawSubjectMembers.map((m) => ({ userId: m.userId, subjectName: m.subject.name }));
+
+  const [mineInProgress, assignedByMe]: [TaskWithAssignees[], TaskWithAssignees[]] =
+    await Promise.all([
+      prisma.task.findMany({
+        where: { assignees: { some: { userId: meId, status: 'in_progress' } } },
         select: {
           id: true,
-          name: true,
-          role: true,
-          methodicalGroups: true,
-          subjects: true,
+          number: true,
+          title: true,
+          description: true,
+          dueDate: true,
+          priority: true,
+          hidden: true,
+          createdById: true,
+          createdByName: true,
+          reviewRequired: true,
+          assignees: {
+            include: {
+              user: { select: { id: true, name: true } },
+              submissions: {
+                where: { open: false },
+                orderBy: { reviewedAt: 'desc' as const },
+                take: 1,
+                select: { reviewerComment: true, reviewedAt: true },
+              },
+            },
+          },
+          attachments: {
+            select: {
+              attachment: { select: { id: true, name: true, originalName: true, size: true, mime: true } }
+            }
+          },
         },
-        orderBy: { name: 'asc' },
+        orderBy: { dueDate: 'asc' as const },
       }),
-      prisma.group.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
-      prisma.subject.findMany({
-        select: { name: true, _count: { select: { members: true } } },
-        orderBy: { name: 'asc' },
-      }),
-      prisma.groupMember.findMany({ select: { groupId: true, userId: true } }),
-      prisma.subjectMember.findMany({
+      prisma.task.findMany({
+        where: { createdById: meId, hidden: false },
         select: {
-          userId: true,
-          subject: { select: { name: true } },
+          id: true,
+          number: true,
+          title: true,
+          description: true,
+          dueDate: true,
+          priority: true,
+          hidden: true,
+          createdById: true,
+          createdByName: true,
+          reviewRequired: true,
+          assignees: {
+            include: {
+              user: { select: { id: true, name: true } },
+              submissions: {
+                where: { open: false },
+                orderBy: { reviewedAt: 'desc' as const },
+                take: 1,
+                select: { reviewerComment: true, reviewedAt: true },
+              },
+            },
+          },
+          attachments: {
+            select: {
+              attachment: { select: { id: true, name: true, originalName: true, size: true, mime: true } }
+            }
+          },
         },
+        orderBy: { dueDate: 'desc' as const },
+        take: 30,
       }),
     ]);
 
-    users = usersRaw;
-    groups = groupsRaw;
-    subjects = subjectsRaw.map((s) => ({ name: s.name, count: s._count.members }));
-    groupMembers = groupMembersRaw;
-    subjectMembers = subjectMembersRaw.map((sm) => ({ userId: sm.userId, subjectName: sm.subject.name }));
+  // Только две вкладки: 'mine' и 'byme'
+  const activeTab = tabParam === 'byme' ? 'byme' : 'mine';
+
+  const statusRu = (s: string) =>
+    s === 'in_progress' ? 'в работе'
+    : s === 'submitted'  ? 'на проверке'
+    : s === 'done'       ? 'принято'
+    : s === 'rejected'   ? 'возвращено'
+    : s;
+
+  // отрисовка блока вложений задачи
+  function TaskAttachments({ items }: { items: { attachment: { id: string; name: string; originalName: string | null; size: number; mime: string } }[] }) {
+    if (!items?.length) return null;
+    return (
+      <div style={{ marginTop: 8 }}>
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>Вложения:</div>
+        <ul style={{ margin: 0, paddingLeft: 18 }}>
+          {items.map(({ attachment }) => {
+            const title = attachment.originalName || attachment.name;
+            const href = `/api/files/${attachment.name}`;
+            const sizeKb = Math.max(1, Math.round(attachment.size / 1024));
+            return (
+              <li key={attachment.id} style={{ marginBottom: 4 }}>
+                <a href={href} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                  {title}
+                </a>
+                <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>
+                  ({attachment.mime}, ~{sizeKb} КБ)
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
   }
-
-  // Списки задач
-  const [assignedToMe, createdByMe]: [TaskWithAssignees[], TaskWithAssignees[]] = await Promise.all([
-    prisma.task.findMany({
-      where: {
-        assignees: { some: { userId: meId, status: 'in_progress' } },
-      },
-      include: {
-        assignees: { include: { user: { select: { id: true, name: true } } } },
-      },
-      orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
-    }),
-    mayCreate
-      ? prisma.task.findMany({
-          where: { createdById: meId },
-          include: { assignees: { include: { user: { select: { id: true, name: true } } } } },
-          orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
-        })
-      : Promise.resolve([] as TaskWithAssignees[]),
-  ]);
-
-  // helper: временная эвристика «требует проверки» по маркеру в тексте
-  const hasReviewMarker = (t: TaskWithAssignees) => {
-    const rx = /\[(review|проверка)\]/i;
-    return rx.test(t.title ?? '') || rx.test(t.description ?? '');
-  };
 
   return (
     <main style={{ padding: 16 }}>
-      <div className="gridWrap">
-        {/* Левая колонка: форма (или гид для Teacher) */}
+      <h1 style={{ marginTop: 0 }}>Задачи</h1>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
         <aside className="leftCol">
           {mayCreate ? (
             <section aria-label="Создать задачу" className="card">
@@ -158,7 +247,7 @@ export default async function Page({
                 <TaskForm
                   users={users}
                   groups={groups}
-                  subjects={subjects}
+                  subjects={subjects.map((s) => ({ name: s.name }))}
                   groupMembers={groupMembers}
                   subjectMembers={subjectMembers}
                   createAction={createTaskAction}
@@ -170,331 +259,271 @@ export default async function Page({
             <TeacherGuide />
           )}
 
-          {/* Баннер перехода на страницу проверки — только для ролей выше teacher */}
           {mayCreate && reviewFlowOn && (
-            <div className="card" style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 13, color: '#374151' }}>
-                Есть задачи на проверку? Откройте страницу проверки.
-              </div>
-              <a href="/reviews" className="btnGhost" style={{ textDecoration: 'none' }}>Перейти</a>
+            <div className="card" style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 13, color: '#374151' }}>Есть задачи на проверку? Откройте страницу проверки.</div>
+              <a href="/reviews" className="btnGhost" style={{ textDecoration: 'none' }}>
+                Перейти
+              </a>
             </div>
           )}
         </aside>
 
-        {/* Правая колонка: список задач с табами */}
         <section className="rightCol">
           <header className="tabsWrap">
             {mayCreate ? (
               <nav className="tabs">
-                <a
-                  href="/inboxtasks?tab=mine"
-                  className={`tab ${activeTab === 'mine' ? 'tab--active' : ''}`}
-                  aria-current={activeTab === 'mine' ? 'page' : undefined}
-                >
-                  Назначенные мне ({assignedToMe.length})
+                <a href="/inboxtasks?tab=mine" className={activeTab === 'mine' ? 'tabActive' : 'tab'}>
+                  Назначенные мне
                 </a>
-                <a
-                  href="/inboxtasks?tab=byme"
-                  className={`tab ${activeTab === 'byme' ? 'tab--active' : ''}`}
-                  aria-current={activeTab === 'byme' ? 'page' : undefined}
-                >
-                  Назначенные мной ({createdByMe.length})
+                <a href="/inboxtasks?tab=byme" className={activeTab === 'byme' ? 'tabActive' : 'tab'}>
+                  Назначенные мной
                 </a>
               </nav>
             ) : (
-              <div style={{ fontSize: 13, color: '#6b7280' }}>
-                Роль: преподаватель — доступна только вкладка «Назначенные мне»
-              </div>
+              <nav className="tabs">
+                <a href="/inboxtasks?tab=mine" className="tabActive">
+                  Назначенные мне
+                </a>
+              </nav>
             )}
           </header>
 
-          {/* Вкладка: Назначенные мне — с макетом review-flow */}
-          {activeTab === 'mine' && (
-            <section aria-label="Назначенные мне" style={{ display: 'grid', gap: 8 }}>
-              {assignedToMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет активных задач.</div>}
-              {assignedToMe.map((t) => {
-                const myAssn = t.assignees.find((a) => a.userId === meId);
-                const urgent = (t.priority ?? 'normal') === 'high';
-                const requiresReview = reviewFlowOn && hasReviewMarker(t);
+          <div className="lists">
+            {activeTab === 'mine' && (
+              <section>
+                {mineInProgress.length === 0 ? (
+                  <div className="empty">Нет активных задач.</div>
+                ) : (
+                  mineInProgress.map((t) => {
+                    const myAssn = t.assignees.find((a) => a.userId === meId);
+                    const requiresReview = reviewFlowOn && t.reviewRequired === true;
+                    const lastComment = myAssn?.submissions?.[0]?.reviewerComment;
 
-                return (
-                  <details key={t.id} className="taskCard">
-                    <summary className="taskSummary">
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600 }}>{t.title}</span>
-                        {urgent && <span className="pillUrgent">Срочно</span>}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#374151' }}>
-                        <span>{fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
-                        <span>Назначил: {t.createdByName ?? '—'}</span>
-                      </div>
-                    </summary>
-                    <div className="taskBody">
-                      {t.description && (
-                        <div
-                          style={{
-                            whiteSpace: 'pre-wrap',
-                            color: '#111827',
-                            marginBottom: 8,
-                            overflowWrap: 'anywhere',
-                            wordBreak: 'break-word',
-                          }}
-                        >
-                          {t.description}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {requiresReview ? (
-                          <form action={submitForReviewAction}>
-                            <input type="hidden" name="taskId" value={t.id} />
-                            <button
-                              type="submit"
-                              className="btnGhost"
-                              // на макете блокируем только если уже done
-                              disabled={myAssn?.status === 'done'}
-                              title="Отправить на проверку (макет, без записи в БД)"
+                    return (
+                      <details
+                        key={t.id}
+                        className="taskCard"
+                        style={t.priority === 'high' ? { borderColor: '#8d2828' } : undefined}
+                      >
+                        <summary className="taskHeader">
+                          <div className="taskTitle">
+                            {/* добавили номер задачи */}
+                            <b>№{t.number} — {t.title}</b>
+                            <span className="taskMeta">
+                              до {fmtRuDateTimeYekb(t.dueDate)}
+                              {t.priority === 'high' ? ' • высокий приоритет' : ''}
+                              {t.createdByName ? ` • назначил: ${t.createdByName}` : ''}
+                              {requiresReview && lastComment ? ' • есть комментарий проверяющего' : ''}
+                            </span>
+                          </div>
+                          <div className="taskActions" />
+                        </summary>
+
+                        <div className="taskBody">
+                          {t.description && (
+                            <div
+                              style={{
+                                whiteSpace: 'pre-wrap',
+                                color: '#111827',
+                                marginBottom: 8,
+                                overflowWrap: 'anywhere',
+                                wordBreak: 'break-word',
+                              }}
                             >
-                              Отправить на проверку
-                            </button>
-                          </form>
-                        ) : (
-                          <form action={markAssigneeDoneAction}>
-                            <input type="hidden" name="taskId" value={t.id} />
-                            <button
-                              type="submit"
-                              className="btnPrimaryGreen"
-                              disabled={myAssn?.status === 'done'}
-                              title="Выполнить"
-                            >
-                              Выполнить
-                            </button>
-                          </form>
-                        )}
-                      </div>
-                    </div>
-                  </details>
-                );
-              })}
-            </section>
-          )}
+                              {t.description}
+                            </div>
+                          )}
 
-          {/* Вкладка: Назначенные мной — без кнопок ревью (ревью на /reviews) */}
-          {activeTab === 'byme' && mayCreate && (
-            <section aria-label="Назначенные мной" style={{ display: 'grid', gap: 8 }}>
-              {createdByMe.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Вы пока не создавали задач.</div>}
-              {createdByMe.map((t) => {
-                const urgent = (t.priority ?? 'normal') === 'high';
-                const total = t.assignees.length;
-                const done = t.assignees.filter(a => a.status === 'done').length;
+                          {/* вложения задачи */}
+                          <TaskAttachments items={t.attachments} />
 
-                const sorted = [...t.assignees].sort((a, b) => {
-                  const av = a.status === 'done' ? 1 : 0;
-                  const bv = b.status === 'done' ? 1 : 0;
-                  return av - bv;
-                });
-
-                const preview = sorted.slice(0, 7);
-                const hasMore = sorted.length > 7;
-
-                return (
-                  <details key={t.id} className="taskCard">
-                    <summary className="taskSummary">
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600 }}>{t.title}</span>
-                        {urgent && <span className="pillUrgent">Срочно</span>}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#374151' }}>
-                        <span>{fmtRuDateWithOptionalTimeYekb(t.dueDate as Date)}</span>
-                        <span style={{ color: '#111827', fontWeight: 600 }}>{done}/{total} выполнено</span>
-                      </div>
-                    </summary>
-
-                    <div className="taskBody" style={{ display: 'grid', gap: 10 }}>
-                      <div style={{ fontSize: 13 }}>
-                        <div style={{ color: '#6b7280', marginBottom: 4 }}>Кому назначено:</div>
-
-                        {hasMore ? (
-                          <details>
-                            <summary style={{ listStyle: 'none', cursor: 'pointer' }}>
-                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                {preview.map((a) => (
-                                  <span
-                                    key={a.id}
-                                    title={a.status === 'done' ? 'Выполнено' : 'В работе'}
-                                    style={{
-                                      border: '1px solid #e5e7eb',
-                                      borderRadius: 999,
-                                      padding: '2px 8px',
-                                      fontSize: 12,
-                                      background: a.status === 'done' ? '#ecfdf5' : '#fff',
-                                    }}
-                                  >
-                                    {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
-                                  </span>
-                                ))}
-                              </div>
-                              <div style={{ marginTop: 6, fontSize: 12, color: '#374151' }}>Показать всех</div>
-                            </summary>
-                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                              {sorted.map((a) => (
-                                <span
-                                  key={a.id}
-                                  title={a.status === 'done' ? 'Выполнено' : 'В работе'}
-                                  style={{
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: 999,
-                                    padding: '2px 8px',
-                                    fontSize: 12,
-                                    background: a.status === 'done' ? '#ecfdf5' : '#fff',
-                                  }}
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                            {requiresReview ? (
+                              <ReviewSubmitForm
+                                taskId={t.id}
+                                disabled={myAssn?.status === 'done' || myAssn?.status === 'submitted'}
+                              />
+                            ) : (
+                              <form action={markAssigneeDoneAction}>
+                                <input type="hidden" name="taskId" value={t.id} />
+                                <button
+                                  type={myAssn?.status === 'done' ? 'button' : 'submit'}
+                                  className="btnPrimaryGreen"
+                                  disabled={myAssn?.status === 'done'}
+                                  title="Выполнить"
                                 >
-                                  {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
-                                </span>
-                              ))}
+                                  Выполнить
+                                </button>
+                              </form>
+                            )}
+                          </div>
+
+                          {myAssn && (
+                            <div style={{ marginTop: 8, fontSize: 13, color: '#374151' }}>
+                              <div>
+                                Мой статус: <b>{statusRu(myAssn.status)}</b>
+                              </div>
+                              {requiresReview && lastComment && (
+                                <div style={{ marginTop: 4 }}>
+                                  Комментарий проверяющего: {lastComment}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })
+                )}
+              </section>
+            )}
+
+            {activeTab === 'byme' && mayCreate && (
+              <section>
+                {assignedByMe.length === 0 ? (
+                  <div className="empty">Нет задач, назначенных вами.</div>
+                ) : (
+                  assignedByMe.map((t) => {
+                    const doneCnt = t.assignees.filter(a => a.status === 'done').length;
+                    const onReviewCnt = t.assignees.filter(a => a.status === 'submitted').length;
+                    const totalCnt = t.assignees.length;
+                    const updateFormId = `update-${t.id}`;
+
+                    // Разворот списка исполнителей: первые 7 видны сразу
+                    const visible = t.assignees.slice(0, 7);
+                    const rest = t.assignees.slice(7);
+
+                    return (
+                      <details
+                        key={t.id}
+                        className="taskCard"
+                        style={t.priority === 'high' ? { borderColor: '#8d2828' } : undefined}
+                      >
+                        <summary className="taskHeader">
+                          <div className="taskTitle">
+                            {/* добавили номер задачи */}
+                            <b>№{t.number} — {t.title}</b>
+                            <span className="taskMeta">
+                              до {fmtRuDateTimeYekb(t.dueDate)}
+                              {t.priority === 'high' ? ' • высокий приоритет' : ''}
+                              {' • '}исполнители: {doneCnt}/{totalCnt}
+                              {onReviewCnt ? ` • на проверке: ${onReviewCnt}` : ''}
+                            </span>
+                          </div>
+                          <div className="taskActions">
+                            <form action={deleteTaskAction}>
+                              <input type="hidden" name="taskId" value={t.id} />
+                              <button type="submit" className="btnDanger" title="Удалить">Удалить</button>
+                            </form>
+                          </div>
+                        </summary>
+
+                        <div className="taskBody">
+                          {t.description && (
+                            <div style={{ whiteSpace:'pre-wrap', color:'#111827', marginBottom:8 }}>
+                              {t.description}
+                            </div>
+                          )}
+
+                          {/* вложения задачи */}
+                          <TaskAttachments items={t.attachments} />
+
+                          {/* Список исполнителей со статусами и комментариями проверяющего */}
+                          <div style={{ display:'grid', gap:6, margin:'8px 0 12px' }}>
+                            {[...visible].map(a => {
+                              const lastComment = a.submissions?.[0]?.reviewerComment;
+                              return (
+                                <div key={a.id} style={{ display:'grid', gridTemplateColumns:'minmax(240px,1fr) auto', gap:8, alignItems:'center' }}>
+                                  <div style={{ fontSize:13 }}>
+                                    <b>{a.user?.name || a.userId}</b>
+                                    <span style={{ color:'#6b7280' }}>{' • '}{statusRu(a.status)}</span>
+                                  </div>
+
+                                  {a.status === 'submitted' ? (
+                                    <a href={`/reviews/${a.id}`} className="btnGhost" style={{ justifySelf:'start' }}>
+                                      Открыть проверку
+                                    </a>
+                                  ) : <span />}
+
+                                  {t.reviewRequired && lastComment && (
+                                    <div style={{ gridColumn:'1 / -1', fontSize:13, color:'#374151' }}>
+                                      Комментарий проверяющего: {lastComment}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+
+                            {rest.length > 0 && (
+                              <details>
+                                <summary className="btnGhost" style={{ display:'inline-block', cursor:'pointer' }}>
+                                  Показать всех ({t.assignees.length})
+                                </summary>
+                                <div style={{ display:'grid', gap:6, marginTop:8 }}>
+                                  {rest.map(a => {
+                                    const lastComment = a.submissions?.[0]?.reviewerComment;
+                                    return (
+                                      <div key={a.id} style={{ display:'grid', gridTemplateColumns:'minmax(240px,1fr) auto', gap:8, alignItems:'center' }}>
+                                        <div style={{ fontSize:13 }}>
+                                          <b>{a.user?.name || a.userId}</b>
+                                          <span style={{ color:'#6b7280' }}>{' • '}{statusRu(a.status)}</span>
+                                        </div>
+
+                                        {a.status === 'submitted' ? (
+                                          <a href={`/reviews/${a.id}`} className="btnGhost" style={{ justifySelf:'start' }}>
+                                            Открыть проверку
+                                          </a>
+                                        ) : <span />}
+
+                                        {t.reviewRequired && lastComment && (
+                                          <div style={{ gridColumn:'1 / -1', fontSize:13, color:'#374151' }}>
+                                            Комментарий проверяющего: {lastComment}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </details>
+                            )}
+                          </div>
+
+                          {/* Редактирование — аккуратно, в отдельном развороте */}
+                          <details style={{ border:'1px solid #e5e7eb', borderRadius:10, padding:8 }}>
+                            <summary style={{ cursor:'pointer', fontSize:13, color:'#111827' }}>Редактировать</summary>
+                            <form id={updateFormId} action={updateTaskAction} style={{ display:'grid', gap:8, marginTop:8 }}>
+                              <input type="hidden" name="taskId" value={t.id} />
+                              <label>Название<input type="text" name="title" defaultValue={t.title} /></label>
+                              <label>Описание<textarea name="description" defaultValue={t.description ?? ''} rows={3} /></label>
+                              <label>Дедлайн
+                                <input type="datetime-local" name="dueDate" defaultValue={new Date(t.dueDate).toISOString().slice(0,16)} />
+                              </label>
+                              <label>Приоритет
+                                <select name="priority" defaultValue={t.priority ?? 'normal'}>
+                                  <option value="normal">Обычный</option>
+                                  <option value="high">Высокий</option>
+                                </select>
+                              </label>
+                            </form>
+                            <div style={{ display:'flex', gap:8, marginTop:8 }}>
+                              <button type="submit" form={updateFormId} className="btnGhost">Сохранить</button>
+                              <form action={deleteTaskAction}>
+                                <input type="hidden" name="taskId" value={t.id} />
+                                <button type="submit" className="btnDanger">Удалить</button>
+                              </form>
                             </div>
                           </details>
-                        ) : (
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {sorted.map((a) => (
-                              <span
-                                key={a.id}
-                                title={a.status === 'done' ? 'Выполнено' : 'В работе'}
-                                style={{
-                                  border: '1px solid #e5e7eb',
-                                  borderRadius: 999,
-                                  padding: '2px 8px',
-                                  fontSize: 12,
-                                  background: a.status === 'done' ? '#ecfdf5' : '#fff',
-                                }}
-                              >
-                                {(a.user?.name ?? `${a.userId.slice(0,8)}…`)} {a.status === 'done' ? '✓' : ''}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Редактирование основных полей */}
-                      <form action={updateTaskAction} style={{ display: 'grid', gap: 8 }}>
-                        <input type="hidden" name="taskId" value={t.id} />
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 140px', gap: 8 }}>
-                          <input
-                            name="title"
-                            defaultValue={t.title}
-                            placeholder="Название"
-                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
-                          />
-                          <input
-                            name="dueDate"
-                            type="date"
-                            defaultValue={new Date(t.dueDate as Date).toISOString().slice(0, 10)}
-                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}
-                          />
-                          <select name="priority" defaultValue={t.priority ?? 'normal'} style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8 }}>
-                            <option value="normal">обычный</option>
-                            <option value="high">срочно</option>
-                          </select>
                         </div>
-                        <textarea
-                          name="description"
-                          defaultValue={t.description ?? ''}
-                          rows={3}
-                          placeholder="Описание"
-                          style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 8, resize: 'vertical' }}
-                        />
-                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                          <input type="checkbox" name="hidden" defaultChecked={(t as any)['hidden'] ?? false} /> не размещать в календаре
-                        </label>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <button type="submit" className="btnPrimary">
-                            Сохранить изменения
-                          </button>
-                        </div>
-                      </form>
-
-                      {/* Кнопки Удалить / В архив */}
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <form action={deleteTaskAction}>
-                          <input type="hidden" name="taskId" value={t.id} />
-                          <button type="submit" className="btnDanger">
-                            Удалить
-                          </button>
-                        </form>
-                        {(() => {
-                          const totalAssignees = t.assignees.length;
-                          const doneAssignees = t.assignees.filter(a => a.status === 'done').length;
-                          const allDone = totalAssignees > 0 && doneAssignees === totalAssignees;
-                          return allDone ? (
-                            <form action={updateTaskAction} style={{ marginLeft: 'auto' }}>
-                              <input type="hidden" name="taskId" value={t.id} />
-                              <input type="hidden" name="archive" value="1" />
-                              <button type="submit" className="btnGhost" title="Перенести задачу в архив">
-                                В архив
-                              </button>
-                            </form>
-                          ) : null;
-                        })()}
-                      </div>
-                    </div>
-                  </details>
-                );
-              })}
-            </section>
-          )}
+                      </details>
+                    );
+                  })
+                )}
+              </section>
+            )}
+          </div>
         </section>
       </div>
-
-      <style>{`
-        .gridWrap {
-          display: grid;
-          grid-template-columns: minmax(320px, clamp(320px, 33%, 420px)) 1fr;
-          gap: 12px;
-        }
-        @media (max-width: 980px) {
-          .gridWrap { grid-template-columns: 1fr; }
-        }
-        .leftCol { min-width: 0; }
-        .rightCol { min-width: 0; }
-
-        .card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff; }
-
-        .tabsWrap { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-        .tabs { display:flex; gap:8px; }
-        .tab {
-          padding: 6px 10px;
-          border-radius: 999px;
-          border: 1px solid #e5e7eb;
-          background: #fff;
-          color: #111827;
-          text-decoration: none;
-          font-size: 13px;
-        }
-        .tab--active {
-          background: #8d2828;
-          color: #fff !important;
-          border-color: #8d2828;
-        }
-
-        .taskCard { border:1px solid #e5e7eb; border-radius:12px; background:#fff; }
-        .taskSummary { padding:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
-        .taskBody { padding:10px; border-top:1px solid #f3f4f6; }
-
-        .pillUrgent { font-size:11px; color:#8d2828; border:1px solid #8d2828; border-radius:999px; padding:0 6px; }
-
-        .btnPrimary {
-          height:32px; padding:0 12px; border-radius:10px; border:1px solid #111827; background:#111827; color:#fff; cursor:pointer; font-size:13px;
-        }
-        .btnPrimaryGreen {
-          height:32px; padding:0 12px; border-radius:10px; border:1px solid #10b981; background:#10b981; color:#fff; cursor:pointer; font-size:13px;
-        }
-        .btnDanger {
-          height:32px; padding:0 12px; border-radius:10px; border:1px solid #ef4444; background:#ef4444; color:#fff; cursor:pointer; font-size:13px;
-        }
-        .btnGhost {
-          height:32px; padding:0 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; color:#111827;
-          text-decoration:none; display:inline-flex; align-items:center; font-size:13px;
-        }
-      `}</style>
     </main>
   );
 }

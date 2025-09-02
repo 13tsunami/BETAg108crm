@@ -84,3 +84,40 @@ table{ border-collapse:separate; border-spacing:0; }
 
 /* ====== На всякий: ссылки внутри кликабельных карточек/плиток без подчёркиваний ====== */
 [role="button"], .tile-link, .navlink{ text-decoration:none !important; }
+
+/* Добавьте в ваш globals.css */
+html, body, #app-shell {
+  height: 100%;
+}
+
+.appShell {
+  height: 100vh;
+  display: flex;
+}
+
+.appMain {
+  flex: 1;
+  height: 100%;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+}
+
+.glass.card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.glass.relief {
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 8px 32px 0 rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+}

@@ -1,6 +1,6 @@
 # Аудит репозитория (Next.js 15 + Prisma)
 
-Генерация: 2025-08-31T15:20:26.902Z
+Генерация: 2025-08-31T19:19:51.996Z
 
 ## Краткое дерево проекта
 ```
@@ -81,6 +81,8 @@ lib/
   search/index.ts
   search/types.ts
   serialize.ts
+  server
+  server/uploads.ts
   tasks
   tasks/getUnreadTasks.ts
 middleware.ts/
@@ -92,7 +94,10 @@ package.json/
 prisma/
   migrations
   migrations/20250830203849_init
+  migrations/20250831154559_review_flow
+  migrations/20250831174726_review_flow_open_submission
   migrations/migration_lock.toml
+  review-flow.sql
   schema.prisma
   seed.cjs
 project-snapshot/
@@ -113,6 +118,9 @@ tools/
   snapshot.js
 tsconfig.json/
 tsconfig.tsbuildinfo/
+uploads/
+  .gitignore
+  .gitkeep
 ```
 
 ## Страницы App Router и контракт searchParams
@@ -121,7 +129,7 @@ tsconfig.tsbuildinfo/
 - app/(app)/groups/page.tsx — searchParams: MISMATCH, await MISSING
 - app/(app)/inboxtasks/archive/page.tsx — searchParams: OK, await MISSING
 - app/(app)/inboxtasks/page.tsx — searchParams: OK, await MISSING
-- app/(app)/reviews/[taskId]/page.tsx — searchParams: OK, await MISSING
+- app/(app)/reviews/[taskAssigneeId]/page.tsx — searchParams: MISMATCH, await MISSING
 - app/(app)/reviews/page.tsx — searchParams: OK, await MISSING
 - app/(app)/schedule/page.tsx — searchParams: MISMATCH, await MISSING
 - app/(app)/settings/page.tsx — searchParams: MISMATCH, await MISSING
@@ -136,26 +144,29 @@ tsconfig.tsbuildinfo/
 - app/(app)/heartbeat/actions.ts — use server; экспорт: heartbeat: Promise<void>
 - app/(app)/inboxtasks/actions.ts — use server; экспорт: createTaskAction: Promise<void>, updateTaskAction: Promise<void>, deleteTaskAction: Promise<void>, markAssigneeDoneAction: Promise<void>, unarchiveAssigneeAction: Promise<void>
 - app/(app)/inboxtasks/review-actions.ts — use server; экспорт: submitForReviewAction: Promise<void>, approveSubmissionAction: Promise<void>, rejectSubmissionAction: Promise<void>
+- app/(app)/reviews/actions.ts — use server; экспорт: submitForReviewAction: Promise<void>, approveSubmissionAction: Promise<void>, rejectSubmissionAction: Promise<void>, approveAllInTaskAction: Promise<void>
 - app/(app)/settings/actions.ts — use server; экспорт: updateSelfAction: Promise<void>
 - app/(app)/teachers/actions.ts — use server; экспорт: createUser: Promise<void>, updateUser: Promise<void>, deleteUser: Promise<void>
 - app/admin/db-status/actions.ts — use server; экспорт: upsertUser: Promise<void>, forceResetPassword: Promise<void>, deleteUser: Promise<void>
 
 ## Prisma: модели (коротко)
-- User (27 полей, 0 индексов)
+- User (29 полей, 0 индексов)
 - Group (3 полей, 0 индексов)
 - GroupMember (5 полей, 1 индексов)
 - Thread (10 полей, 1 индексов)
 - Message (11 полей, 1 индексов)
 - MessageHide (4 полей, 2 индексов)
-- Task (13 полей, 2 индексов)
-- TaskAssignee (8 полей, 4 индексов)
+- Task (14 полей, 2 индексов)
+- TaskAssignee (13 полей, 5 индексов)
 - Tag (3 полей, 0 индексов)
 - TaskTag (5 полей, 0 индексов)
 - ReadMark (5 полей, 2 индексов)
-- Attachment (7 полей, 1 индексов)
+- Attachment (11 полей, 1 индексов)
 - Subject (3 полей, 0 индексов)
 - SubjectMember (5 полей, 1 индексов)
 - Note (9 полей, 2 индексов)
+- Submission (11 полей, 3 индексов)
+- SubmissionAttachment (4 полей, 2 индексов)
 
 ### User
 - id: String @id @default(uuid())
@@ -184,7 +195,9 @@ tsconfig.tsbuildinfo/
 - subjectMemberships: SubjectMember[]
 - createdTasks: Task[] @relation("TaskCreatedBy")
 - messageHides: MessageHide[]
-- notes: Note[] // ← добавили обратную сторону связи
+- notes: Note[]
+- reviewedAssignments: TaskAssignee[] @relation("TaskReviewedBy")
+- reviewedSubmissions: Submission[] @relation("SubmissionReviewedBy")
 
 ### Task
 - id: String @id @default(uuid())
@@ -197,6 +210,7 @@ tsconfig.tsbuildinfo/
 - updatedAt: DateTime @default(now()) @updatedAt
 - createdById: String ?
 - createdByName: String ?
+- reviewRequired: Boolean @default(false)
 - createdBy: User ? @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 - assignees: TaskAssignee[]
 - tags: TaskTag[]
@@ -211,20 +225,26 @@ tsconfig.tsbuildinfo/
 - userId: String
 - task: Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 - user: User @relation(fields: [userId], references: [id], onDelete: Cascade)
-- status: String @default("in_progress") // 'in_progress' | 'done'
+- status: TaskAssigneeStatus @default(in_progress)
 - assignedAt: DateTime @default(now())
 - completedAt: DateTime ?
+- submittedAt: DateTime ?
+- reviewedAt: DateTime ?
+- reviewedById: String ?
+- reviewedBy: User ?     @relation("TaskReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+- submissions: Submission[]
 
 Индексы:
-@@unique([taskId, userId]) // TaskAssignee_taskId_userId_key
-@@index([userId]) // TaskAssignee_userId_idx
-@@index([taskId]) // TaskAssignee_taskId_idx
-@@index([status]) // TaskAssignee_status_idx
+@@unique([taskId, userId])
+@@index([userId])
+@@index([taskId])
+@@index([status])
+@@index([reviewedById])
 
 ### Note
 - id: String @id @default(uuid())
 - userId: String
-- at: DateTime // сохраняем в UTC, группируем по локали на уровне UI
+- at: DateTime
 - allDay: Boolean @default(true)
 - title: String ?
 - text: String
@@ -237,7 +257,7 @@ tsconfig.tsbuildinfo/
 @@index([at])
 
 ## Готовность к review-flow
-- Task.reviewRequired: нет
+- Task.reviewRequired: да
 - TaskAssignee.status включает submitted: проверьте enum/строку
-- submittedAt/reviewedAt/reviewedById: нет
+- submittedAt/reviewedAt/reviewedById: да
 - Модели вложений: TaskAttachment=нет, AssigneeSubmissionAttachment=нет

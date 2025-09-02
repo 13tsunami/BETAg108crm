@@ -1,0 +1,425 @@
+# Audit report
+Date: 2025-09-01T18:19:49.553Z
+Root: C:/Users/ievzh/Projects/BETAg108crm.clean
+
+Pages: 14, API routes: 4, Server actions: 37
+Prisma models: 17, enums: 1
+
+## Problems
+- searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx
+- searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx
+- server action createGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action renameGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action deleteGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action addUsersToGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action removeUserFromGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action fetchGroupMembers should return Promise<void> at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action fetchGroupMembers without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action createSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action renameSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action deleteSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action addUsersToSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action removeUserFromSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action fetchSubjectMembers should return Promise<void> at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- server action fetchSubjectMembers without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx
+- searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx
+- searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx
+- server action upsertUser without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts
+- server action forceResetPassword without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts
+- server action deleteUser without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts
+- API route without auth() guard at C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/auth/[...nextauth]/route.ts
+- API route without auth() guard at C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts
+- missing required env: DIRECT_URL
+- missing required env: NEXTAUTH_URL
+- docker-compose: uploads volume not detected
+
+## API routes
+- /api/auth/[...nextauth] ->  (C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/auth/[...nextauth]/route.ts)
+- /api/files/upload -> POST (C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts)
+- /api/files/[name] -> GET (C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts)
+- /api/tasks/mark-done -> POST (C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/tasks/mark-done/route.ts)
+
+## Pages
+- /calendar (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx) searchParams=mismatch async=true client=false
+- /dashboard (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx) searchParams=mismatch async=true client=false
+- /groups (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/page.tsx) searchParams=ok async=true client=false
+- /inboxtasks/archive (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx) searchParams=mismatch async=true client=false
+- /inboxtasks (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx) searchParams=mismatch async=true client=false
+- /reviews (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx) searchParams=mismatch async=true client=false
+- /reviews/[taskAssigneeId] (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx) searchParams=none async=true client=false
+- /schedule (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/schedule/page.tsx) searchParams=none async=false client=true
+- /settings (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx) searchParams=none async=true client=false
+- /teachers (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx) searchParams=none async=true client=false
+- /sign-in (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(auth)/sign-in/page.tsx) searchParams=none async=true client=false
+- /admin/db-status (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx) searchParams=none async=true client=false
+- /admin (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/page.tsx) searchParams=none async=true client=false
+- /. (C:/Users/ievzh/Projects/BETAg108crm.clean/app/page.tsx) searchParams=none async=true client=false
+
+## Server actions
+- createNoteAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts) return=Promise<void> redirect=true revalidate=true
+- updateNoteAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts) return=Promise<void> redirect=true revalidate=true
+- deleteNoteAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts) return=Promise<void> redirect=true revalidate=true
+- markMyTaskDoneAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts) return=Promise<void> redirect=true revalidate=true
+- createGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- renameGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- deleteGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- addUsersToGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- removeUserFromGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- fetchGroupMembers (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<{ userId: string; name: string | null }[]> redirect=false revalidate=false
+- createSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- renameSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- deleteSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- addUsersToSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- removeUserFromSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<void> redirect=false revalidate=true
+- fetchSubjectMembers (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) return=Promise<{ userId: string; name: string | null }[]> redirect=false revalidate=false
+- heartbeat (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/actions.ts) return=Promise<void> redirect=false revalidate=false
+- createTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) return=Promise<void> redirect=false revalidate=false
+- updateTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) return=Promise<void> redirect=false revalidate=false
+- deleteTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) return=Promise<void> redirect=false revalidate=false
+- markAssigneeDoneAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) return=Promise<void> redirect=false revalidate=false
+- unarchiveAssigneeAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) return=Promise<void> redirect=false revalidate=false
+- submitForReviewAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts) return=Promise<void> redirect=true revalidate=true
+- approveSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts) return=Promise<void> redirect=true revalidate=true
+- rejectSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts) return=Promise<void> redirect=true revalidate=true
+- approveAllInTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts) return=Promise<void> redirect=true revalidate=true
+- submitForReviewAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts) return=Promise<void> redirect=true revalidate=true
+- approveSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts) return=Promise<void> redirect=true revalidate=true
+- rejectSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts) return=Promise<void> redirect=true revalidate=true
+- approveAllInTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts) return=Promise<void> redirect=true revalidate=true
+- updateSelfAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts) return=Promise<void> redirect=true revalidate=true
+- createUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts) return=Promise<void> redirect=true revalidate=true
+- updateUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts) return=Promise<void> redirect=true revalidate=true
+- deleteUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts) return=Promise<void> redirect=true revalidate=true
+- upsertUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts) return=Promise<void> redirect=true revalidate=true
+- forceResetPassword (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts) return=Promise<void> redirect=true revalidate=true
+- deleteUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts) return=Promise<void> redirect=true revalidate=true
+
+## Guards
+- server-action createNoteAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts) auth=true rolePred=false earlyForbidden=false
+- server-action updateNoteAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts) auth=true rolePred=false earlyForbidden=false
+- server-action deleteNoteAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts) auth=true rolePred=false earlyForbidden=false
+- server-action markMyTaskDoneAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts) auth=true rolePred=false earlyForbidden=false
+- server-action createGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action renameGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action deleteGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action addUsersToGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action removeUserFromGroup (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action fetchGroupMembers (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action createSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action renameSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action deleteSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action addUsersToSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action removeUserFromSubject (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action fetchSubjectMembers (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action heartbeat (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/actions.ts) auth=true rolePred=false earlyForbidden=false
+- server-action createTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action updateTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action deleteTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action markAssigneeDoneAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) auth=true rolePred=false earlyForbidden=false
+- server-action unarchiveAssigneeAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts) auth=true rolePred=false earlyForbidden=false
+- server-action submitForReviewAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action approveSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action rejectSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action approveAllInTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action submitForReviewAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action approveSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action rejectSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action approveAllInTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action updateSelfAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts) auth=true rolePred=false earlyForbidden=false
+- server-action createUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action updateUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action deleteUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts) auth=true rolePred=true earlyForbidden=false
+- server-action upsertUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action forceResetPassword (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts) auth=false rolePred=false earlyForbidden=false
+- server-action deleteUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts) auth=false rolePred=false earlyForbidden=false
+- api-route (C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/auth/[...nextauth]/route.ts) auth=false rolePred=false earlyForbidden=false
+- api-route (C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts) auth=true rolePred=true earlyForbidden=true
+- api-route (C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts) auth=false rolePred=false earlyForbidden=false
+- api-route (C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/tasks/mark-done/route.ts) auth=true rolePred=false earlyForbidden=false
+
+## UI wiring
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx action -> unarchiveAssigneeAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx action -> submitForReviewAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx action -> markAssigneeDoneAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx action -> deleteTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx action -> updateTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx action -> deleteTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx action -> approveAllInTaskAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx onClick -> ? (?)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx action -> approveSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx action -> rejectSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx action -> approveSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx action -> rejectSubmissionAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx action -> updateSelfAction (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx action -> createUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx action -> updateUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx action -> deleteUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx action -> deleteUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx action -> forceResetPassword (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx)
+- C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx action -> upsertUser (C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx)
+
+## Reachability
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/groups-search-client.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/actions.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/Heartbeat.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/layout.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/auth.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/db.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/dbInfo.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/edu.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/http.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/prisma.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/rbac.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/roles.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/search/index.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/search/types.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/serialize.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/server/uploads.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/tasks/getUnreadTasks.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/lib/uploads.ts
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/AddUserModal.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/ConfirmDeleteUser.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/EditUserModal.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/GroupsBoard.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/Modal.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/Providers.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/SearchProvider.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/UniversalSearchInput.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/Sidebar.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/TaskPopover.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/Tooltip.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/UnreadBadgeClient.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/UserForm.tsx
+- unreachable: C:/Users/ievzh/Projects/BETAg108crm.clean/components/UserMenu.tsx
+
+## Env
+DATABASE_URL, NEXTAUTH_SECRET, NEXT_PUBLIC_REVIEW_FLOW, NODE_ENV, ROOT_USER_IDS, UPLOADS_DIR
+
+## Prisma models
+- User
+- id: String @id @default(uuid())
+- name: String
+- username: String? @unique
+- email: String? @unique
+- phone: String? @unique
+- birthday: DateTime?
+- classroom: String?
+- role: String?
+- avatarUrl: String?
+- telegram: String?
+- about: String?
+- notifyEmail: Boolean @default(true)
+- notifyTelegram: Boolean @default(false)
+- subjects: String?
+- methodicalGroups: String?
+- passwordHash: String?
+- lastSeen: DateTime?
+- messages: Message[] @relation("UserMessages")
+- threadsA: Thread[] @relation("ThreadA")
+- threadsB: Thread[] @relation("ThreadB")
+- readMarks: ReadMark[] @relation("ReadMarkUser")
+- groupMemberships: GroupMember[]
+- taskAssignments: TaskAssignee[]
+- subjectMemberships: SubjectMember[]
+- createdTasks: Task[] @relation("TaskCreatedBy")
+- messageHides: MessageHide[]
+- notes: Note[]
+- reviewedAssignments: TaskAssignee[] @relation("TaskReviewedBy")
+- reviewedSubmissions: Submission[] @relation("SubmissionReviewedBy")
+- Group
+- id: String @id @default(uuid())
+- name: String
+- members: GroupMember[]
+- GroupMember
+- id: String @id @default(uuid())
+- userId: String
+- groupId: String
+- user: User @relation(fields: [userId], references: [id], onDelete: Cascade)
+- group: Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  - @@unique([userId, groupId])
+- Thread
+- id: String @id @default(uuid())
+- aId: String
+- bId: String
+- lastMessageAt: DateTime?
+- lastMessageText: String?
+- title: String @default("")
+- a: User @relation("ThreadA", fields: [aId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+- b: User @relation("ThreadB", fields: [bId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+- messages: Message[]
+- readMarks: ReadMark[] @relation("ReadMarkThread")
+  - @@index([lastMessageAt, id])
+- Message
+- id: String @id @default(uuid())
+- createdAt: DateTime @default(now())
+- text: String
+- authorId: String
+- threadId: String
+- editedAt: DateTime?
+- deletedAt: DateTime?
+- author: User @relation("UserMessages", fields: [authorId], references: [id], onDelete: Cascade)
+- thread: Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+- attachments: Attachment[] @relation("MessageAttachments")
+- hides: MessageHide[]
+  - @@index([threadId, createdAt])
+- MessageHide
+- messageId: String
+- userId: String
+- message: Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+- user: User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  - @@id([messageId, userId])
+  - @@index([userId])
+- Task
+- id: String @id @default(uuid())
+- title: String
+- description: String
+- dueDate: DateTime
+- hidden: Boolean @default(false)
+- priority: String @default("normal")
+- createdAt: DateTime @default(now())
+- updatedAt: DateTime @default(now()) @updatedAt
+- createdById: String?
+- createdByName: String?
+- reviewRequired: Boolean @default(false)
+- createdBy: User? @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+- assignees: TaskAssignee[]
+- tags: TaskTag[]
+  - @@index([createdById])
+  - @@index([dueDate])
+- TaskAssignee
+- id: String @id @default(uuid())
+- taskId: String
+- userId: String
+- task: Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+- user: User @relation(fields: [userId], references: [id], onDelete: Cascade)
+- status: TaskAssigneeStatus @default(in_progress)
+- assignedAt: DateTime @default(now())
+- completedAt: DateTime?
+- submittedAt: DateTime?
+- reviewedAt: DateTime?
+- reviewedById: String?
+- reviewedBy: User? @relation("TaskReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+- submissions: Submission[]
+  - @@unique([taskId, userId])
+  - @@index([userId])
+  - @@index([taskId])
+  - @@index([status])
+  - @@index([reviewedById])
+- Tag
+- id: String @id @default(uuid())
+- name: String @unique
+- tasks: TaskTag[]
+- TaskTag
+- id: String @id @default(uuid())
+- taskId: String
+- tagId: String
+- task: Task @relation(fields: [taskId], references: [id])
+- tag: Tag @relation(fields: [tagId], references: [id])
+- ReadMark
+- threadId: String
+- userId: String
+- readAt: DateTime
+- thread: Thread @relation("ReadMarkThread", fields: [threadId], references: [id], onDelete: Cascade)
+- user: User @relation("ReadMarkUser", fields: [userId], references: [id], onDelete: Cascade)
+  - @@id([threadId, userId])
+  - @@index([userId])
+- Attachment
+- id: String @id @default(uuid())
+- messageId: String?
+- message: Message? @relation("MessageAttachments", fields: [messageId], references: [id], onDelete: Cascade)
+- name: String
+- originalName: String?
+- mime: String
+- size: Int
+- data: Bytes? // опциональное
+- sha256: String? @db.VarChar(64)
+- createdAt: DateTime @default(now())
+- submissionLinks: SubmissionAttachment[]
+  - @@index([messageId])
+- Subject
+- id: String @id @default(uuid())
+- name: String @unique
+- members: SubjectMember[]
+- SubjectMember
+- id: String @id @default(uuid())
+- userId: String
+- subjectId: String
+- user: User @relation(fields: [userId], references: [id], onDelete: Cascade)
+- subject: Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  - @@unique([userId, subjectId])
+- Note
+- id: String @id @default(uuid())
+- userId: String
+- at: DateTime
+- allDay: Boolean @default(true)
+- title: String?
+- text: String
+- createdAt: DateTime @default(now())
+- updatedAt: DateTime @updatedAt
+- user: User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  - @@index([userId, at])
+  - @@index([at])
+- Submission
+- id: String @id @default(uuid())
+- taskAssigneeId: String
+- comment: String?
+- createdAt: DateTime @default(now())
+- open: Boolean @default(true)
+- reviewedAt: DateTime?
+- reviewedById: String?
+- reviewerComment: String?
+- reviewedBy: User? @relation("SubmissionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+- assignee: TaskAssignee @relation(fields: [taskAssigneeId], references: [id], onDelete: Cascade)
+- attachments: SubmissionAttachment[]
+  - @@index([taskAssigneeId])
+  - @@index([reviewedById])
+  - @@index([taskAssigneeId, open])
+- SubmissionAttachment
+- submissionId: String
+- attachmentId: String
+- submission: Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+- attachment: Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  - @@id([submissionId, attachmentId])
+  - @@index([attachmentId])
+
+## Prisma relations
+- User -> Message via messages
+- User -> Thread via threadsA
+- User -> Thread via threadsB
+- User -> ReadMark via readMarks
+- User -> Task via createdTasks
+- User -> TaskAssignee via reviewedAssignments
+- User -> Submission via reviewedSubmissions
+- GroupMember -> User via user
+- GroupMember -> Group via group
+- Thread -> User via a
+- Thread -> User via b
+- Thread -> ReadMark via readMarks
+- Message -> User via author
+- Message -> Thread via thread
+- Message -> Attachment via attachments
+- MessageHide -> Message via message
+- MessageHide -> User via user
+- Task -> User via createdBy
+- TaskAssignee -> Task via task
+- TaskAssignee -> User via user
+- TaskAssignee -> User via reviewedBy
+- TaskTag -> Task via task
+- TaskTag -> Tag via tag
+- ReadMark -> Thread via thread
+- ReadMark -> User via user
+- Attachment -> Message via message
+- SubjectMember -> User via user
+- SubjectMember -> Subject via subject
+- Note -> User via user
+- Submission -> User via reviewedBy
+- Submission -> TaskAssignee via assignee
+- SubmissionAttachment -> Submission via submission
+- SubmissionAttachment -> Attachment via attachment
+
+## Notes
+- docker-compose: uploads volume not detected

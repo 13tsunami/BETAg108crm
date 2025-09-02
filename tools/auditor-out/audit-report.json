@@ -1,0 +1,3286 @@
+{
+  "generatedAt": "2025-09-01T18:19:49.553Z",
+  "root": "C:/Users/ievzh/Projects/BETAg108crm.clean",
+  "summary": {
+    "pages": 14,
+    "apiRoutes": 4,
+    "serverActions": 37,
+    "prismaModels": 17,
+    "prismaEnums": 1
+  },
+  "pages": [
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+      "route": "/calendar",
+      "isClient": false,
+      "hasSearchParams": true,
+      "searchParamsType": "{ searchParams: SearchParams }",
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx",
+      "route": "/dashboard",
+      "isClient": false,
+      "hasSearchParams": true,
+      "searchParamsType": "{ searchParams: SearchParams }",
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/page.tsx",
+      "route": "/groups",
+      "isClient": false,
+      "hasSearchParams": true,
+      "searchParamsType": "{\r\n  searchParams: Promise<Record<string, string | string[] | undefined>>;\r\n}",
+      "searchParamsOk": true,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+      "route": "/inboxtasks/archive",
+      "isClient": false,
+      "hasSearchParams": true,
+      "searchParamsType": "{ searchParams: SearchParams }",
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "route": "/inboxtasks",
+      "isClient": false,
+      "hasSearchParams": true,
+      "searchParamsType": "{ searchParams: SearchParams }",
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+      "route": "/reviews",
+      "isClient": false,
+      "hasSearchParams": true,
+      "searchParamsType": "{ searchParams: SearchParams }",
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+      "route": "/reviews/[taskAssigneeId]",
+      "isClient": false,
+      "hasSearchParams": false,
+      "searchParamsType": "{ params: Params }",
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/schedule/page.tsx",
+      "route": "/schedule",
+      "isClient": true,
+      "hasSearchParams": false,
+      "searchParamsType": null,
+      "searchParamsOk": false,
+      "isAsync": false,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+      "route": "/settings",
+      "isClient": false,
+      "hasSearchParams": false,
+      "searchParamsType": null,
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "route": "/teachers",
+      "isClient": false,
+      "hasSearchParams": false,
+      "searchParamsType": null,
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(auth)/sign-in/page.tsx",
+      "route": "/sign-in",
+      "isClient": false,
+      "hasSearchParams": false,
+      "searchParamsType": null,
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+      "route": "/admin/db-status",
+      "isClient": false,
+      "hasSearchParams": false,
+      "searchParamsType": null,
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/page.tsx",
+      "route": "/admin",
+      "isClient": false,
+      "hasSearchParams": false,
+      "searchParamsType": null,
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/page.tsx",
+      "route": "/.",
+      "isClient": false,
+      "hasSearchParams": false,
+      "searchParamsType": null,
+      "searchParamsOk": false,
+      "isAsync": true,
+      "usesClientHooksOnServer": false
+    }
+  ],
+  "apiRoutes": [
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/auth/[...nextauth]/route.ts",
+      "route": "/api/auth/[...nextauth]",
+      "methods": []
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts",
+      "route": "/api/files/upload",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts",
+      "route": "/api/files/[name]",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/tasks/mark-done/route.ts",
+      "route": "/api/tasks/mark-done",
+      "methods": [
+        "POST"
+      ]
+    }
+  ],
+  "serverActions": [
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "name": "createNoteAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "name": "updateNoteAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "name": "deleteNoteAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "name": "markMyTaskDoneAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "createGroup",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "renameGroup",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "deleteGroup",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "addUsersToGroup",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "removeUserFromGroup",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "fetchGroupMembers",
+      "returnType": "Promise<{ userId: string; name: string | null }[]>",
+      "hasRedirect": false,
+      "hasRevalidatePath": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "createSubject",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "renameSubject",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "deleteSubject",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "addUsersToSubject",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "removeUserFromSubject",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "name": "fetchSubjectMembers",
+      "returnType": "Promise<{ userId: string; name: string | null }[]>",
+      "hasRedirect": false,
+      "hasRevalidatePath": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/actions.ts",
+      "name": "heartbeat",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "name": "createTaskAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "name": "updateTaskAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "name": "deleteTaskAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "name": "markAssigneeDoneAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "name": "unarchiveAssigneeAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": false,
+      "hasRevalidatePath": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "name": "submitForReviewAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "name": "approveSubmissionAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "name": "rejectSubmissionAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "name": "approveAllInTaskAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "name": "submitForReviewAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "name": "approveSubmissionAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "name": "rejectSubmissionAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "name": "approveAllInTaskAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts",
+      "name": "updateSelfAction",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "name": "createUser",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "name": "updateUser",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "name": "deleteUser",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "name": "upsertUser",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "name": "forceResetPassword",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "name": "deleteUser",
+      "returnType": "Promise<void>",
+      "hasRedirect": true,
+      "hasRevalidatePath": true
+    }
+  ],
+  "guards": [
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "kind": "server-action",
+      "name": "createNoteAction",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "kind": "server-action",
+      "name": "updateNoteAction",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "kind": "server-action",
+      "name": "deleteNoteAction",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "kind": "server-action",
+      "name": "markMyTaskDoneAction",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "createGroup",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "renameGroup",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "deleteGroup",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "addUsersToGroup",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "removeUserFromGroup",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "fetchGroupMembers",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "createSubject",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "renameSubject",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "deleteSubject",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "addUsersToSubject",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "removeUserFromSubject",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "kind": "server-action",
+      "name": "fetchSubjectMembers",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/actions.ts",
+      "kind": "server-action",
+      "name": "heartbeat",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "kind": "server-action",
+      "name": "createTaskAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "kind": "server-action",
+      "name": "updateTaskAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "kind": "server-action",
+      "name": "deleteTaskAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "kind": "server-action",
+      "name": "markAssigneeDoneAction",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "kind": "server-action",
+      "name": "unarchiveAssigneeAction",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "kind": "server-action",
+      "name": "submitForReviewAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "kind": "server-action",
+      "name": "approveSubmissionAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "kind": "server-action",
+      "name": "rejectSubmissionAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "kind": "server-action",
+      "name": "approveAllInTaskAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "kind": "server-action",
+      "name": "submitForReviewAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "kind": "server-action",
+      "name": "approveSubmissionAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "kind": "server-action",
+      "name": "rejectSubmissionAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "kind": "server-action",
+      "name": "approveAllInTaskAction",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts",
+      "kind": "server-action",
+      "name": "updateSelfAction",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "kind": "server-action",
+      "name": "createUser",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "kind": "server-action",
+      "name": "updateUser",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "kind": "server-action",
+      "name": "deleteUser",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "kind": "server-action",
+      "name": "upsertUser",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "kind": "server-action",
+      "name": "forceResetPassword",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "kind": "server-action",
+      "name": "deleteUser",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/auth/[...nextauth]/route.ts",
+      "kind": "api-route",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts",
+      "kind": "api-route",
+      "hasAuth": true,
+      "hasRolePredicate": true,
+      "hasEarlyForbidden": true
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts",
+      "kind": "api-route",
+      "hasAuth": false,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    },
+    {
+      "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/tasks/mark-done/route.ts",
+      "kind": "api-route",
+      "hasAuth": true,
+      "hasRolePredicate": false,
+      "hasEarlyForbidden": false
+    }
+  ],
+  "ui": {
+    "jsxActions": [
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+        "where": "action",
+        "targetName": "unarchiveAssigneeAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+        "snippet": "unarchiveAssigneeAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "where": "action",
+        "targetName": "submitForReviewAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "snippet": "submitForReviewAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "where": "action",
+        "targetName": "markAssigneeDoneAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "snippet": "markAssigneeDoneAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "where": "action",
+        "targetName": "deleteTaskAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "snippet": "deleteTaskAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "where": "action",
+        "targetName": "updateTaskAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "snippet": "updateTaskAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "where": "action",
+        "targetName": "deleteTaskAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+        "snippet": "deleteTaskAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+        "where": "action",
+        "targetName": "approveAllInTaskAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+        "snippet": "approveAllInTaskAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+        "where": "onClick",
+        "targetName": null,
+        "targetFile": null,
+        "snippet": "(e) => e.stopPropagation()"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+        "where": "action",
+        "targetName": "approveSubmissionAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+        "snippet": "approveSubmissionAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+        "where": "action",
+        "targetName": "rejectSubmissionAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+        "snippet": "rejectSubmissionAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+        "where": "action",
+        "targetName": "approveSubmissionAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+        "snippet": "approveSubmissionAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+        "where": "action",
+        "targetName": "rejectSubmissionAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+        "snippet": "rejectSubmissionAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+        "where": "action",
+        "targetName": "updateSelfAction",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+        "snippet": "updateSelfAction"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+        "where": "action",
+        "targetName": "createUser",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+        "snippet": "createUser"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+        "where": "action",
+        "targetName": "updateUser",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+        "snippet": "updateUser"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+        "where": "action",
+        "targetName": "deleteUser",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+        "snippet": "deleteUser"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+        "where": "action",
+        "targetName": "deleteUser",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+        "snippet": "deleteUser"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+        "where": "action",
+        "targetName": "forceResetPassword",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+        "snippet": "forceResetPassword"
+      },
+      {
+        "file": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+        "where": "action",
+        "targetName": "upsertUser",
+        "targetFile": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+        "snippet": "upsertUser"
+      }
+    ],
+    "fetchCalls": [],
+    "routerPushes": []
+  },
+  "imports": [
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/CalendarModals.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/CalendarModals.tsx",
+      "to": "react-dom"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/CalendarModals.tsx",
+      "to": "./page"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/CalendarModals.tsx",
+      "to": "./actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+      "to": "./CalendarBoard"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+      "to": "./NewNoteButton"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+      "to": "./CalendarModals"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/CalendarBoard.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/CalendarBoard.tsx",
+      "to": "./page"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/CalendarBoard.tsx",
+      "to": "@/components/Tooltip"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/analytics.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/analytics.ts",
+      "to": "./types"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/charts.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/charts.tsx",
+      "to": "./types"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/charts.tsx",
+      "to": "./page.module.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/widgets.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/widgets.tsx",
+      "to": "./types"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/widgets.tsx",
+      "to": "./page.module.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/widgets.tsx",
+      "to": "./charts"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx",
+      "to": "./page.module.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx",
+      "to": "./widgets"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx",
+      "to": "./analytics"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx",
+      "to": "./types"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/groups-search-client.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/groups-search-client.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/page.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/page.tsx",
+      "to": "@/components/GroupsBoard"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/actions.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/Heartbeat.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/Heartbeat.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/actions.ts",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+      "to": "@prisma/client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+      "to": "../actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/TaskForm.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/TaskForm.tsx",
+      "to": "react-dom"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/review-actions.ts",
+      "to": "@/lib/uploads"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/ReviewSubmitForm.tsx",
+      "to": "./review-actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "./TaskForm"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "./actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "./review-actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "@prisma/client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "./inboxtasks.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+      "to": "./ReviewSubmitForm"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "@prisma/client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "@/components/Sidebar"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "./heartbeat/Heartbeat"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "./heartbeat/actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "@/lib/tasks/getUnreadTasks"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "to": "./layout.module.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "to": "@/lib/uploads"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+      "to": "@prisma/client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+      "to": "../inboxtasks/review-actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/[taskAssigneeId]/page.tsx",
+      "to": "../../inboxtasks/review-actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts",
+      "to": "bcryptjs"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/actions.ts",
+      "to": "@prisma/client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/SettingsToast.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/SettingsToast.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+      "to": "@/components/UserForm"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+      "to": "./actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+      "to": "./SettingsToast"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/settings/page.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "to": "next/headers"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "to": "bcryptjs"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/actions.ts",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/SearchBox.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/SearchBox.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/TeachersToast.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/TeachersToast.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "./actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "@/components/AddUserModal"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "@/components/EditUserModal"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "./SearchBox"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "@prisma/client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "@/components/ConfirmDeleteUser"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/teachers/page.tsx",
+      "to": "./TeachersToast"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(auth)/sign-in/SignInForm.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(auth)/sign-in/SignInForm.tsx",
+      "to": "next-auth/react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(auth)/sign-in/page.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(auth)/sign-in/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(auth)/sign-in/page.tsx",
+      "to": "./SignInForm"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "to": "bcryptjs"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+      "to": "./actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/page.tsx",
+      "to": "./page.module.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/layout.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/layout.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/layout.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/layout.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/layout.tsx",
+      "to": "@/components/Sidebar"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/layout.tsx",
+      "to": "./layout.module.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/page.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/page.tsx",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/page.tsx",
+      "to": "./page.module.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/auth/[...nextauth]/route.ts",
+      "to": "next-auth"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/auth/[...nextauth]/route.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts",
+      "to": "next/server"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts",
+      "to": "@/lib/roles"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/upload/route.ts",
+      "to": "@/lib/server/uploads"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts",
+      "to": "@/lib/uploads"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts",
+      "to": "node:path"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts",
+      "to": "node:fs"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/tasks/mark-done/route.ts",
+      "to": "next/server"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/tasks/mark-done/route.ts",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/tasks/mark-done/route.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/tasks/mark-done/route.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/providers.tsx",
+      "to": "next-auth/react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/providers.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/layout.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/layout.tsx",
+      "to": "./providers"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/layout.tsx",
+      "to": "@/styles/globals.css"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/layout.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/page.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/app/page.tsx",
+      "to": "@/auth.config"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/auth.ts",
+      "to": "next-auth"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/auth.ts",
+      "to": "next-auth/providers/credentials"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/auth.ts",
+      "to": "bcryptjs"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/auth.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/auth.ts",
+      "to": "@/lib/rbac"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/db.ts",
+      "to": "@prisma/client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/prisma.ts",
+      "to": "@prisma/client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/rbac.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/search/index.ts",
+      "to": "server-only"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/search/index.ts",
+      "to": "next/cache"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/search/index.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/search/index.ts",
+      "to": "./types"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/server/uploads.ts",
+      "to": "fs"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/server/uploads.ts",
+      "to": "path"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/server/uploads.ts",
+      "to": "crypto"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/server/uploads.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/tasks/getUnreadTasks.ts",
+      "to": "@/lib/prisma"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/uploads.ts",
+      "to": "node:fs"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/uploads.ts",
+      "to": "node:path"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/uploads.ts",
+      "to": "node:crypto"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Modal.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Modal.tsx",
+      "to": "react-dom"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/UserForm.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/AddUserModal.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/AddUserModal.tsx",
+      "to": "./Modal"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/AddUserModal.tsx",
+      "to": "./UserForm"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/ConfirmDeleteUser.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/ConfirmDeleteUser.tsx",
+      "to": "./Modal"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/EditUserModal.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/EditUserModal.tsx",
+      "to": "./Modal"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/EditUserModal.tsx",
+      "to": "./UserForm"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/GroupsBoard.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/GroupsBoard.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/GroupsBoard.tsx",
+      "to": "@/app/(app)/groups/actions"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/GroupsBoard.tsx",
+      "to": "@/app/(app)/groups/groups-search-client"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Providers.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/SearchProvider.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/SearchProvider.tsx",
+      "to": "@/lib/search/types"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/UniversalSearchInput.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/UniversalSearchInput.tsx",
+      "to": "./SearchProvider"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/UniversalSearchInput.tsx",
+      "to": "@/lib/search/types"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Sidebar.tsx",
+      "to": "next/link"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Sidebar.tsx",
+      "to": "next/navigation"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Sidebar.tsx",
+      "to": "next-auth/react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Sidebar.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/TaskPopover.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/TaskPopover.tsx",
+      "to": "next/link"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Tooltip.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Tooltip.tsx",
+      "to": "react-dom"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/UnreadBadgeClient.tsx",
+      "to": "react"
+    },
+    {
+      "from": "C:/Users/ievzh/Projects/BETAg108crm.clean/components/UserMenu.tsx",
+      "to": "next-auth/react"
+    }
+  ],
+  "reachability": {
+    "unreachable": [
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/groups-search-client.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/actions.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/heartbeat/Heartbeat.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/layout.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/actions.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/layout.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/auth.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/db.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/dbInfo.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/edu.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/http.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/prisma.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/rbac.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/roles.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/search/index.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/search/types.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/serialize.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/server/uploads.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/tasks/getUnreadTasks.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/lib/uploads.ts",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/AddUserModal.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/ConfirmDeleteUser.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/EditUserModal.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/GroupsBoard.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Modal.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Providers.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/SearchProvider.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/search/UniversalSearchInput.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Sidebar.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/TaskPopover.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/Tooltip.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/UnreadBadgeClient.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/UserForm.tsx",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/components/UserMenu.tsx"
+    ]
+  },
+  "env": {
+    "referenced": [
+      "DATABASE_URL",
+      "NEXTAUTH_SECRET",
+      "NEXT_PUBLIC_REVIEW_FLOW",
+      "NODE_ENV",
+      "ROOT_USER_IDS",
+      "UPLOADS_DIR"
+    ],
+    "files": [
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/.env",
+      "C:/Users/ievzh/Projects/BETAg108crm.clean/.env.local"
+    ]
+  },
+  "prisma": {
+    "models": [
+      {
+        "name": "User",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "username",
+            "type": "String?",
+            "attrs": [
+              "@unique"
+            ]
+          },
+          {
+            "name": "email",
+            "type": "String?",
+            "attrs": [
+              "@unique"
+            ]
+          },
+          {
+            "name": "phone",
+            "type": "String?",
+            "attrs": [
+              "@unique"
+            ]
+          },
+          {
+            "name": "birthday",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "classroom",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "role",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "avatarUrl",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "telegram",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "about",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "notifyEmail",
+            "type": "Boolean",
+            "attrs": [
+              "@default(true)"
+            ]
+          },
+          {
+            "name": "notifyTelegram",
+            "type": "Boolean",
+            "attrs": [
+              "@default(false)"
+            ]
+          },
+          {
+            "name": "subjects",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "methodicalGroups",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "passwordHash",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "lastSeen",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "messages",
+            "type": "Message[]",
+            "attrs": [
+              "@relation(\"UserMessages\")"
+            ]
+          },
+          {
+            "name": "threadsA",
+            "type": "Thread[]",
+            "attrs": [
+              "@relation(\"ThreadA\")"
+            ]
+          },
+          {
+            "name": "threadsB",
+            "type": "Thread[]",
+            "attrs": [
+              "@relation(\"ThreadB\")"
+            ]
+          },
+          {
+            "name": "readMarks",
+            "type": "ReadMark[]",
+            "attrs": [
+              "@relation(\"ReadMarkUser\")"
+            ]
+          },
+          {
+            "name": "groupMemberships",
+            "type": "GroupMember[]",
+            "attrs": []
+          },
+          {
+            "name": "taskAssignments",
+            "type": "TaskAssignee[]",
+            "attrs": []
+          },
+          {
+            "name": "subjectMemberships",
+            "type": "SubjectMember[]",
+            "attrs": []
+          },
+          {
+            "name": "createdTasks",
+            "type": "Task[]",
+            "attrs": [
+              "@relation(\"TaskCreatedBy\")"
+            ]
+          },
+          {
+            "name": "messageHides",
+            "type": "MessageHide[]",
+            "attrs": []
+          },
+          {
+            "name": "notes",
+            "type": "Note[]",
+            "attrs": []
+          },
+          {
+            "name": "reviewedAssignments",
+            "type": "TaskAssignee[]",
+            "attrs": [
+              "@relation(\"TaskReviewedBy\")"
+            ]
+          },
+          {
+            "name": "reviewedSubmissions",
+            "type": "Submission[]",
+            "attrs": [
+              "@relation(\"SubmissionReviewedBy\")"
+            ]
+          }
+        ],
+        "modelAttrs": []
+      },
+      {
+        "name": "Group",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "members",
+            "type": "GroupMember[]",
+            "attrs": []
+          }
+        ],
+        "modelAttrs": []
+      },
+      {
+        "name": "GroupMember",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "userId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "groupId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "user",
+            "type": "User",
+            "attrs": [
+              "@relation(fields:",
+              "[userId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "group",
+            "type": "Group",
+            "attrs": [
+              "@relation(fields:",
+              "[groupId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          }
+        ],
+        "modelAttrs": [
+          "@@unique([userId, groupId])"
+        ]
+      },
+      {
+        "name": "Thread",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "aId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "bId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "lastMessageAt",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "lastMessageText",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "title",
+            "type": "String",
+            "attrs": [
+              "@default(\"\")"
+            ]
+          },
+          {
+            "name": "a",
+            "type": "User",
+            "attrs": [
+              "@relation(\"ThreadA\",",
+              "fields:",
+              "[aId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade,",
+              "onUpdate:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "b",
+            "type": "User",
+            "attrs": [
+              "@relation(\"ThreadB\",",
+              "fields:",
+              "[bId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade,",
+              "onUpdate:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "messages",
+            "type": "Message[]",
+            "attrs": []
+          },
+          {
+            "name": "readMarks",
+            "type": "ReadMark[]",
+            "attrs": [
+              "@relation(\"ReadMarkThread\")"
+            ]
+          }
+        ],
+        "modelAttrs": [
+          "@@index([lastMessageAt, id])"
+        ]
+      },
+      {
+        "name": "Message",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime",
+            "attrs": [
+              "@default(now())"
+            ]
+          },
+          {
+            "name": "text",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "authorId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "threadId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "editedAt",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "deletedAt",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "author",
+            "type": "User",
+            "attrs": [
+              "@relation(\"UserMessages\",",
+              "fields:",
+              "[authorId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "thread",
+            "type": "Thread",
+            "attrs": [
+              "@relation(fields:",
+              "[threadId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "attachments",
+            "type": "Attachment[]",
+            "attrs": [
+              "@relation(\"MessageAttachments\")"
+            ]
+          },
+          {
+            "name": "hides",
+            "type": "MessageHide[]",
+            "attrs": []
+          }
+        ],
+        "modelAttrs": [
+          "@@index([threadId, createdAt])"
+        ]
+      },
+      {
+        "name": "MessageHide",
+        "fields": [
+          {
+            "name": "messageId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "userId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "message",
+            "type": "Message",
+            "attrs": [
+              "@relation(fields:",
+              "[messageId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "user",
+            "type": "User",
+            "attrs": [
+              "@relation(fields:",
+              "[userId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          }
+        ],
+        "modelAttrs": [
+          "@@id([messageId, userId])",
+          "@@index([userId])"
+        ]
+      },
+      {
+        "name": "Task",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "title",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "description",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "dueDate",
+            "type": "DateTime",
+            "attrs": []
+          },
+          {
+            "name": "hidden",
+            "type": "Boolean",
+            "attrs": [
+              "@default(false)"
+            ]
+          },
+          {
+            "name": "priority",
+            "type": "String",
+            "attrs": [
+              "@default(\"normal\")"
+            ]
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime",
+            "attrs": [
+              "@default(now())"
+            ]
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime",
+            "attrs": [
+              "@default(now())",
+              "@updatedAt"
+            ]
+          },
+          {
+            "name": "createdById",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "createdByName",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "reviewRequired",
+            "type": "Boolean",
+            "attrs": [
+              "@default(false)"
+            ]
+          },
+          {
+            "name": "createdBy",
+            "type": "User?",
+            "attrs": [
+              "@relation(\"TaskCreatedBy\",",
+              "fields:",
+              "[createdById],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "SetNull,",
+              "onUpdate:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "assignees",
+            "type": "TaskAssignee[]",
+            "attrs": []
+          },
+          {
+            "name": "tags",
+            "type": "TaskTag[]",
+            "attrs": []
+          }
+        ],
+        "modelAttrs": [
+          "@@index([createdById])",
+          "@@index([dueDate])"
+        ]
+      },
+      {
+        "name": "TaskAssignee",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "taskId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "userId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "task",
+            "type": "Task",
+            "attrs": [
+              "@relation(fields:",
+              "[taskId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "user",
+            "type": "User",
+            "attrs": [
+              "@relation(fields:",
+              "[userId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "status",
+            "type": "TaskAssigneeStatus",
+            "attrs": [
+              "@default(in_progress)"
+            ]
+          },
+          {
+            "name": "assignedAt",
+            "type": "DateTime",
+            "attrs": [
+              "@default(now())"
+            ]
+          },
+          {
+            "name": "completedAt",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "submittedAt",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "reviewedAt",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "reviewedById",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "reviewedBy",
+            "type": "User?",
+            "attrs": [
+              "@relation(\"TaskReviewedBy\",",
+              "fields:",
+              "[reviewedById],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "SetNull)"
+            ]
+          },
+          {
+            "name": "submissions",
+            "type": "Submission[]",
+            "attrs": []
+          }
+        ],
+        "modelAttrs": [
+          "@@unique([taskId, userId])",
+          "@@index([userId])",
+          "@@index([taskId])",
+          "@@index([status])",
+          "@@index([reviewedById])"
+        ]
+      },
+      {
+        "name": "Tag",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "attrs": [
+              "@unique"
+            ]
+          },
+          {
+            "name": "tasks",
+            "type": "TaskTag[]",
+            "attrs": []
+          }
+        ],
+        "modelAttrs": []
+      },
+      {
+        "name": "TaskTag",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "taskId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "tagId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "task",
+            "type": "Task",
+            "attrs": [
+              "@relation(fields:",
+              "[taskId],",
+              "references:",
+              "[id])"
+            ]
+          },
+          {
+            "name": "tag",
+            "type": "Tag",
+            "attrs": [
+              "@relation(fields:",
+              "[tagId],",
+              "references:",
+              "[id])"
+            ]
+          }
+        ],
+        "modelAttrs": []
+      },
+      {
+        "name": "ReadMark",
+        "fields": [
+          {
+            "name": "threadId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "userId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "readAt",
+            "type": "DateTime",
+            "attrs": []
+          },
+          {
+            "name": "thread",
+            "type": "Thread",
+            "attrs": [
+              "@relation(\"ReadMarkThread\",",
+              "fields:",
+              "[threadId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "user",
+            "type": "User",
+            "attrs": [
+              "@relation(\"ReadMarkUser\",",
+              "fields:",
+              "[userId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          }
+        ],
+        "modelAttrs": [
+          "@@id([threadId, userId])",
+          "@@index([userId])"
+        ]
+      },
+      {
+        "name": "Attachment",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "messageId",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "message",
+            "type": "Message?",
+            "attrs": [
+              "@relation(\"MessageAttachments\",",
+              "fields:",
+              "[messageId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "originalName",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "mime",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "size",
+            "type": "Int",
+            "attrs": []
+          },
+          {
+            "name": "data",
+            "type": "Bytes?",
+            "attrs": [
+              "//",
+              "опциональное"
+            ]
+          },
+          {
+            "name": "sha256",
+            "type": "String?",
+            "attrs": [
+              "@db.VarChar(64)"
+            ]
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime",
+            "attrs": [
+              "@default(now())"
+            ]
+          },
+          {
+            "name": "submissionLinks",
+            "type": "SubmissionAttachment[]",
+            "attrs": []
+          }
+        ],
+        "modelAttrs": [
+          "@@index([messageId])"
+        ]
+      },
+      {
+        "name": "Subject",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "attrs": [
+              "@unique"
+            ]
+          },
+          {
+            "name": "members",
+            "type": "SubjectMember[]",
+            "attrs": []
+          }
+        ],
+        "modelAttrs": []
+      },
+      {
+        "name": "SubjectMember",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "userId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "subjectId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "user",
+            "type": "User",
+            "attrs": [
+              "@relation(fields:",
+              "[userId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "subject",
+            "type": "Subject",
+            "attrs": [
+              "@relation(fields:",
+              "[subjectId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          }
+        ],
+        "modelAttrs": [
+          "@@unique([userId, subjectId])"
+        ]
+      },
+      {
+        "name": "Note",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "userId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "at",
+            "type": "DateTime",
+            "attrs": []
+          },
+          {
+            "name": "allDay",
+            "type": "Boolean",
+            "attrs": [
+              "@default(true)"
+            ]
+          },
+          {
+            "name": "title",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "text",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime",
+            "attrs": [
+              "@default(now())"
+            ]
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime",
+            "attrs": [
+              "@updatedAt"
+            ]
+          },
+          {
+            "name": "user",
+            "type": "User",
+            "attrs": [
+              "@relation(fields:",
+              "[userId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          }
+        ],
+        "modelAttrs": [
+          "@@index([userId, at])",
+          "@@index([at])"
+        ]
+      },
+      {
+        "name": "Submission",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "attrs": [
+              "@id",
+              "@default(uuid())"
+            ]
+          },
+          {
+            "name": "taskAssigneeId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "comment",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime",
+            "attrs": [
+              "@default(now())"
+            ]
+          },
+          {
+            "name": "open",
+            "type": "Boolean",
+            "attrs": [
+              "@default(true)"
+            ]
+          },
+          {
+            "name": "reviewedAt",
+            "type": "DateTime?",
+            "attrs": []
+          },
+          {
+            "name": "reviewedById",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "reviewerComment",
+            "type": "String?",
+            "attrs": []
+          },
+          {
+            "name": "reviewedBy",
+            "type": "User?",
+            "attrs": [
+              "@relation(\"SubmissionReviewedBy\",",
+              "fields:",
+              "[reviewedById],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "SetNull)"
+            ]
+          },
+          {
+            "name": "assignee",
+            "type": "TaskAssignee",
+            "attrs": [
+              "@relation(fields:",
+              "[taskAssigneeId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "attachments",
+            "type": "SubmissionAttachment[]",
+            "attrs": []
+          }
+        ],
+        "modelAttrs": [
+          "@@index([taskAssigneeId])",
+          "@@index([reviewedById])",
+          "@@index([taskAssigneeId, open])"
+        ]
+      },
+      {
+        "name": "SubmissionAttachment",
+        "fields": [
+          {
+            "name": "submissionId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "attachmentId",
+            "type": "String",
+            "attrs": []
+          },
+          {
+            "name": "submission",
+            "type": "Submission",
+            "attrs": [
+              "@relation(fields:",
+              "[submissionId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          },
+          {
+            "name": "attachment",
+            "type": "Attachment",
+            "attrs": [
+              "@relation(fields:",
+              "[attachmentId],",
+              "references:",
+              "[id],",
+              "onDelete:",
+              "Cascade)"
+            ]
+          }
+        ],
+        "modelAttrs": [
+          "@@id([submissionId, attachmentId])",
+          "@@index([attachmentId])"
+        ]
+      }
+    ],
+    "enums": [
+      {
+        "name": "TaskAssigneeStatus",
+        "values": [
+          "in_progress",
+          "submitted",
+          "done",
+          "rejected"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "User",
+        "to": "Message",
+        "field": "messages"
+      },
+      {
+        "from": "User",
+        "to": "Thread",
+        "field": "threadsA"
+      },
+      {
+        "from": "User",
+        "to": "Thread",
+        "field": "threadsB"
+      },
+      {
+        "from": "User",
+        "to": "ReadMark",
+        "field": "readMarks"
+      },
+      {
+        "from": "User",
+        "to": "Task",
+        "field": "createdTasks"
+      },
+      {
+        "from": "User",
+        "to": "TaskAssignee",
+        "field": "reviewedAssignments"
+      },
+      {
+        "from": "User",
+        "to": "Submission",
+        "field": "reviewedSubmissions"
+      },
+      {
+        "from": "GroupMember",
+        "to": "User",
+        "field": "user"
+      },
+      {
+        "from": "GroupMember",
+        "to": "Group",
+        "field": "group"
+      },
+      {
+        "from": "Thread",
+        "to": "User",
+        "field": "a"
+      },
+      {
+        "from": "Thread",
+        "to": "User",
+        "field": "b"
+      },
+      {
+        "from": "Thread",
+        "to": "ReadMark",
+        "field": "readMarks"
+      },
+      {
+        "from": "Message",
+        "to": "User",
+        "field": "author"
+      },
+      {
+        "from": "Message",
+        "to": "Thread",
+        "field": "thread"
+      },
+      {
+        "from": "Message",
+        "to": "Attachment",
+        "field": "attachments"
+      },
+      {
+        "from": "MessageHide",
+        "to": "Message",
+        "field": "message"
+      },
+      {
+        "from": "MessageHide",
+        "to": "User",
+        "field": "user"
+      },
+      {
+        "from": "Task",
+        "to": "User",
+        "field": "createdBy"
+      },
+      {
+        "from": "TaskAssignee",
+        "to": "Task",
+        "field": "task"
+      },
+      {
+        "from": "TaskAssignee",
+        "to": "User",
+        "field": "user"
+      },
+      {
+        "from": "TaskAssignee",
+        "to": "User",
+        "field": "reviewedBy"
+      },
+      {
+        "from": "TaskTag",
+        "to": "Task",
+        "field": "task"
+      },
+      {
+        "from": "TaskTag",
+        "to": "Tag",
+        "field": "tag"
+      },
+      {
+        "from": "ReadMark",
+        "to": "Thread",
+        "field": "thread"
+      },
+      {
+        "from": "ReadMark",
+        "to": "User",
+        "field": "user"
+      },
+      {
+        "from": "Attachment",
+        "to": "Message",
+        "field": "message"
+      },
+      {
+        "from": "SubjectMember",
+        "to": "User",
+        "field": "user"
+      },
+      {
+        "from": "SubjectMember",
+        "to": "Subject",
+        "field": "subject"
+      },
+      {
+        "from": "Note",
+        "to": "User",
+        "field": "user"
+      },
+      {
+        "from": "Submission",
+        "to": "User",
+        "field": "reviewedBy"
+      },
+      {
+        "from": "Submission",
+        "to": "TaskAssignee",
+        "field": "assignee"
+      },
+      {
+        "from": "SubmissionAttachment",
+        "to": "Submission",
+        "field": "submission"
+      },
+      {
+        "from": "SubmissionAttachment",
+        "to": "Attachment",
+        "field": "attachment"
+      }
+    ]
+  },
+  "docker": {
+    "notes": [
+      "docker-compose: uploads volume not detected"
+    ]
+  },
+  "problems": [
+    "searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/calendar/page.tsx",
+    "searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/dashboard/page.tsx",
+    "server action createGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action renameGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action deleteGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action addUsersToGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action removeUserFromGroup without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action fetchGroupMembers should return Promise<void> at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action fetchGroupMembers without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action createSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action renameSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action deleteSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action addUsersToSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action removeUserFromSubject without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action fetchSubjectMembers should return Promise<void> at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "server action fetchSubjectMembers without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/groups/actions.ts",
+    "searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/archive/page.tsx",
+    "searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/inboxtasks/page.tsx",
+    "searchParams type mismatch at C:/Users/ievzh/Projects/BETAg108crm.clean/app/(app)/reviews/page.tsx",
+    "server action upsertUser without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+    "server action forceResetPassword without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+    "server action deleteUser without auth() at C:/Users/ievzh/Projects/BETAg108crm.clean/app/admin/db-status/actions.ts",
+    "API route without auth() guard at C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/auth/[...nextauth]/route.ts",
+    "API route without auth() guard at C:/Users/ievzh/Projects/BETAg108crm.clean/app/api/files/[name]/route.ts",
+    "missing required env: DIRECT_URL",
+    "missing required env: NEXTAUTH_URL",
+    "docker-compose: uploads volume not detected"
+  ],
+  "reviewFlowNotes": []
+}

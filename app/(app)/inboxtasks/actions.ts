@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks, hasFullAccess } from '@/lib/roles';
+import { saveTaskFileToDiskAndDb } from '@/lib/server/uploads';
 
 // утилита: "сегодня 00:00" в зоне Asia/Yekaterinburg (UTC+5) в UTC
 function todayStartUtcFromYekb(): Date {
@@ -40,12 +41,20 @@ function uniqueStrings(input: unknown): string[] {
 }
 
 function revalidateAll() {
-  // список страниц, которым нужен пересчёт после любых CRUD по задачам
   revalidatePath('/inboxtasks');
   revalidatePath('/inboxtasks/archive');
   revalidatePath('/calendar');
   revalidatePath('/'); // Sidebar (unreadTasks)
+  revalidatePath('/reviews');
 }
+
+const MAX_TASK_FILES = Number(process.env.NEXT_PUBLIC_MAX_TASK_FILES ?? 12);
+const MAX_TASK_FILE_SIZE = Number(process.env.NEXT_PUBLIC_MAX_TASK_FILE_SIZE ?? 50 * 1024 * 1024); // 50MB
+const ALLOWED_TASK_FILE_MIME = (process.env.NEXT_PUBLIC_TASK_FILE_MIME_WHITELIST ??
+  'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,image/png,image/jpeg,image/jpg,image/gif')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
 
 export async function createTaskAction(fd: FormData): Promise<void> {
   const session = await auth();
@@ -63,6 +72,11 @@ export async function createTaskAction(fd: FormData): Promise<void> {
   const dueIso = String(fd.get('due') ?? '').trim(); // ISO от формы (Екб -> UTC)
   const priority = (String(fd.get('priority') ?? 'normal') === 'high') ? 'high' : 'normal';
   const noCalendar = String(fd.get('noCalendar') ?? '') === '1';
+
+  // исправлено: поддерживаем 1 | on | true
+  const reviewRequiredRaw = String(fd.get('reviewRequired') ?? '').toLowerCase();
+  const reviewRequired = reviewRequiredRaw === '1' || reviewRequiredRaw === 'on' || reviewRequiredRaw === 'true';
+
   const assigneeUserIdsJson = fd.get('assigneeUserIdsJson');
   const assigneeIds = uniqueStrings(assigneeUserIdsJson);
 
@@ -73,7 +87,11 @@ export async function createTaskAction(fd: FormData): Promise<void> {
   const todayStartUtc = todayStartUtcFromYekb();
   if (dueDate.getTime() < todayStartUtc.getTime()) { revalidateAll(); return; }
 
+  // файлы из формы (множественные)
+  const taskFiles = (fd.getAll('taskFiles') ?? []).filter((x): x is File => x instanceof File);
+
   try {
+    // создаём задачу
     const task = await prisma.task.create({
       data: {
         title,
@@ -83,10 +101,12 @@ export async function createTaskAction(fd: FormData): Promise<void> {
         hidden: !!noCalendar,
         createdById: meId,
         createdByName: meName ?? null,
+        reviewRequired,
       },
       select: { id: true },
     });
 
+    // создаём назначения
     if (assigneeIds.length > 0) {
       await prisma.taskAssignee.createMany({
         data: assigneeIds.map((uid) => ({
@@ -96,6 +116,21 @@ export async function createTaskAction(fd: FormData): Promise<void> {
         })),
         skipDuplicates: true,
       });
+    }
+
+    // сохраняем вложения задачи (если переданы)
+    if (taskFiles.length > 0) {
+      const limited = taskFiles.slice(0, MAX_TASK_FILES);
+      for (const f of limited) {
+        // базовая валидация
+        const fsize = (f as File).size ?? 0;
+        const fmime = (f as File).type || 'application/octet-stream';
+
+        if (!fsize || fsize > MAX_TASK_FILE_SIZE) continue;
+        if (ALLOWED_TASK_FILE_MIME.length && !ALLOWED_TASK_FILE_MIME.includes(fmime)) continue;
+
+        await saveTaskFileToDiskAndDb({ file: f, taskId: task.id });
+      }
     }
   } finally {
     revalidateAll();
@@ -123,6 +158,7 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
   const priorityRaw = fd.get('priority');
   const hiddenRaw = fd.get('hidden');
   const dueDateRaw = fd.get('dueDate'); // YYYY-MM-DD
+  const reviewRequiredRaw = fd.get('reviewRequired');
 
   const data: {
     title?: string;
@@ -130,6 +166,7 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
     priority?: string;
     hidden?: boolean;
     dueDate?: Date;
+    reviewRequired?: boolean;
   } = {};
 
   if (title !== null) data.title = String(title ?? '').trim();
@@ -144,6 +181,11 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
       const due = new Date(`${dateStr}T23:59:00+05:00`);
       if (!Number.isNaN(due.getTime())) data.dueDate = due;
     }
+  }
+
+  if (reviewRequiredRaw !== null) {
+    const val = String(reviewRequiredRaw ?? '').toLowerCase();
+    data.reviewRequired = val === '1' || val === 'on' || val === 'true';
   }
 
   try {
@@ -182,6 +224,13 @@ export async function markAssigneeDoneAction(fd: FormData): Promise<void> {
   if (!meId || !taskId) { revalidateAll(); return; }
 
   try {
+    const t = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: { reviewRequired: true },
+    });
+    if (!t) { revalidateAll(); return; }
+    if (t.reviewRequired) { revalidateAll(); return; }
+
     await prisma.taskAssignee.updateMany({
       where: { taskId, userId: meId, status: 'in_progress' },
       data: { status: 'done', completedAt: new Date() },
@@ -191,16 +240,10 @@ export async function markAssigneeDoneAction(fd: FormData): Promise<void> {
   }
 }
 
-// НОВОЕ: снять из архива своё назначение (done -> in_progress)
-// НОВОЕ: снять из архива своё назначение
-// Поддерживает ДВА варианта вызова:
-// 1) с assigneeId — точечное изменение конкретной записи назначения;
-// 2) только с taskId — откатывает статус для назначения текущего пользователя на эту задачу.
 export async function unarchiveAssigneeAction(fd: FormData): Promise<void> {
   const session = await auth();
   const meId = session?.user?.id ?? null;
 
-  // оба поля читаем, будем решать по наличию assigneeId
   const assigneeId = String(fd.get('assigneeId') ?? '').trim();
   const taskId = String(fd.get('taskId') ?? '').trim();
 
@@ -208,7 +251,6 @@ export async function unarchiveAssigneeAction(fd: FormData): Promise<void> {
 
   try {
     if (assigneeId) {
-      // Вариант 1: задан конкретный assigneeId — убедимся, что он принадлежит текущему пользователю
       const ass = await prisma.taskAssignee.findUnique({
         where: { id: assigneeId },
         select: { id: true, userId: true },
@@ -223,7 +265,6 @@ export async function unarchiveAssigneeAction(fd: FormData): Promise<void> {
         data: { status: 'in_progress', completedAt: null },
       });
     } else if (taskId) {
-      // Вариант 2: только taskId — откатить статус моего назначения по этой задаче
       await prisma.taskAssignee.updateMany({
         where: { taskId, userId: meId, status: 'done' },
         data: { status: 'in_progress', completedAt: null },
@@ -233,4 +274,3 @@ export async function unarchiveAssigneeAction(fd: FormData): Promise<void> {
     revalidateAll();
   }
 }
-

@@ -1,3 +1,4 @@
+// app/(app)/reviews/page.tsx
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
@@ -6,11 +7,19 @@ import type { Prisma } from '@prisma/client';
 import {
   approveSubmissionAction,
   rejectSubmissionAction,
+  approveAllInTaskAction,
 } from '../inboxtasks/review-actions';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 type TaskWithAssignees = Prisma.TaskGetPayload<{
-  include: { assignees: { include: { user: { select: { id: true; name: true } } } } }
+  include: {
+    assignees: {
+      include: {
+        user: { select: { id: true; name: true } };
+      };
+    };
+  };
 }>;
 
 function fmtRuDate(d: Date | string | null | undefined): string {
@@ -28,31 +37,28 @@ function fmtRuDate(d: Date | string | null | undefined): string {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function Page({
-  searchParams,
-}: { searchParams: SearchParams }) {
+export default async function Page({ searchParams }: { searchParams: SearchParams }) {
+  await searchParams;
+
   const session = await auth();
   const meId = session?.user?.id ?? null;
   const role = normalizeRole(session?.user?.role);
   const mayReview = canCreateTasks(role);
 
-  if (!meId || !mayReview) {
-    redirect('/inboxtasks');
-  }
+  if (!meId || !mayReview) redirect('/inboxtasks');
 
-  // До миграций фильтруем по служебному маркеру [review] в title/description
+  const reviewFlowOn = process.env.NEXT_PUBLIC_REVIEW_FLOW === '1';
+
   const tasks: TaskWithAssignees[] = await prisma.task.findMany({
     where: {
       createdById: meId,
-      OR: [
-        { title:       { contains: '[review]', mode: 'insensitive' } },
-        { description: { contains: '[review]', mode: 'insensitive' } },
-        { title:       { contains: '[проверка]', mode: 'insensitive' } },
-        { description: { contains: '[проверка]', mode: 'insensitive' } },
-      ],
+      ...(reviewFlowOn ? { reviewRequired: true } : {}),
+      assignees: { some: { status: 'submitted' } },
     },
     include: {
-      assignees: { include: { user: { select: { id: true, name: true } } } },
+      assignees: {
+        include: { user: { select: { id: true, name: true } } },
+      },
     },
     orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
   });
@@ -62,25 +68,24 @@ export default async function Page({
       <header style={{ marginBottom: 12 }}>
         <h1 style={{ margin: 0, fontSize: 22 }}>Проверка назначенных задач</h1>
         <div style={{ fontSize: 13, color: '#6b7280' }}>
-          Здесь отображаются только ваши задачи с пометкой [review]. Действия — макетные, база не изменяется.
+          Здесь собраны ваши задачи c включённой проверкой, где есть сдачи на ревью.
         </div>
       </header>
 
       {tasks.length === 0 && (
         <div style={{ fontSize: 14, color: '#6b7280' }}>
-          Задач, требующих проверки, не найдено.
+          Пока нет задач, ожидающих проверки.
         </div>
       )}
 
       <section style={{ display: 'grid', gap: 10 }}>
         {tasks.map((t) => {
-          // До миграций считаем: исполнители со статусом in_progress — «на проверке», done — «принято».
-          const onReview = t.assignees.filter(a => a.status === 'in_progress');
+          const onReview = t.assignees.filter(a => a.status === 'submitted');
           const accepted = t.assignees.filter(a => a.status === 'done');
 
           return (
             <details key={t.id} style={{ border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff' }}>
-              <summary style={{ padding: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <summary style={{ padding: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>{t.title}</div>
                   <div style={{ fontSize: 12, color: '#374151' }}>
@@ -90,12 +95,27 @@ export default async function Page({
               </summary>
 
               <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 12 }}>
+                {/* Верхняя панель действий по задаче */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <form action={approveAllInTaskAction}>
+                    <input type="hidden" name="taskId" value={t.id} />
+                    <button
+                      type="submit"
+                      title="Принять всех со статусом «на проверке»"
+                      style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #111827', background: '#111827', color: '#fff', cursor: 'pointer', fontSize: 13 }}
+                    >
+                      Принять всех
+                    </button>
+                  </form>
+                </div>
+
                 {t.description && (
                   <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {t.description}
                   </div>
                 )}
 
+                {/* На проверке */}
                 <div>
                   <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>На проверке</div>
                   {onReview.length === 0 ? (
@@ -104,29 +124,37 @@ export default async function Page({
                     <div style={{ display: 'grid', gap: 8 }}>
                       {onReview.map((a) => (
                         <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ border: '1px solid #e5e7eb', borderRadius: 999, padding: '2px 8px', fontSize: 12, background: '#fff' }}>
+                          <a
+                            href={`/reviews/${a.id}`}
+                            style={{ border: '1px solid #e5e7eb', borderRadius: 999, padding: '2px 8px', fontSize: 12, background: '#fff', textDecoration: 'none', color: '#111827' }}
+                            title="Открыть карточку исполнения"
+                          >
                             {a.user?.name ?? a.userId}
-                          </span>
+                          </a>
 
+                          {/* Принять одного */}
                           <form action={approveSubmissionAction}>
-                            <input type="hidden" name="taskId" value={t.id} />
-                            <input type="hidden" name="userId" value={a.userId} />
-                            <button type="submit" className="btnPrimary" title="Принять (макет)"
-                              style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #111827', background: '#111827', color: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                            <input type="hidden" name="taskAssigneeId" value={a.id} />
+                            <button
+                              type="submit"
+                              style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #111827', background: '#111827', color: '#fff', cursor: 'pointer', fontSize: 13 }}
+                            >
                               Принять
                             </button>
                           </form>
 
+                          {/* Вернуть с причиной */}
                           <form action={rejectSubmissionAction} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <input type="hidden" name="taskId" value={t.id} />
-                            <input type="hidden" name="userId" value={a.userId} />
+                            <input type="hidden" name="taskAssigneeId" value={a.id} />
                             <input
-                              name="comment"
-                              placeholder="Комментарий (опц.)"
+                              name="reason"
+                              placeholder="Причина (опц.)"
                               style={{ height: 28, padding: '0 8px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
                             />
-                            <button type="submit" className="btnGhost" title="Вернуть (макет)"
-                              style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', color: '#111827', cursor: 'pointer', fontSize: 13 }}>
+                            <button
+                              type="submit"
+                              style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', color: '#111827', cursor: 'pointer', fontSize: 13 }}
+                            >
                               Вернуть
                             </button>
                           </form>
@@ -136,6 +164,7 @@ export default async function Page({
                   )}
                 </div>
 
+                {/* Принято */}
                 <div>
                   <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Принято</div>
                   {accepted.length === 0 ? (

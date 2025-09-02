@@ -63,7 +63,12 @@ export default function TaskForm({
   const [dueTime, setDueTime] = useState(''); // опц. время
   const [priority, setPriority] = useState<'normal'|'high'>('normal');
 
-  // блок файлов и тумблер review
+  // БЛОК «Вложения задачи» (новый, реальные загрузки)
+  const [taskFiles, setTaskFiles] = useState<File[]>([]);
+  const taskFileInputRef = useRef<HTMLInputElement | null>(null);
+  const MAX_TASK_FILES = 12;
+
+  // блок файлов и тумблер review (как был — это макет для потока «сдачи работы»)
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [reviewRequired, setReviewRequired] = useState(false);
@@ -144,67 +149,50 @@ export default function TaskForm({
     return Array.from(userIds);
   }
 
+  // превью количества и актуальный список ID для скрытого поля
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewTotal, setPreviewTotal] = useState<number>(0);
+  const [assigneeUserIds, setAssigneeUserIds] = useState<string[]>([]);
 
   const recomputePreview = useCallback(async () => {
     setPreviewLoading(true);
     try {
       const ids = await expandAssigneesToUserIds();
       setPreviewTotal(ids.length);
+      setAssigneeUserIds(ids);
     } finally {
       setPreviewLoading(false);
     }
-  }, [assignees, users]);
+  }, [assignees, users, groups, groupMembers, subjects, subjectMembers]);
 
   useEffect(() => { void recomputePreview(); }, [assignees, recomputePreview]);
 
-  const formRef = useRef<HTMLFormElement | null>(null);
-  async function onSubmit(e?: React.FormEvent) {
-    if (e) e.preventDefault();
-
-    // дата не раньше сегодняшнего дня по Екатеринбургу
-    const today = todayYekbYMD();
-    if (!due || due < today) { alert('Срок не может быть раньше сегодняшнего дня (Екатеринбург).'); return; }
-
-    const assigneeUserIds = await expandAssigneesToUserIds();
-
-    // ISO в зоне +05:00. Если время не указано — 23:59.
-    const datePart = due;
+  // ISO для due (Екб +05:00). Если времени нет — 23:59.
+  const dueIso = useMemo(() => {
+    if (!due) return '';
     const timePart = (dueTime && /^\d{2}:\d{2}$/.test(dueTime)) ? dueTime : '23:59';
-    const dueDate = new Date(`${datePart}T${timePart}:00+05:00`);
-    const dueIso = dueDate.toISOString();
-
-    const fd = new FormData();
-
-    fd.set('title', title);
-    fd.set('description', description); // БЕЗ маркера [review]
-    fd.set('due', dueIso);
-    fd.set('priority', priority);
-    fd.set('assigneeUserIdsJson', JSON.stringify(assigneeUserIds));
-
-    // главный флаг review — ЯВНО
-    fd.set('reviewRequired', reviewRequired ? 'true' : 'false');
-
-    // файлы пока не отправляем — макет UX
-
-    await createAction(fd);
-
-    try {
-      setTitle(''); setDesc(''); setDue(''); setDueTime(''); setPriority('normal');
-      setAssignees([]); setQuery(''); setFound([]); setPreviewTotal(0);
-      setFiles([]); setReviewRequired(false);
-    } catch {}
-  }
+    const d = new Date(`${due}T${timePart}:00+05:00`);
+    return Number.isNaN(d.getTime()) ? '' : d.toISOString();
+  }, [due, dueTime]);
 
   const isHigh = priority === 'high';
 
+  // синхронизация «чипсов» с нативным input[type=file] для вложений задачи
+  const syncTaskInputFiles = useCallback((next: File[]) => {
+    setTaskFiles(next);
+    const input = taskFileInputRef.current;
+    if (!input) return;
+    const dt = new DataTransfer();
+    next.forEach(ff => dt.items.add(ff));
+    input.files = dt.files;
+  }, []);
+
   return (
-    <form ref={formRef} onSubmit={onSubmit} style={{ display: 'grid', gap: 10 }}>
-      {/* Название */}
+    <form action={createAction} style={{ display: 'grid', gap: 10 }}>
       <div>
         <label style={{ display: 'block', marginBottom: 4 }}>Название</label>
         <input
+          name="title"
           value={title}
           onChange={(e)=>setTitle(e.target.value)}
           required
@@ -213,10 +201,10 @@ export default function TaskForm({
         />
       </div>
 
-      {/* Описание */}
       <div>
         <label style={{ display: 'block', marginBottom: 4 }}>Описание</label>
         <textarea
+          name="description"
           value={description}
           onChange={(e)=>setDesc(e.target.value)}
           rows={4}
@@ -225,7 +213,6 @@ export default function TaskForm({
         />
       </div>
 
-      {/* Срок, время и приоритет */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
         <div>
           <label style={{ display:'block', marginBottom:4 }}>Срок</label>
@@ -296,10 +283,10 @@ export default function TaskForm({
               />
             </button>
           </div>
+          <input type="hidden" name="priority" value={priority} />
         </div>
       </div>
 
-      {/* Кому назначить */}
       <div>
         <label style={{ display:'block', marginBottom:4 }}>Кому назначить</label>
         <Chips
@@ -326,7 +313,55 @@ export default function TaskForm({
         </div>
       </div>
 
-      {/* Тумблер review и блок файлов — только для ролей, кому можно назначать */}
+      {/* НОВОЕ: реальный блок «Вложения задачи» */}
+      <div>
+        <label style={{ display:'block', marginBottom:6 }}>Вложения задачи (до {MAX_TASK_FILES} файлов)</label>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
+          {taskFiles.map((f, idx) => (
+            <span key={idx} style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid #e5e7eb', borderRadius:999, padding:'2px 8px', fontSize:12, background:'#fff' }}>
+              {f.name}
+              <button
+                type="button"
+                onClick={() => {
+                  const next = taskFiles.slice();
+                  next.splice(idx, 1);
+                  syncTaskInputFiles(next);
+                }}
+                style={{ border:0, background:'transparent', cursor:'pointer', color:'#6b7280' }}
+                aria-label="Удалить"
+              >×</button>
+            </span>
+          ))}
+        </div>
+
+        {/* ВАЖНО: это именно инпут c name="taskFiles" — серверный экшен прочитает fd.getAll('taskFiles') */}
+        <input
+          ref={taskFileInputRef}
+          type="file"
+          name="taskFiles"
+          multiple
+          onChange={(e) => {
+            const list = Array.from(e.target.files ?? []);
+            if (!list.length) return;
+            const next = [...taskFiles, ...list].slice(0, MAX_TASK_FILES);
+            syncTaskInputFiles(next);
+            if (taskFileInputRef.current) taskFileInputRef.current.value = '';
+          }}
+          style={{ display:'none' }}
+        />
+        <button
+          type="button"
+          className="btnGhost"
+          onClick={() => taskFileInputRef.current?.click()}
+          style={{ height:36, padding:'0 14px', borderRadius:10, border:'1px solid #e5e7eb', background:'#fff', color:'#111827', cursor:'pointer' }}
+        >
+          Добавить файлы
+        </button>
+        <div style={{ marginTop:6, fontSize:12, color:'#6b7280' }}>
+          Поддерживаются PDF, Word, Excel, PowerPoint, изображения и т.п. (до 50 МБ каждый).
+        </div>
+      </div>
+
       {allowReviewControls && (
         <>
           <div>
@@ -400,15 +435,22 @@ export default function TaskForm({
                 Выбрать файлы
               </button>
               <div style={{ marginTop:6, fontSize:12, color:'#6b7280' }}>
-                На этом этапе файлы не загружаются. Это макет, чтобы утвердить UX.
+                Эти файлы относятся к потоку «сдачи работы» исполнителя и не загружаются при создании задачи.
               </div>
             </div>
           )}
         </>
       )}
 
+      {/* скрытые поля */}
+      <input type="hidden" name="due" value={dueIso} />
+      <input type="hidden" name="assigneeUserIdsJson" value={JSON.stringify(assigneeUserIds)} />
+      {/* ключевое изменение: слать 1/'' */}
+      <input type="hidden" name="reviewRequired" value={reviewRequired ? '1' : ''} />
+
       <div style={{ display:'flex', gap:8 }}>
-        <button type="submit"
+        <button
+          type="submit"
           style={{ height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${BRAND}`, background:BRAND, color:'#fff', cursor:'pointer' }}>
           Сохранить задачу
         </button>

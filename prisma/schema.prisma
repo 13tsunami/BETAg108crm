@@ -132,8 +132,12 @@ model Task {
 
   createdBy User? @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
-  assignees TaskAssignee[]
-  tags      TaskTag[]
+  assignees   TaskAssignee[]
+  tags        TaskTag[]
+
+  // НОВОЕ:
+  number      Int      @unique @default(autoincrement())
+  attachments TaskAttachment[]
 
   @@index([createdById])
   @@index([dueDate])
@@ -201,13 +205,28 @@ model Attachment {
   originalName String?
   mime         String
   size         Int
-  data         Bytes? // опциональное
+  data         Bytes?
   sha256       String? @db.VarChar(64)
   createdAt    DateTime @default(now())
 
   submissionLinks SubmissionAttachment[]
 
+  // НОВОЕ:
+  taskLinks       TaskAttachment[]
+
   @@index([messageId])
+}
+
+/* новая сущность */
+model TaskAttachment {
+  taskId       String
+  attachmentId String
+
+  task       Task       @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attachment Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([taskId, attachmentId])
+  @@index([attachmentId])
 }
 
 /* ===== Нормализованные предметы ===== */
