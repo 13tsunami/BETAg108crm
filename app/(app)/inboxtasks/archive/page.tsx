@@ -3,8 +3,6 @@ import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
 import type { Prisma, TaskAssignee, Task } from '@prisma/client';
-import { unarchiveAssigneeAction } from '../actions';
-
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 type TaskWithAssignees = Prisma.TaskGetPayload<{ include: { assignees: { include: { user: { select: { id: true; name: true } } } } } }>;
@@ -94,7 +92,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         )}
       </header>
 
-      {/* Назначенные мне (выполненные мной) */}
       {activeTab === 'mine' && (
         <section aria-label="Назначенные мне — архив" style={{ display: 'grid', gap: 8 }}>
           {mineAssigneesDone.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>В архиве пока пусто.</div>}
@@ -119,28 +116,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   {t.description && (
                     <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#111827', marginBottom: 12 }}>{t.description}</div>
                   )}
-                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 10 }}>Назначил: {t.createdByName ?? '—'}</div>
-
-                  {/* Разархивировать (вернуть в активные для меня) */}
-                  <form action={unarchiveAssigneeAction}>
-                    <input type="hidden" name="assigneeId" value={a.id} />
-                    <input type="hidden" name="taskId" value={t.id} />
-                    <button
-                      type="submit"
-                      style={{
-                        height: 32,
-                        padding: '0 12px',
-                        borderRadius: 10,
-                        border: '1px solid #111827',
-                        background: '#111827',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        fontSize: 13,
-                      }}
-                    >
-                      Разархивировать
-                    </button>
-                  </form>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Назначил: {t.createdByName ?? '—'}</div>
                 </div>
               </details>
             );
@@ -148,7 +124,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         </section>
       )}
 
-      {/* Назначенные мной (все исполнили) */}
       {activeTab === 'byme' && mayCreate && (
         <section aria-label="Назначенные мной — архив" style={{ display: 'grid', gap: 8 }}>
           {byMeAllDone.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>Пока нет завершённых задач, назначенных вами.</div>}

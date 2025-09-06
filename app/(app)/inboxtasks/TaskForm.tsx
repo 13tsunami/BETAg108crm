@@ -69,9 +69,7 @@ export default function TaskForm({
   const taskFileInputRef = useRef<HTMLInputElement | null>(null);
   const MAX_TASK_FILES = 12;
 
-  // Макет для потока «сдачи работы» (не грузится при создании задачи)
-  const [files, setFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Флаг потока проверки
   const [reviewRequired, setReviewRequired] = useState(false);
 
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
@@ -187,6 +185,9 @@ export default function TaskForm({
     } catch {
       // no-op
     }
+    if (next.length === 0) {
+      try { input.value = ''; } catch {}
+    }
   }, []);
 
   const [submitting, setSubmitting] = useState(false);
@@ -206,7 +207,16 @@ export default function TaskForm({
       const hiddenDue = form.querySelector<HTMLInputElement>('input[name="due"]');
       if (hiddenDue) hiddenDue.value = dueIso;
 
+      // В некоторых браузерах пустой file-input попадает в FormData отдельной "blob"-частью.
+      const taskInput = form.querySelector<HTMLInputElement>('input[name="taskFiles"]');
+      const disableTaskInput = !!(taskInput && (!taskInput.files || taskInput.files.length === 0));
+      if (disableTaskInput && taskInput) taskInput.disabled = true;
+
       const fd = new FormData(form);
+
+      if (disableTaskInput && taskInput) taskInput.disabled = false;
+      if ((taskFiles?.length ?? 0) === 0) fd.delete('taskFiles');
+
       await createAction(fd);
     } catch (err) {
       console.error('TaskForm submit error', err);
@@ -214,7 +224,7 @@ export default function TaskForm({
     } finally {
       setSubmitting(false);
     }
-  }, [createAction, submitting, expandAssigneesToUserIds, dueIso]);
+  }, [createAction, submitting, expandAssigneesToUserIds, dueIso, taskFiles]);
 
   return (
     <form onSubmit={handleSubmit} encType="multipart/form-data" style={{ display: 'grid', gap: 10 }}>
@@ -399,13 +409,13 @@ export default function TaskForm({
               aria-checked={reviewRequired}
               onClick={() => setReviewRequired(v => !v)}
               style={{
-                width:'100%',
-                height:36,
+                width:140,
+                height:28,
                 position:'relative',
                 borderRadius:999,
                 border:`1px solid ${reviewRequired ? BRAND+'66' : '#e5e7eb'}`,
                 background: reviewRequired ? `${BRAND}1a` : '#f3f4f6',
-                padding:4,
+                padding:3,
                 display:'flex',
                 alignItems:'center',
                 justifyContent: reviewRequired ? 'flex-end' : 'flex-start',
@@ -420,52 +430,15 @@ export default function TaskForm({
                   textAlign:'center',
                   fontWeight:700,
                   color: reviewRequired ? BRAND : '#111827',
-                  fontSize:13,
+                  fontSize:12,
                   pointerEvents:'none'
                 }}
               >
                 {reviewRequired ? 'нужна проверка' : 'без проверки'}
               </span>
-              <span aria-hidden style={{ width:28, height:28, borderRadius:'50%', background: reviewRequired ? BRAND : '#e5e7eb' }} />
+              <span aria-hidden style={{ width:22, height:22, borderRadius:'50%', background: reviewRequired ? BRAND : '#e5e7eb' }} />
             </button>
           </div>
-
-          {reviewRequired && (
-            <div>
-              <label style={{ display:'block', marginBottom:6 }}>Файлы для сдачи работы (опционально)</label>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
-                {files.map((f, idx) => (
-                  <span key={idx} style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid #e5e7eb', borderRadius:999, padding:'2px 8px', fontSize:12, background:'#fff' }}>
-                    {f.name}
-                    <button type="button" onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))} style={{ border:0, background:'transparent', cursor:'pointer', color:'#6b7280' }} aria-label="Удалить">×</button>
-                  </span>
-                ))}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={(e) => {
-                  const list = Array.from(e.target.files ?? []);
-                  if (!list.length) return;
-                  setFiles(prev => [...prev, ...list].slice(0, 12));
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                }}
-                style={{ display:'none' }}
-              />
-              <button
-                type="button"
-                className="btnGhost"
-                onClick={() => fileInputRef.current?.click()}
-                style={{ height:36, padding:'0 14px', borderRadius:10, border:'1px solid #e5e7eb', background:'#fff', color:'#111827', cursor:'pointer' }}
-              >
-                Выбрать файлы
-              </button>
-              <div style={{ marginTop:6, fontSize:12, color:'#6b7280' }}>
-                Эти файлы относятся к потоку «сдачи работы» исполнителя и не загружаются при создании задачи.
-              </div>
-            </div>
-          )}
         </>
       )}
 
