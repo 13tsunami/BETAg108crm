@@ -1,3 +1,4 @@
+// app/(app)/inboxtasks/TaskForm.tsx
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -46,7 +47,7 @@ export default function TaskForm({
   groupMembers,
   subjectMembers,
   createAction,
-  allowReviewControls = true, // показывать ли тумблер и файлы
+  allowReviewControls = true,
 }: {
   users: SimpleUser[];
   groups: SimpleGroup[];
@@ -60,15 +61,15 @@ export default function TaskForm({
   const [description, setDesc] = useState('');
   const todayStr = useMemo(() => todayYekbYMD(), []);
   const [due, setDue] = useState(todayStr);
-  const [dueTime, setDueTime] = useState(''); // опц. время
+  const [dueTime, setDueTime] = useState('');
   const [priority, setPriority] = useState<'normal'|'high'>('normal');
 
-  // БЛОК «Вложения задачи» (новый, реальные загрузки)
+  // Вложения задачи (реальные загрузки)
   const [taskFiles, setTaskFiles] = useState<File[]>([]);
   const taskFileInputRef = useRef<HTMLInputElement | null>(null);
   const MAX_TASK_FILES = 12;
 
-  // блок файлов и тумблер review (как был — это макет для потока «сдачи работы»)
+  // Макет для потока «сдачи работы» (не грузится при создании задачи)
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [reviewRequired, setReviewRequired] = useState(false);
@@ -117,7 +118,6 @@ export default function TaskForm({
     setAssignees((prev) => prev.filter((x) => !(x.type === a.type && x.id === a.id)));
   }
 
-  // развёртка выбранных в userId
   async function expandAssigneesToUserIds(): Promise<string[]> {
     const userIds = new Set<string>();
 
@@ -149,7 +149,6 @@ export default function TaskForm({
     return Array.from(userIds);
   }
 
-  // превью количества и актуальный список ID для скрытого поля
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewTotal, setPreviewTotal] = useState<number>(0);
   const [assigneeUserIds, setAssigneeUserIds] = useState<string[]>([]);
@@ -177,55 +176,48 @@ export default function TaskForm({
 
   const isHigh = priority === 'high';
 
-  // синхронизация «чипсов» с нативным input[type=file] для вложений задачи
   const syncTaskInputFiles = useCallback((next: File[]) => {
     setTaskFiles(next);
     const input = taskFileInputRef.current;
     if (!input) return;
     const dt = new DataTransfer();
     next.forEach(ff => dt.items.add(ff));
-    // программно обновляем файлы элемента — это нужно, чтобы FormData(form) включал файлы
     try {
       input.files = dt.files;
     } catch {
-      // в некоторых браузерах/сценариях это может бросать — но мы всё равно храним state taskFiles
+      // no-op
     }
   }, []);
 
-  // состояние отправки, чтобы блокировать кнопку при сохранении
   const [submitting, setSubmitting] = useState(false);
 
-  // обработчик submit: гарантированно пересчитываем assignee ids, заполняем hidden и вызываем createAction(fd)
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (submitting) return;
     setSubmitting(true);
     try {
       const form = e.currentTarget as HTMLFormElement;
-      // пересчитываем список исполнителей (с учётом ролей/групп/предметов)
+
+      // гарантированно обновляем скрытые поля перед сбором FormData
       const ids = await expandAssigneesToUserIds();
-      const hidden = form.querySelector<HTMLInputElement>('input[name="assigneeUserIdsJson"]');
-      if (hidden) hidden.value = JSON.stringify(ids);
+      const hiddenIds = form.querySelector<HTMLInputElement>('input[name="assigneeUserIdsJson"]');
+      if (hiddenIds) hiddenIds.value = JSON.stringify(ids);
 
-      // ensure due field is set (hidden already bound to dueIso via state, but re-read from DOM)
+      const hiddenDue = form.querySelector<HTMLInputElement>('input[name="due"]');
+      if (hiddenDue) hiddenDue.value = dueIso;
+
       const fd = new FormData(form);
-
-      // call server action directly with FormData
       await createAction(fd);
-      // Примечание: не делаем автоматический редирект здесь, оставляем revalidation на сервере
-      // можно очищать форму или показывать уведомление, если нужно
     } catch (err) {
       console.error('TaskForm submit error', err);
-      // простое уведомление — можно заменить на ваш toast
-      // eslint-disable-next-line no-alert
       alert('Ошибка при сохранении задачи. Посмотрите логи или повторите попытку.');
     } finally {
       setSubmitting(false);
     }
-  }, [createAction, submitting, expandAssigneesToUserIds]);
+  }, [createAction, submitting, expandAssigneesToUserIds, dueIso]);
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 10 }}>
+    <form onSubmit={handleSubmit} encType="multipart/form-data" style={{ display: 'grid', gap: 10 }}>
       <div>
         <label style={{ display: 'block', marginBottom: 4 }}>Название</label>
         <input
@@ -351,7 +343,6 @@ export default function TaskForm({
         </div>
       </div>
 
-      {/* НОВОЕ: реальный блок «Вложения задачи» */}
       <div>
         <label style={{ display:'block', marginBottom:6 }}>Вложения задачи (до {MAX_TASK_FILES} файлов)</label>
         <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
@@ -372,7 +363,6 @@ export default function TaskForm({
           ))}
         </div>
 
-        {/* ВАЖНО: это именно инпут c name="taskFiles" — серверный экшен прочитает fd.getAll('taskFiles') */}
         <input
           ref={taskFileInputRef}
           type="file"
@@ -383,7 +373,6 @@ export default function TaskForm({
             if (!list.length) return;
             const next = [...taskFiles, ...list].slice(0, MAX_TASK_FILES);
             syncTaskInputFiles(next);
-            // removed clearing input.value here — it would remove files that we've just set
           }}
           style={{ display:'none' }}
         />
@@ -483,7 +472,6 @@ export default function TaskForm({
       {/* скрытые поля */}
       <input type="hidden" name="due" value={dueIso} />
       <input type="hidden" name="assigneeUserIdsJson" value={JSON.stringify(assigneeUserIds)} />
-      {/* ключевое изменение: слать 1/'' */}
       <input type="hidden" name="reviewRequired" value={reviewRequired ? '1' : ''} />
 
       <div style={{ display:'flex', gap:8 }}>
