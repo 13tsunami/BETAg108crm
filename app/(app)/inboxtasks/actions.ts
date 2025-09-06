@@ -2,6 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
@@ -54,8 +55,12 @@ async function nextTaskNumber() {
   return (last?.number ?? 0) + 1;
 }
 
-// каталог хранения файлов
-const FILES_DIR = process.env.FILES_DIR || '/uploads';
+/** Каталог хранения файлов:
+ *  1) FILES_DIR, если задан,
+ *  2) иначе UPLOADS_DIR,
+ *  3) иначе /uploads.
+ */
+const FILES_DIR = process.env.FILES_DIR ?? process.env.UPLOADS_DIR ?? '/uploads';
 const MAX_MB = Number(process.env.MAX_UPLOAD_MB || '50');
 const MAX_BYTES = MAX_MB * 1024 * 1024;
 
@@ -91,6 +96,7 @@ async function saveOneFile(tx: Prisma.TransactionClient, taskId: string, file: F
     });
   } catch (err) {
     console.error('[upload] failed to save file', { err });
+    // мягкий режим: не валим экшен целиком
   }
 }
 
@@ -102,15 +108,22 @@ export async function createTaskAction(fd: FormData): Promise<void> {
     if (!meId || !canCreateTasks(role)) return;
 
     const title = asNonEmptyString(fd.get('title'), 'Название');
-    const description = asOptionalString(fd.get('description')) ?? '';
-    const dueDate = parseISODate(fd.get('due'));
+    const description = asOptionalString(fd.get('description')) ?? ''; // в схеме description: String (не null)
+    const dueDate = parseISODate(fd.get('due')); // hidden name="due" из формы TaskForm
     const priority = asPriority(fd.get('priority'));
     const reviewRequired = String(fd.get('reviewRequired') ?? '') === '1';
 
     const userIds = parseAssigneeIds(fd.get('assigneeUserIdsJson'));
     if (userIds.length === 0) throw new Error('Нужно выбрать хотя бы одного исполнителя');
 
-    await ensureFilesDir();
+    // Пытаемся подготовить каталог под файлы, но не рвём сохранение задачи при ошибке
+    let uploadsReady = true;
+    try {
+      await ensureFilesDir();
+    } catch (e) {
+      uploadsReady = false;
+      console.error('[files] ensure dir failed, continue without saving files', e);
+    }
 
     await prisma.$transaction(async (tx) => {
       const number = await nextTaskNumber();
@@ -134,17 +147,22 @@ export async function createTaskAction(fd: FormData): Promise<void> {
             })),
           },
         },
+        select: { id: true },
       });
 
-      const files = fd.getAll('taskFiles') as unknown as File[];
-      if (files && files.length) {
-        for (const f of files) {
-          await saveOneFile(tx, task.id, f);
+      // Файлы задачи: name="taskFiles"
+      if (uploadsReady) {
+        const files = fd.getAll('taskFiles') as unknown as File[];
+        if (files && files.length) {
+          for (const f of files) {
+            await saveOneFile(tx, task.id, f);
+          }
         }
       }
     });
 
     revalidatePath('/inboxtasks');
+    redirect('/inboxtasks'); // явный переход после успеха
   } catch (err) {
     console.error('[createTaskAction] failed', err);
   }
@@ -161,8 +179,8 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
     if (!taskId) throw new Error('taskId is required');
 
     const title = asNonEmptyString(fd.get('title'), 'Название');
-    const description = asOptionalString(fd.get('description')) ?? undefined;
-    const dueRaw = fd.get('due');
+    const description = asOptionalString(fd.get('description')) ?? undefined; // undefined = не трогать поле
+    const dueRaw = fd.get('dueDate'); // если форма шлёт dueDate, разбираем его
     const dueDate = dueRaw ? parseISODate(dueRaw) : undefined;
     const priority = asPriority(fd.get('priority'));
 
@@ -200,6 +218,7 @@ export async function deleteTaskAction(fd: FormData): Promise<void> {
     if (!task) return;
     if (task.createdById !== meId && !canCreateTasks(role)) return;
 
+    // мягкое "удаление"
     await prisma.task.update({ where: { id: taskId }, data: { hidden: true } });
 
     revalidatePath('/inboxtasks');
