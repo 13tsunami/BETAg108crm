@@ -106,7 +106,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     );
   }
 
-  const reviewFlowOn = process.env.NEXT_PUBLIC_REVIEW_FLOW === '1';
+ 
 
   const [users, groups, subjects] = await Promise.all([
     prisma.user.findMany({
@@ -246,7 +246,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                 ) : (
                   mineInProgress.map((t) => {
                     const myAssn = t.assignees.find((a) => a.userId === meId);
-                    const requiresReview = reviewFlowOn && t.reviewRequired === true;
+                    const requiresReview = t.reviewRequired === true;
                     const lastComment = myAssn?.submissions?.[0]?.reviewerComment;
                     return (
                       <details key={t.id} className="taskCard" style={t.priority === 'high' ? { borderColor: '#8d2828' } : undefined}>
