@@ -39,16 +39,16 @@ export async function getAnalytics(opts: Options): Promise<Analytics> {
     };
   }
 
-  // «Создано»: я — автор
+  // «Создано»: я — автор, только не скрытые
   const createdByMe = await prisma.task.findMany({
-    where: { createdById: meId },
+    where: { createdById: meId, hidden: false },
     select: { id: true, createdAt: true },
     orderBy: { createdAt: 'asc' },
   });
 
-  // Мои назначения (для done/today/weekday)
+  // Мои назначения (для done/today/weekday), только не скрытые
   const myAssigned = await prisma.task.findMany({
-    where: { assignees: { some: { userId: meId } } },
+    where: { hidden: false, assignees: { some: { userId: meId } } },
     select: {
       id: true,
       dueDate: true,
