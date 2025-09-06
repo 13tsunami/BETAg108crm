@@ -125,10 +125,10 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   const [mineInProgress, assignedByMe] = await Promise.all([
     prisma.task.findMany({
-  where: {
-    hidden: false,
-    assignees: { some: { userId: meId, status: 'in_progress' } }
-  },
+      where: {
+        hidden: { not: true }, // NULL-safe
+        assignees: { some: { userId: meId, status: 'in_progress' } }
+      },
       select: {
         id: true, number: true, title: true, description: true, dueDate: true,
         priority: true, hidden: true, createdById: true, createdByName: true,
@@ -149,7 +149,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       orderBy: { dueDate: 'asc' as const },
     }),
     prisma.task.findMany({
-      where: { createdById: meId, hidden: false },
+      where: { createdById: meId, hidden: { not: true } }, // NULL-safe
       select: {
         id: true, number: true, title: true, description: true, dueDate: true,
         priority: true, hidden: true, createdById: true, createdByName: true,
@@ -327,7 +327,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                               до {fmtRuDateTimeYekb(t.dueDate)}
                               {t.priority === 'high' ? ' • высокий приоритет' : ''}
                               {' • '}исполнители: {doneCnt}/{totalCnt}
-                              {onReviewCnt ? ` • на проверке: {onReviewCnt}` : ''}
+                              {onReviewCnt ? ` • на проверке: ${onReviewCnt}` : ''}
                             </span>
                           </div>
                           <div className="taskActions">
@@ -383,7 +383,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                                             <b>{a.user?.name || a.userId}</b>
                                             <span style={{ color:'#6b7280' }}> • {statusRu(a.status)}</span>
                                           </div>
-                                          {a.status === 'submitted' && <a href={`/reviews/{a.id}`} className="btnGhost">Открыть проверку</a>}
+                                          {a.status === 'submitted' && <a href={`/reviews/${a.id}`} className="btnGhost">Открыть проверку</a>}
                                           {t.reviewRequired && lastComment && (
                                             <div style={{ fontSize:13, color:'#374151' }}>Комментарий проверяющего: {lastComment}</div>
                                           )}
