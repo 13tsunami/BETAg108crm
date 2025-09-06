@@ -83,6 +83,14 @@ export default async function Page({ params }: { params: Params }) {
     assn.status === 'done'        ? 'принято' :
     assn.status === 'rejected'    ? 'возвращено' : assn.status;
 
+  // Валидация файлов: убираем «пустые» и не показываем blob
+  const validOpenFiles = openSubmission
+    ? openSubmission.attachments.filter(sa => {
+        const a = sa.attachment;
+        return !!a && typeof a.size === 'number' && a.size > 0;
+      })
+    : [];
+
   return (
     <main style={{ padding: 16 }}>
       <a href="/reviews" className="linkBack" style={{ textDecoration: 'none', fontSize: 13 }}>&larr; Назад к списку</a>
@@ -117,15 +125,25 @@ export default async function Page({ params }: { params: Params }) {
 
         {openSubmission ? (
           <>
-            {/* Вложения открытой сдачи */}
+            {openSubmission.comment && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 2 }}>Комментарий исполнителя</div>
+                <div style={{ whiteSpace: 'pre-wrap' }}>{openSubmission.comment}</div>
+              </div>
+            )}
+
             <div style={{ marginTop: 8 }}>
               <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Вложения</div>
-              {openSubmission.attachments.length === 0 ? (
+              {validOpenFiles.length === 0 ? (
                 <div style={{ fontSize: 13, color: '#9ca3af' }}>Файлы не прикреплены.</div>
               ) : (
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {openSubmission.attachments.map((sa) => {
-                    const a = sa.attachment;
+                  {validOpenFiles.map((sa) => {
+                    const a = sa.attachment!;
+                    const displayName =
+                      a.originalName && a.originalName.toLowerCase() !== 'blob'
+                        ? a.originalName
+                        : (a.name || 'без имени');
                     return (
                       <li key={a.name} style={{ marginBottom: 4 }}>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
@@ -133,7 +151,7 @@ export default async function Page({ params }: { params: Params }) {
                             href={`/api/files/${encodeURIComponent(a.name)}`}
                             style={{ fontWeight: 500, color: '#8d2828', textDecoration: 'underline' }}
                           >
-                            {a.originalName ?? a.name}
+                            {displayName}
                           </a>
                           <span style={{ fontSize: 12, color: '#6b7280' }}>
                             {a.mime} • {fmtBytes(a.size)} • загружено {fmtRuDateTime(a.createdAt)}
@@ -146,21 +164,21 @@ export default async function Page({ params }: { params: Params }) {
               )}
             </div>
 
-            {/* Форма проверки: Принять / Вернуть с причиной */}
+            {/* Порядок: Принять — Вернуть на доработку — поле комментария */}
             <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <form action={approveSubmissionAction}>
                 <input type="hidden" name="taskAssigneeId" value={taskAssigneeId} />
                 <button type="submit" className="btnPrimary">Принять</button>
               </form>
 
-              <form action={rejectSubmissionAction} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <form action={rejectSubmissionAction} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
                 <input type="hidden" name="taskAssigneeId" value={taskAssigneeId} />
+                <button type="submit" className="btnGhost">Вернуть на доработку</button>
                 <input
                   name="reason"
-                  placeholder="Причина (опц.)"
-                  style={{ height: 32, padding: '0 8px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
+                  placeholder="Комментарий (опц.)"
+                  style={{ height: 32, padding: '0 8px', borderRadius: 8, border: '1px solid #8d2828', fontSize: 13, minWidth: 200, flex: 1 }}
                 />
-                <button type="submit" className="btnGhost">Вернуть</button>
               </form>
             </div>
           </>
@@ -178,48 +196,66 @@ export default async function Page({ params }: { params: Params }) {
           <div style={{ fontSize: 14, color: '#6b7280' }}>Пока пусто.</div>
         ) : (
           <div style={{ display: 'grid', gap: 10 }}>
-            {closedSubmissions.map((s) => (
-              <div key={`${String(s.createdAt)}-${String(s.reviewedAt)}`} style={{ borderTop: '1px solid #f3f4f6', paddingTop: 8 }}>
-                <div style={{ fontSize: 13, color: '#6b7280' }}>
-                  Создано: {fmtRuDateTime(s.createdAt)} • Проверено: {fmtRuDateTime(s.reviewedAt)}
-                </div>
-                {s.reviewerComment && (
-                  <div style={{ marginTop: 6 }}>
-                    <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 2 }}>Комментарий проверяющего</div>
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{s.reviewerComment}</div>
-                  </div>
-                )}
+            {closedSubmissions.map((s) => {
+              const validFiles = s.attachments.filter(sa => {
+                const a = sa.attachment;
+                return !!a && typeof a.size === 'number' && a.size > 0;
+              });
 
-                {/* Вложения закрытой сдачи */}
-                <div style={{ marginTop: 8 }}>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Вложения</div>
-                  {s.attachments.length === 0 ? (
-                    <div style={{ fontSize: 13, color: '#9ca3af' }}>Файлы не прикреплены.</div>
-                  ) : (
-                    <ul style={{ margin: 0, paddingLeft: 18 }}>
-                      {s.attachments.map((sa) => {
-                        const a = sa.attachment;
-                        return (
-                          <li key={`${a.name}-${String(a.createdAt)}`} style={{ marginBottom: 4 }}>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                              <a
-                                href={`/api/files/${encodeURIComponent(a.name)}`}
-                                style={{ fontWeight: 500, color: '#8d2828', textDecoration: 'underline' }}
-                              >
-                                {a.originalName ?? a.name}
-                              </a>
-                              <span style={{ fontSize: 12, color: '#6b7280' }}>
-                                {a.mime} • {fmtBytes(a.size)} • загружено {fmtRuDateTime(a.createdAt)}
-                              </span>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
+              return (
+                <div key={`${String(s.createdAt)}-${String(s.reviewedAt)}`} style={{ borderTop: '1px solid #f3f4f6', paddingTop: 8 }}>
+                  <div style={{ fontSize: 13, color: '#6b7280' }}>
+                    Создано: {fmtRuDateTime(s.createdAt)} • Проверено: {fmtRuDateTime(s.reviewedAt)}
+                  </div>
+
+                  {s.comment && (
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 2 }}>Комментарий исполнителя</div>
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{s.comment}</div>
+                    </div>
                   )}
+
+                  {s.reviewerComment && (
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 2 }}>Комментарий проверяющего</div>
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{s.reviewerComment}</div>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Вложения</div>
+                    {validFiles.length === 0 ? (
+                      <div style={{ fontSize: 13, color: '#9ca3af' }}>Файлы не прикреплены.</div>
+                    ) : (
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {validFiles.map((sa) => {
+                          const a = sa.attachment!;
+                          const displayName =
+                            a.originalName && a.originalName.toLowerCase() !== 'blob'
+                              ? a.originalName
+                              : (a.name || 'без имени');
+                          return (
+                            <li key={`${a.name}-${String(a.createdAt)}`} style={{ marginBottom: 4 }}>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                <a
+                                  href={`/api/files/${encodeURIComponent(a.name)}`}
+                                  style={{ fontWeight: 500, color: '#8d2828', textDecoration: 'underline' }}
+                                >
+                                  {displayName}
+                                </a>
+                                <span style={{ fontSize: 12, color: '#6b7280' }}>
+                                  {a.mime} • {fmtBytes(a.size)} • загружено {fmtRuDateTime(a.createdAt)}
+                                </span>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

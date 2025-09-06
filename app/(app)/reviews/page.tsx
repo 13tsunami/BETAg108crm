@@ -80,8 +80,14 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
       <section style={{ display: 'grid', gap: 10 }}>
         {tasks.map((t) => {
-          const onReview = t.assignees.filter(a => a.status === 'submitted');
-          const accepted = t.assignees.filter(a => a.status === 'done');
+          const onReviewAll = t.assignees.filter(a => a.status === 'submitted');
+          const acceptedAll = t.assignees.filter(a => a.status === 'done');
+
+          const onReviewFirst = onReviewAll.slice(0, 5);
+          const onReviewRest  = onReviewAll.slice(5);
+
+          const acceptedFirst = acceptedAll.slice(0, 5);
+          const acceptedRest  = acceptedAll.slice(5);
 
           return (
             <details key={t.id} style={{ border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff' }}>
@@ -89,13 +95,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                 <div>
                   <div style={{ fontWeight: 600 }}>{t.title}</div>
                   <div style={{ fontSize: 12, color: '#374151' }}>
-                    Срок: {fmtRuDate(t.dueDate as Date)} • Принято {accepted.length} из {t.assignees.length}
+                    Срок: {fmtRuDate(t.dueDate as Date)} • Принято {acceptedAll.length} из {t.assignees.length}
                   </div>
                 </div>
               </summary>
 
               <div style={{ padding: 10, borderTop: '1px solid #f3f4f6', display: 'grid', gap: 12 }}>
-                {/* Верхняя панель действий по задаче */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <form action={approveAllInTaskAction}>
                     <input type="hidden" name="taskId" value={t.id} />
@@ -115,24 +120,32 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   </div>
                 )}
 
-                {/* На проверке */}
                 <div>
                   <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>На проверке</div>
-                  {onReview.length === 0 ? (
+                  {onReviewAll.length === 0 ? (
                     <div style={{ fontSize: 13, color: '#9ca3af' }}>Пока никого.</div>
                   ) : (
                     <div style={{ display: 'grid', gap: 8 }}>
-                      {onReview.map((a) => (
-                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      {onReviewFirst.map((a, idx) => (
+                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', width: '100%' }}>
+                          <span style={{ fontSize: 12, color: '#6b7280', minWidth: 24, textAlign: 'right' }}>{idx + 1}.</span>
+
                           <a
                             href={`/reviews/${a.id}`}
-                            style={{ border: '1px solid #e5e7eb', borderRadius: 999, padding: '2px 8px', fontSize: 12, background: '#fff', textDecoration: 'none', color: '#111827' }}
+                            style={{
+                              border: '1px solid #8d2828',
+                              borderRadius: 999,
+                              padding: '2px 10px',
+                              fontSize: 12,
+                              background: '#fff',
+                              textDecoration: 'none',
+                              color: '#111827'
+                            }}
                             title="Открыть карточку исполнения"
                           >
                             {a.user?.name ?? a.userId}
                           </a>
 
-                          {/* Принять одного */}
                           <form action={approveSubmissionAction}>
                             <input type="hidden" name="taskAssigneeId" value={a.id} />
                             <button
@@ -143,40 +156,129 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                             </button>
                           </form>
 
-                          {/* Вернуть с причиной */}
-                          <form action={rejectSubmissionAction} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <form action={rejectSubmissionAction} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', width: '100%', maxWidth: '100%' }}>
                             <input type="hidden" name="taskAssigneeId" value={a.id} />
-                            <input
-                              name="reason"
-                              placeholder="Причина (опц.)"
-                              style={{ height: 28, padding: '0 8px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
-                            />
                             <button
                               type="submit"
-                              style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', color: '#111827', cursor: 'pointer', fontSize: 13 }}
+                              style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', color: '#111827', cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' }}
                             >
-                              Вернуть
+                              Вернуть на доработку
                             </button>
+                            <input
+                              name="reason"
+                              placeholder="Комментарий (опц.)"
+                              style={{
+                                height: 28,
+                                padding: '0 8px',
+                                borderRadius: 8,
+                                border: '1px solid #8d2828',
+                                fontSize: 13,
+                                flex: 1,
+                                minWidth: 180
+                              }}
+                            />
                           </form>
                         </div>
                       ))}
+
+                      {onReviewRest.length > 0 && (
+                        <details>
+                          <summary style={{ cursor: 'pointer', fontSize: 13, color: '#8d2828' }}>
+                            Показать всех исполнителей ({onReviewRest.length})
+                          </summary>
+                          <div style={{ display: 'grid', gap: 8, marginTop: 6 }}>
+                            {onReviewRest.map((a, jdx) => {
+                              const idx = 5 + jdx;
+                              return (
+                                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', width: '100%' }}>
+                                  <span style={{ fontSize: 12, color: '#6b7280', minWidth: 24, textAlign: 'right' }}>{idx + 1}.</span>
+
+                                  <a
+                                    href={`/reviews/${a.id}`}
+                                    style={{
+                                      border: '1px solid #8d2828',
+                                      borderRadius: 999,
+                                      padding: '2px 10px',
+                                      fontSize: 12,
+                                      background: '#fff',
+                                      textDecoration: 'none',
+                                      color: '#111827'
+                                    }}
+                                    title="Открыть карточку исполнения"
+                                  >
+                                    {a.user?.name ?? a.userId}
+                                  </a>
+
+                                  <form action={approveSubmissionAction}>
+                                    <input type="hidden" name="taskAssigneeId" value={a.id} />
+                                    <button
+                                      type="submit"
+                                      style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #111827', background: '#111827', color: '#fff', cursor: 'pointer', fontSize: 13 }}
+                                    >
+                                      Принять
+                                    </button>
+                                  </form>
+
+                                  <form action={rejectSubmissionAction} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', width: '100%', maxWidth: '100%' }}>
+                                    <input type="hidden" name="taskAssigneeId" value={a.id} />
+                                    <button
+                                      type="submit"
+                                      style={{ height: 28, padding: '0 10px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', color: '#111827', cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' }}
+                                    >
+                                      Вернуть на доработку
+                                    </button>
+                                    <input
+                                      name="reason"
+                                      placeholder="Комментарий (опц.)"
+                                      style={{
+                                        height: 28,
+                                        padding: '0 8px',
+                                        borderRadius: 8,
+                                        border: '1px solid #8d2828',
+                                        fontSize: 13,
+                                        flex: 1,
+                                        minWidth: 180
+                                      }}
+                                    />
+                                  </form>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </details>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Принято */}
                 <div>
                   <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Принято</div>
-                  {accepted.length === 0 ? (
+                  {acceptedAll.length === 0 ? (
                     <div style={{ fontSize: 13, color: '#9ca3af' }}>Пока никого.</div>
                   ) : (
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {accepted.map((a) => (
-                        <span key={a.id} title="Принято" style={{ border: '1px solid #e5e7eb', borderRadius: 999, padding: '2px 8px', fontSize: 12, background: '#ecfdf5' }}>
-                          {a.user?.name ?? a.userId} ✓
-                        </span>
-                      ))}
-                    </div>
+                    <>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {acceptedFirst.map((a) => (
+                          <span key={a.id} title="Принято" style={{ border: '1px solid #e5e7eb', borderRadius: 999, padding: '2px 8px', fontSize: 12, background: '#ecfdf5' }}>
+                            {a.user?.name ?? a.userId} ✓
+                          </span>
+                        ))}
+                      </div>
+                      {acceptedRest.length > 0 && (
+                        <details style={{ marginTop: 6 }}>
+                          <summary style={{ cursor: 'pointer', fontSize: 13, color: '#8d2828' }}>
+                            Показать всех ({acceptedRest.length})
+                          </summary>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                            {acceptedRest.map((a) => (
+                              <span key={a.id} title="Принято" style={{ border: '1px solid #e5e7eb', borderRadius: 999, padding: '2px 8px', fontSize: 12, background: '#ecfdf5' }}>
+                                {a.user?.name ?? a.userId} ✓
+                              </span>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

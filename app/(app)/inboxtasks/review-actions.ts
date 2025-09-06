@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canViewTasks, hasFullAccess } from '@/lib/roles';
-import { saveBufferToUploads } from '@/lib/uploads'; // NEW: пишем файлы на диск
+import { saveBufferToUploads } from '@/lib/uploads';
 
 function forbid(): never {
   redirect('/');
@@ -17,29 +17,35 @@ function invariant<T>(value: T, message = 'Forbidden'): asserts value is NonNull
   if (value === null || value === undefined) throw new Error(message);
 }
 
-/** Сохранение файлов на диск и линковка к Submission (метаданные в БД) */
-async function persistAttachments(files: File[], submissionId: string) {
+/** Минимальный тип для tx внутри транзакции */
+type TxLike = Pick<typeof prisma, 'attachment' | 'submissionAttachment' | 'submission' | 'taskAssignee'>;
+
+/** Сохранение файлов на диск и линковка к Submission (метаданные в БД), пропуская пустые и blob-имена */
+async function persistAttachmentsTx(tx: TxLike, files: File[], submissionId: string) {
   for (const file of files) {
+    if (!file || typeof file.size !== 'number' || file.size <= 0) continue;
+
     const arr = await file.arrayBuffer();
     const buf = Buffer.from(arr);
+    if (buf.length <= 0) continue;
 
-    // на диск
     const { name, sha256, size } = await saveBufferToUploads(buf, file.name ?? null);
 
-    // только метаданные в БД
-    const att = await prisma.attachment.create({
+    const originalName =
+      file.name && file.name.toLowerCase() !== 'blob' ? file.name : null;
+
+    const att = await tx.attachment.create({
       data: {
-        name,                              // имя файла в сторадже
-        originalName: file.name ?? null,   // исходное имя
+        name,                       // имя файла в сторадже
+        originalName,               // исходное имя (без "blob")
         mime: file.type || 'application/octet-stream',
         size,
         sha256,
-        // data:  // больше НЕ сохраняем бинарь в БД
       },
       select: { id: true },
     });
 
-    await prisma.submissionAttachment.create({
+    await tx.submissionAttachment.create({
       data: { submissionId, attachmentId: att.id },
     });
   }
@@ -97,29 +103,9 @@ export async function submitForReviewAction(formData: FormData): Promise<void> {
       select: { id: true },
     });
 
-    // Вложения: пишем на диск, в БД — только метаданные
+    // Вложения: на диск, в БД — только метаданные, пропуская нулевые/«blob»
     if (files.length) {
-      for (const file of files) {
-        const arr = await file.arrayBuffer();
-        const buf = Buffer.from(arr);
-
-        const { name, sha256, size } = await saveBufferToUploads(buf, file.name ?? null);
-
-        const att = await tx.attachment.create({
-          data: {
-            name,
-            originalName: file.name ?? null,
-            mime: file.type || 'application/octet-stream',
-            size,
-            sha256,
-          },
-          select: { id: true },
-        });
-
-        await tx.submissionAttachment.create({
-          data: { submissionId: sub.id, attachmentId: att.id },
-        });
-      }
+      await persistAttachmentsTx(tx, files, sub.id);
     }
 
     // Обновляем статус назначенного
