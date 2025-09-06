@@ -1,3 +1,4 @@
+// app/(app)/calendar/page.tsx
 import { auth } from '@/auth.config';
 import { normalizeRole } from '@/lib/roles';
 import { prisma } from '@/lib/prisma';
@@ -11,6 +12,16 @@ export const revalidate = 0;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+export type AttachmentLite = {
+  id: string;
+  name: string;
+  originalName: string | null;
+  mime: string;
+  size: number;
+};
+
+export type AssigneeLite = { id: string; name: string | null };
+
 export type TaskLite = {
   id: string;
   title: string;
@@ -21,6 +32,10 @@ export type TaskLite = {
   createdById: string | null;
   createdByName: string | null;
   myStatus: 'in_progress' | 'done' | null;
+
+  // новое
+  attachments: AttachmentLite[];
+  assignees: AssigneeLite[];
 };
 
 export type NoteLite = {
@@ -58,7 +73,7 @@ function parseMonthParam(mParam: string | string[] | undefined, timeZone: string
   return currentYearMonthInTz(timeZone);
 }
 
-// новая функция: берем диапазон ±2 месяца вокруг выбранного месяца
+// диапазон ±2 месяца вокруг выбранного
 function aroundMonthUtcRange(year: number, month1to12: number, tzOffsetMinutes: number): { startUTC: Date; endUTC: Date } {
   const pad = (n: number) => String(n).padStart(2, '0');
   const offSign = tzOffsetMinutes >= 0 ? '+' : '-';
@@ -67,12 +82,10 @@ function aroundMonthUtcRange(year: number, month1to12: number, tzOffsetMinutes: 
   const offMM = pad(abs % 60);
   const offset = `${offSign}${offHH}:${offMM}`;
 
-  // старт: два месяца ДО выбранного
   const startMonthIndex = month1to12 - 2;
   const startYear = startMonthIndex <= 0 ? year - 1 : year;
   const startMonth = startMonthIndex <= 0 ? 12 + startMonthIndex : startMonthIndex;
 
-  // конец: начало месяца, который на три месяца ПОСЛЕ выбранного
   const endMonthIndex = month1to12 + 3;
   const endYear = endMonthIndex > 12 ? year + 1 : year;
   const endMonth = endMonthIndex > 12 ? endMonthIndex - 12 : endMonthIndex;
@@ -116,7 +129,23 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     select: {
       id: true, title: true, description: true, dueDate: true, priority: true, hidden: true,
       createdById: true, createdByName: true,
-      assignees: { where: { userId: meId }, select: { status: true } },
+
+      // кому назначено
+      assignees: {
+        select: {
+          user: { select: { id: true, name: true } },
+          status: true,
+        }
+      },
+
+      // вложения задачи
+      attachments: {
+        select: {
+          attachment: {
+            select: { id: true, name: true, originalName: true, mime: true, size: true }
+          }
+        }
+      },
     },
     orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
   });
@@ -131,6 +160,15 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     createdById: t.createdById,
     createdByName: t.createdByName,
     myStatus: (t.assignees[0]?.status as 'in_progress' | 'done' | undefined) ?? null,
+
+    assignees: t.assignees.map(a => ({ id: a.user.id, name: a.user.name })),
+    attachments: t.attachments.map(x => ({
+      id: x.attachment.id,
+      name: x.attachment.name,
+      originalName: x.attachment.originalName ?? null,
+      mime: x.attachment.mime,
+      size: x.attachment.size,
+    })),
   }));
 
   const grouped: Record<string, TaskLite[]> = {};
@@ -158,12 +196,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   });
 
   const initialNotes: NoteLite[] = notesRaw.map(n => ({
-  id: n.id,
-  at: (n.at as Date).toISOString(),
-  allDay: !!n.allDay,
-  title: n.title ?? null,
-  text: n.text ?? '',           // ← отдаем полный текст
-}));
+    id: n.id,
+    at: (n.at as Date).toISOString(),
+    allDay: !!n.allDay,
+    title: n.title ?? null,
+    text: n.text ?? '',
+  }));
 
   return (
     <main style={{ padding: 16, display: 'grid', gap: 12 }}>
@@ -184,11 +222,4 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       <CalendarModals tasks={initialTasks as any} meId={meId} notes={initialNotes} />
     </main>
   );
-}
-
-function truncateForTile(s: string): string {
-  const max = 180;
-  const clean = s.trim().replace(/\s+/g, ' ');
-  if (clean.length <= max) return clean;
-  return clean.slice(0, max - 1).trimEnd() + '…';
 }

@@ -1,9 +1,13 @@
+// app/(app)/calendar/CalendarModals.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import type { NoteLite } from './page';
-import { createNoteAction, updateNoteAction, deleteNoteAction, markMyTaskDoneAction } from './actions';
+import type { NoteLite, AttachmentLite, AssigneeLite } from './page';
+import { createNoteAction, updateNoteAction, deleteNoteAction } from './actions';
+
+const BRAND = '#8d2828';
 
 type Task = {
   id: string;
@@ -14,6 +18,8 @@ type Task = {
   priority: 'normal' | 'high' | null;
   createdById: string | null;
   createdByName: string | null;
+  attachments: AttachmentLite[];
+  assignees: AssigneeLite[];
 };
 
 type Props = { tasks: Task[]; meId: string; notes?: NoteLite[] };
@@ -39,14 +45,13 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
       const key = ymd(new Date(t.dueDate));
       (m.get(key) ?? m.set(key, []).get(key)!)!.push(t);
     }
-    for (const [k, arr] of m) {
+    for (const [, arr] of m) {
       arr.sort((a, b) => {
         const ap = (a.priority ?? 'normal') === 'high' ? 0 : 1;
         const bp = (b.priority ?? 'normal') === 'high' ? 0 : 1;
         if (ap !== bp) return ap - bp;
         return (a.title || '').localeCompare(b.title || '', 'ru');
       });
-      m.set(k, arr);
     }
     return m;
   }, [tasks]);
@@ -57,9 +62,8 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
       const key = ymd(new Date(n.at));
       (m.get(key) ?? m.set(key, []).get(key)!)!.push(n);
     }
-    for (const [k, arr] of m) {
+    for (const [, arr] of m) {
       arr.sort((a, b) => (a.title ?? '').localeCompare(b.title ?? '', 'ru'));
-      m.set(k, arr);
     }
     return m;
   }, [notes]);
@@ -127,9 +131,9 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
 
   return createPortal(
     <>
-      {/* ==== TASK MODAL (glass-стиль) ==== */}
+      {/* модалка задачи */}
       {task && (
-        <div role="dialog" aria-modal className="cal-modal__backdrop" onClick={() => setTaskId(null)}>
+        <div role="dialog" aria-modal className="cal-modal__backdrop">
           <div className="cal-modal glass" onClick={(e) => e.stopPropagation()}>
             <header className="cal-modal__header">
               <div className="cal-modal__title">
@@ -139,150 +143,168 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
               <button className="cal-close" onClick={() => setTaskId(null)} aria-label="Закрыть">×</button>
             </header>
 
-            <div className="cal-modal__meta">
-              <span>Дедлайн: {fmtRu(task.dueDate)}</span>
-              {task.createdByName ? <span>Назначил: {task.createdByName}</span> : null}
-            </div>
+            <section className="meta-section">
+              <div className="meta-row"><span className="meta-label">Дедлайн</span><span className="meta-val">{fmtRu(task.dueDate)}</span></div>
+              {task.createdByName && <div className="meta-row"><span className="meta-label">Назначил</span><span className="meta-val">{task.createdByName}</span></div>}
+              {!!task.assignees.length && (
+                <div className="meta-row">
+                  <span className="meta-label">Кому</span>
+                  <span className="meta-val">{renderAssignees(task.assignees)}</span>
+                </div>
+              )}
+              {!!task.attachments.length && (
+                <div className="meta-row">
+                  <span className="meta-label">Файлы</span>
+                  <ul className="files__list meta-val">
+                    {task.attachments.map(a => (
+                      <li key={a.id} className="file-chip">
+                        <a href={`/uploads/${a.name}`} download={a.originalName ?? undefined} className="file-chip__link" target="_blank" rel="noopener noreferrer">
+                          <span className="file-chip__name wb clamp1">{a.originalName || a.name}</span>
+                          <span className="file-chip__meta">{a.mime} · {fmtSize(a.size)}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
 
-            {task.description ? (
-              <div className="cal-modal__desc scrollbox wb">{task.description}</div>
-            ) : (
-              <div className="cal-modal__desc cal-modal__desc--empty">Без описания</div>
+            {task.description && (
+              <section className="meta-section">
+                <div className="meta-row">
+                  <span className="meta-label">Описание</span>
+                  <div className="meta-val"><div className="text-box wb">{task.description}</div></div>
+                </div>
+              </section>
             )}
 
             <div style={{ display:'flex', gap:8, marginTop:6 }}>
-              <form action={markMyTaskDoneAction}>
-                <input type="hidden" name="taskId" value={task.id} />
-                <button type="submit" className="btn btn--primary">Выполнить</button>
-              </form>
+              <Link href="/inboxtasks" className="btn btn--brand">В задачи</Link>
               <button type="button" className="btn btn--ghost" onClick={() => setTaskId(null)}>Закрыть</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ==== DAY MODAL ==== */}
+      {/* модалка дня */}
       {dayIso && (
-        <div role="dialog" aria-modal className="cal-modal__backdrop" onClick={() => setDayIso(null)}>
-          <div className="cal-modal" onClick={(e) => e.stopPropagation()}>
+        <div role="dialog" aria-modal className="cal-modal__backdrop">
+          <div className="cal-modal cal-modal--day" onClick={(e) => e.stopPropagation()}>
             <header className="cal-modal__header">
               <div className="cal-modal__title"><strong>За {fmtRu(dayIso)}</strong></div>
               <button className="cal-close" onClick={() => setDayIso(null)} aria-label="Закрыть">×</button>
             </header>
 
-            {/* Фильтр */}
             <div className="day-filter" role="tablist" aria-label="Фильтр содержимого дня">
               <button role="tab" aria-selected={dayFilter === 'all'}   className={tabCls(dayFilter === 'all')}   onClick={() => setDayFilter('all')}>Все</button>
               <button role="tab" aria-selected={dayFilter === 'tasks'} className={tabCls(dayFilter === 'tasks')} onClick={() => setDayFilter('tasks')}>Задачи</button>
               <button role="tab" aria-selected={dayFilter === 'notes'} className={tabCls(dayFilter === 'notes')} onClick={() => setDayFilter('notes')}>Заметки</button>
             </div>
 
-            {filteredDayTasks.length === 0 && filteredDayNotes.length === 0 ? (
+            {(filteredDayTasks.length === 0 && filteredDayNotes.length === 0) ? (
               <div className="muted">Пусто</div>
             ) : (
-              <div className="day-list">
-                {/* задачи */}
-                {[...filteredDayTasks].sort(sortTasks).map(t => {
+              <div className="tiles">
+                {filteredDayTasks.sort(sortTasks).map(t => {
                   const urgent = (t.priority ?? 'normal') === 'high';
-                  const isExp = expanded.has(`t:${t.id}`);
+                  const key = `t:${t.id}`;
+                  const isOpen = expanded.has(key);
                   return (
-                    <div key={t.id} className={`day-item day-item--task ${urgent ? 'day-item--urgent' : ''}`}>
-                      <button
-                        className="day-item__main day-item__main--compact"
-                        onClick={() => { setDayIso(null); setTaskId(t.id); }}
-                        title={t.description || ''}
-                      >
-                        <div className="day-item__title wb clamp1">
-                          {t.title}
-                          {urgent ? <span className="badge badge--urgent">Срочно</span> : null}
-                        </div>
-                        {t.createdByName ? <div className="day-item__kicker wb clamp1">Назначил(а): {t.createdByName}</div> : null}
-                      </button>
+                    <article key={t.id} className={`tile tile--task ${urgent ? 'tile--urgent' : ''} ${isOpen ? 'tile--open' : ''}`}>
+                      <header className="tile__hdr" onClick={() => toggle(key)}>
+                        <div className="tile__ttl wb clamp2">{t.title}</div>
+                        <button className="tile__chev" aria-expanded={isOpen} aria-label={isOpen ? 'Свернуть' : 'Развернуть'}>
+                          {isOpen ? '▴' : '▾'}
+                        </button>
+                      </header>
 
-                      <button
-                        className="day-item__disclosure"
-                        aria-expanded={isExp}
-                        aria-label={isExp ? 'Свернуть' : 'Развернуть'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const next = new Set(expanded);
-                          const key = `t:${t.id}`;
-                          if (next.has(key)) next.delete(key); else next.add(key);
-                          setExpanded(next);
-                        }}
-                      >
-                        {isExp ? '▴' : '▾'}
-                      </button>
+                      <div className="tile__meta-inline">
+                        <span>{fmtRu(t.dueDate)}</span>
+                        {t.createdByName ? <span>· {t.createdByName}</span> : null}
+                        {!!t.assignees.length && <span>· Адресаты: {t.assignees.length}</span>}
+                        {!!t.attachments.length && <span>· Файлы: {t.attachments.length}</span>}
+                      </div>
 
-                      {isExp && (
-                        <div className="day-item__details">
-                          <div className="day-item__meta"><span>Дедлайн: {fmtRu(t.dueDate)}</span></div>
-                          {t.description && <div className="day-item__desc scrollbox-inner wb">{t.description}</div>}
-                          <div style={{ display:'flex', gap:8, marginTop:6 }}>
-                            <form action={markMyTaskDoneAction}>
-                              <input type="hidden" name="taskId" value={t.id} />
-                              <button type="submit" className="btn btn--primary">Выполнить</button>
-                            </form>
+                      {isOpen && (
+                        <>
+                          <section className="meta-section">
+                            <div className="meta-row"><span className="meta-label">Дедлайн</span><span className="meta-val">{fmtRu(t.dueDate)}</span></div>
+                            {t.createdByName && <div className="meta-row"><span className="meta-label">Назначил</span><span className="meta-val">{t.createdByName}</span></div>}
+                            {!!t.assignees.length && (
+                              <div className="meta-row">
+                                <span className="meta-label">Кому</span>
+                                <span className="meta-val">{renderAssignees(t.assignees)}</span>
+                              </div>
+                            )}
+                            {!!t.attachments.length && (
+                              <div className="meta-row">
+                                <span className="meta-label">Файлы</span>
+                                <ul className="files__list">
+                                  {t.attachments.map(a => (
+                                    <li key={a.id}>
+                                      <a href={`/uploads/${a.name}`} download={a.originalName ?? undefined} className="file-chip__link" target="_blank" rel="noopener noreferrer">
+                                        <span className="file-chip__name wb clamp1">{a.originalName || a.name}</span>
+                                        <span className="file-chip__meta">{fmtSize(a.size)}</span>
+                                      </a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </section>
+
+                          {t.description && (
+                            <section className="meta-section">
+                              <div className="meta-row">
+                                <span className="meta-label">Описание</span>
+                                <div className="meta-val"><div className="text-box wb">{t.description}</div></div>
+                              </div>
+                            </section>
+                          )}
+
+                          <div style={{ display:'flex', gap:8 }}>
+                            <Link href="/inboxtasks" className="btn btn--brand">Открыть задачу</Link>
+                            <button type="button" className="btn btn--ghost" onClick={() => { setDayIso(null); setTaskId(t.id); }}>Подробнее</button>
                           </div>
-                        </div>
+                        </>
                       )}
-                    </div>
+                    </article>
                   );
                 })}
 
-                {/* заметки */}
                 {filteredDayNotes.map(n => {
-                  const isExp = expanded.has(`n:${n.id}`);
+                  const key = `n:${n.id}`;
+                  const isOpen = expanded.has(key);
                   return (
-                    <div key={n.id} className="day-item day-item--note">
-                      <button
-                        className="day-item__main day-item__main--compact"
-                        onClick={() => { setDayIso(null); setEditNoteMode(false); setNoteId(n.id); }}
-                        title={n.text || ''}
-                      >
-                        <div className="day-item__title wb clamp1">{n.title ?? 'Заметка'}</div>
-                        {n.text ? <div className="day-item__kicker wb clamp1">{truncate(n.text, 140)}</div> : null}
-                      </button>
+                    <article key={n.id} className={`tile tile--note ${isOpen ? 'tile--open' : ''}`}>
+                      <header className="tile__hdr" onClick={() => toggle(key)}>
+                        <div className="tile__ttl wb clamp2">{n.title ?? 'Заметка'}</div>
+                        <button className="tile__chev" aria-expanded={isOpen}>{isOpen ? '▴' : '▾'}</button>
+                      </header>
+                      <div className="tile__meta-inline">
+                        <span>{n.allDay ? 'Весь день' : 'Время'}</span>
+                        <span>· {fmtRu(n.at)}</span>
+                      </div>
 
-                      <button
-                        className="day-item__disclosure"
-                        aria-expanded={isExp}
-                        aria-label={isExp ? 'Свернуть' : 'Развернуть'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const next = new Set(expanded);
-                          const key = `n:${n.id}`;
-                          if (next.has(key)) next.delete(key); else next.add(key);
-                          setExpanded(next);
-                        }}
-                      >
-                        {isExp ? '▴' : '▾'}
-                      </button>
+                      {isOpen && (
+                        <>
+                          <section className="meta-section">
+                            <div className="meta-row">
+                              <span className="meta-label">Текст</span>
+                              <div className="meta-val"><div className="text-box wb">{n.text}</div></div>
+                            </div>
+                          </section>
 
-                      {isExp && (
-                        <div className="day-item__details note-details">
-                          <div className="day-item__meta">
-                            <span>{n.allDay ? 'Весь день' : 'Время'}</span>
-                            <span>· {fmtRu(n.at)}</span>
-                          </div>
-                          {n.text && <div className="day-item__desc scrollbox-inner wb">{n.text}</div>}
                           <div style={{ display:'flex', gap:8, marginTop:6 }}>
-                            <button
-                              type="button"
-                              className="btn btn--primary"
-                              onClick={() => { setDayIso(null); setNoteId(n.id); setEditNoteMode(true); }}
-                              title="Редактировать"
-                            >
-                              Редактировать
-                            </button>
+                            <button type="button" className="btn btn--brand" onClick={() => { setDayIso(null); setNoteId(n.id); setEditNoteMode(true); }}>Редактировать</button>
                             <form action={deleteNoteAction}>
                               <input type="hidden" name="noteId" value={n.id} />
                               <button type="submit" className="btn btn--danger">Удалить</button>
                             </form>
                           </div>
-                        </div>
+                        </>
                       )}
-                    </div>
+                    </article>
                   );
                 })}
               </div>
@@ -291,9 +313,9 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         </div>
       )}
 
-      {/* ==== NOTE MODAL (просмотр/редактирование) ==== */}
+      {/* модалка заметки */}
       {note && (
-        <div role="dialog" aria-modal className="cal-modal__backdrop" onClick={() => setNoteId(null)}>
+        <div role="dialog" aria-modal className="cal-modal__backdrop">
           <div className="cal-modal glass" onClick={(e) => e.stopPropagation()}>
             <header className="cal-modal__header">
               <div className="cal-modal__title"><strong className="wb">{editNoteMode ? 'Редактировать заметку' : (note.title ?? 'Заметка')}</strong></div>
@@ -302,12 +324,19 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
 
             {!editNoteMode ? (
               <>
-                <div className="cal-modal__meta">
-                  <span>{note.allDay ? 'Весь день' : 'Время'} · {fmtRu(note.at)}</span>
-                </div>
-                {note.text ? <div className="cal-modal__desc scrollbox wb">{note.text}</div> : <div className="cal-modal__desc cal-modal__desc--empty">Без текста</div>}
+                <section className="meta-section">
+                  <div className="meta-row"><span className="meta-label">Когда</span><span className="meta-val">{note.allDay ? 'Весь день' : 'Время'} · {fmtRu(note.at)}</span></div>
+                </section>
+                {note.text && (
+                  <section className="meta-section">
+                    <div className="meta-row">
+                      <span className="meta-label">Текст</span>
+                      <div className="meta-val"><div className="text-box wb">{note.text}</div></div>
+                    </div>
+                  </section>
+                )}
                 <div style={{ display:'flex', gap:8 }}>
-                  <button type="button" className="btn btn--primary" onClick={() => setEditNoteMode(true)}>Редактировать</button>
+                  <button type="button" className="btn btn--brand" onClick={() => setEditNoteMode(true)}>Редактировать</button>
                   <form action={deleteNoteAction}>
                     <input type="hidden" name="noteId" value={note.id} />
                     <button type="submit" className="btn btn--danger">Удалить</button>
@@ -335,185 +364,169 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         </div>
       )}
 
-      {/* ==== NEW NOTE ==== */}
-      {newNote && (
-        <div role="dialog" aria-modal className="cal-modal__backdrop" onClick={() => setNewNote(null)}>
-          <div className="cal-modal glass" onClick={(e) => e.stopPropagation()}>
-            <header className="cal-modal__header">
-              <div className="cal-modal__title"><strong>Новая заметка</strong></div>
-              <button className="cal-close" onClick={() => setNewNote(null)} aria-label="Закрыть">×</button>
-            </header>
+      {/* global — чтобы стили стабильно применялись к узлам портала */}
+      <style jsx global>{`
+        :root { --brand: ${BRAND}; --tile-w: 180px; --tile-h: 120px; }
 
-            <NoteForm
-              mode="create"
-              submitLabel="Сохранить"
-              action={createNoteAction}
-              defaults={{
-                dateISO: newNote.atISO,
-                allDay: newNote.allDay,
-                title: '',
-                text: '',
-              }}
-              onCancel={() => setNewNote(null)}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ===== СТИЛИ (scoped) ===== */}
-      <style jsx>{`
         .cal-modal__backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.32); display: grid; place-items: center; z-index: 1000; padding: 12px; }
-        .cal-modal { width: min(880px, 96vw); max-width: 96vw; max-height: 92svh; overflow: auto; background:#fff; border:1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.18); padding: 12px; }
-        .glass { background: var(--glass-top); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border:1px solid var(--glass-brd); }
-        @media (max-width: 520px) { .cal-modal { width: 100vw; height: 100svh; max-height: 100svh; border-radius: 0; border: none; } }
+        .cal-modal { width: min(1100px, 96vw); max-width: 96vw; max-height: 92svh; overflow: auto; background:#fff; border:1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.18); padding: 12px; }
+        .cal-modal--day { height: 84svh; max-height: 84svh; display: flex; flex-direction: column; overflow: hidden; }
+        .glass { background: var(--glass-top, #fff); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border:1px solid var(--glass-brd, #e5e7eb); }
+        @media (max-width: 520px) {
+          .cal-modal { width: 100vw; height: 100svh; max-height: 100svh; border-radius: 0; border: none; }
+          .cal-modal--day { width: 100vw; height: 100svh; max-height: 100svh; }
+        }
 
         .cal-modal__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
         .cal-modal__title { display:flex; align-items:center; gap:8px; font-weight:800; }
-        .cal-close { border:1px solid var(--glass-brd); background:#fff; border-radius:8px; width:28px; height:28px; cursor:pointer; }
+        .cal-close { border:1px solid var(--glass-brd, #e5e7eb); background:#fff; border-radius:8px; width:28px; height:28px; cursor:pointer; }
 
         .badge { font-size:10px; border-radius:999px; padding:0 6px; }
-        .badge--urgent { color:#fff; background:#8d2828; }
-
-        .cal-modal__meta { display:flex; gap:12px; font-size:12px; color:#374151; margin:6px 0 10px; flex-wrap:wrap; }
+        .badge--urgent { color:#fff; background: var(--brand); }
 
         .wb { word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; }
-        .clamp1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-
-        .scrollbox       { max-height: 60vh; overflow: auto; padding: 10px; background:#fafafa; border:1px solid #f3f4f6; border-radius: 8px; }
-        .scrollbox-inner { max-height: 50vh; overflow: auto; padding: 10px; background: rgba(255,255,255,.65); border:1px solid rgba(0,0,0,.06); border-radius: 8px; }
-
-        .cal-modal__desc { margin-bottom:10px; }
-        .cal-modal__desc--empty { color:#6b7280; font-style:italic; }
+        .clamp1 { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+        .clamp2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
         .muted { color:#6b7280; font-size:12px; }
 
-        /* компактные карточки в модалке дня */
-        .day-list { display:grid; gap:8px; }
-        .day-item { display: grid; grid-template-columns: 1fr auto; align-items: stretch; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff; overflow: hidden; transition: box-shadow .16s ease, border-color .16s ease, background .16s ease, transform .16s ease; }
-        .day-item:hover { border-color: rgba(141,40,40,.35); box-shadow: 0 6px 16px rgba(0,0,0,.08); background: linear-gradient(180deg, rgba(141,40,40,.06), rgba(141,40,40,.02)), #fff; transform: translateY(-1px); }
-        .day-item--task { background: #FEF9E7; border-color: #F59E0B; }
-        .day-item--urgent { border-left: 3px solid #8d2828; }
-        .day-item--note  { background: #F0F7FF; border-color: #60a5fa; }
-
-        .day-item__main { text-align: left; padding: 8px 10px; background: transparent; border: 0; cursor: pointer; min-width: 0; }
-        .day-item__main--compact { padding: 6px 8px; }
-        .day-item__title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:2px; }
-        .day-item__kicker { font-size:12px; color:#374151; opacity:.9; }
-        .day-item__disclosure { width: 40px; padding: 0 8px; border: 0; cursor: pointer; background: transparent; border-left: 1px solid rgba(0,0,0,.06); font-size: 14px; }
-        .day-item__details { grid-column: 1 / -1; display: grid; gap: 6px; padding: 8px 10px 10px; background: rgba(255,255,255,.65); border-top: 1px solid rgba(0,0,0,.06); }
-        .note-details { background: rgba(219,234,254,.45); }
-        .day-item__meta { font-size:12px; color:#374151; display:flex; gap:8px; flex-wrap:wrap; }
-        .day-item__desc { font-size:12px; color:#111827; line-height:1.45; }
-
-        /* локальные классы формы (на всякий случай) */
-        .form-root { display: grid; gap: 10px; }
-        .form-grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-        .span-2 { grid-column: 1 / -1; }
-        .label { display:grid; gap:6px; font-size:12px; color:#374151; }
-        .label__text { font-weight: 600; color:#111827; }
-        .label-inline { display:flex; gap:8px; align-items:center; font-size:12px; color:#374151; }
-        .input, .textarea { width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #111827; font-size: 13px; outline: none; transition: border-color .12s ease, box-shadow .12s ease; }
-        .textarea { resize: vertical; min-height: 140px; }
-        .input:focus, .textarea:focus { border-color: #8d2828; box-shadow: 0 0 0 3px rgba(141,40,40,.12); }
-        .input:disabled { background:#f3f4f6; color:#6b7280; cursor:not-allowed; }
-        .time-row { display:flex; gap:10px; align-items:center; }
-        .checkbox { width: 16px; height: 16px; accent-color: #8d2828; }
-
-        .btn { height: 32px; padding: 0 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
-        .btn--primary { border: 1px solid #111827; background: #111827; color: #fff; }
-        .btn--ghost { border: 1px solid #e5e7eb; background: #fff; color: #111827; }
-        .btn--danger { border: 1px solid #ef4444; background: #ef4444; color: #fff; }
-
         .day-filter { display:flex; gap:6px; margin: 4px 0 10px; }
-        .tab { height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid #e5e7eb; background:#fff; font-size:12px; cursor:pointer; }
-        .tab--active { background:#111827; border-color:#111827; color:#fff; }
 
-        .actions { display:flex; gap:8px; margin-top: 4px; }
-      `}</style>
-
-      {/* ===== ГЛОБАЛЬНЫЕ стили для NoteForm (чтобы работали внутри дочернего компонента) ===== */}
-      <style jsx global>{`
-        .cal-modal .form-root { display: grid; gap: 10px; }
-        .cal-modal .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .cal-modal .span-2 { grid-column: 1 / -1; }
-
-        .cal-modal .label { display: grid; gap: 6px; font-size: 12px; color: #374151; }
-        .cal-modal .label__text { font-weight: 600; color: #111827; }
-        .cal-modal .label-inline { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #374151; }
-
-        .cal-modal .input,
-        .cal-modal .textarea {
-          width: 100%;
-          padding: 8px 10px;
-          border: 1px solid #e5e7eb;
+        /* кнопки — аккуратные, бордовая с белым текстом */
+        .btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 34px;
+          padding: 0 14px;
           border-radius: 10px;
-          background: #fff;
-          color: #111827;
           font-size: 13px;
-          outline: none;
-          transition: border-color .12s ease, box-shadow .12s ease;
+          line-height: 1;
+          font-weight: 600;
+          cursor: pointer;
+          transition: filter .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
         }
-        .cal-modal .textarea { resize: vertical; min-height: 140px; }
-        .cal-modal .input:focus,
-        .cal-modal .textarea:focus {
-          border-color: #8d2828;
-          box-shadow: 0 0 0 3px rgba(141,40,40,.12);
+        .btn--brand  { background: var(--brand); border: 1px solid var(--brand); color: #fff !important; box-shadow: 0 1px 0 rgba(0,0,0,.05); }
+        .btn--brand:hover  { filter: brightness(1.05); }
+        .btn--brand:active { filter: brightness(.95); }
+
+        .btn--ghost  { border: 1px solid #e5e7eb; background: #fff; color: #111827; }
+        .btn--ghost:hover  { background: #f7f7f7; }
+
+        .btn--danger { border: 1px solid #ef4444; background: #ef4444; color: #fff; }
+        .btn--danger:hover  { filter: brightness(1.05); }
+        .btn--danger:active { filter: brightness(.95); }
+
+        /* сетка плиток; скролл появляется при избытке контента */
+        .tiles {
+          display: grid;
+          grid-auto-flow: dense;
+          grid-template-columns: repeat(auto-fill, minmax(var(--tile-w), 1fr));
+          gap: 8px;
+          padding-right: 4px;
+          overflow: auto;            /* скролл внутри области плиток */
+          flex: 1;
+          align-content: start;
         }
-        .cal-modal .input:disabled { background:#f3f4f6; color:#6b7280; cursor:not-allowed; }
+        .tiles::-webkit-scrollbar { width: 8px; height: 8px; }
+        .tiles::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 8px; }
+        .tiles:hover::-webkit-scrollbar-thumb { background: #d1d5db; }
 
-        .cal-modal .time-row { display: flex; gap: 10px; align-items: center; }
-        .cal-modal .checkbox { width: 16px; height: 16px; accent-color: #8d2828; }
+        .tile {
+          border: 1px solid #e5e7eb;
+          border-radius: 14px;
+          background: #fff;
+          padding: 10px;
+          display: grid;
+          gap: 6px;
+          transition: box-shadow .16s ease, border-color .16s ease, background .16s ease, transform .16s ease;
+          width: 100%;
+          height: var(--tile-h);
+          overflow: hidden;
+        }
+        .tile--task { background: #FEF9E7; border-color: #F59E0B; }
+        .tile--note  { background: #F0F7FF; border-color: #60a5fa; }
+        .tile--urgent { box-shadow: inset 3px 0 0 var(--brand); }
+        .tile--open { grid-column: 1 / -1; height: auto; align-self: start; border-radius: 14px; }
 
-        .cal-modal .actions { display:flex; gap:8px; margin-top:4px; }
-        .cal-modal .btn { height: 32px; padding: 0 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
-        .cal-modal .btn--primary { border:1px solid #111827; background:#111827; color:#fff; }
-        .cal-modal .btn--ghost { border:1px solid #e5e7eb; background:#fff; color:#111827; }
-        .cal-modal .btn--danger { border:1px solid #ef4444; background:#ef4444; color:#fff; }
+        .tile__hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; cursor: pointer; }
+        .tile__ttl { font-size: 13px; font-weight: 800; line-height: 1.2; }
+        .tile__chev { border: 0; background: transparent; font-size: 14px; padding: 0 2px; cursor: pointer; }
+        .tile__meta-inline { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:#6b7280; }
+
+        /* опрятные секции метаданных */
+        .meta-section {
+          border: 1px solid var(--brand);
+          border-radius: 12px;
+          padding: 10px;
+          background: #fff;
+          display: grid;
+          gap: 8px;
+        }
+        .meta-row   { display:flex; gap:10px; align-items:flex-start; }
+        .meta-label { width: 110px; flex:none; font-size: 12px; font-weight: 700; color: #111; padding-top: 3px; }
+        .meta-val   { display:flex; flex-wrap:wrap; gap:6px; font-size: 13px; color: #111827; }
+
+        .text-box { background:#fafafa; border:1px solid #f3f4f6; border-radius: 10px; padding: 8px 10px; max-height: 40vh; overflow: auto; }
+
+        .assignees { display:flex; flex-wrap:wrap; gap:6px; }
+        .chip { border:1px solid #e5e7eb; background:#fff; border-radius:999px; padding:2px 8px; font-size:12px; }
+
+        .files__list { display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; list-style:none; }
+        .file-chip__link { display:inline-grid; grid-template-columns:auto auto; align-items:center; gap:6px; border:1px solid #e5e7eb; border-radius:999px; padding:4px 10px; text-decoration:none; background:#fff; }
+        .file-chip__link:hover { border-color:#cbd5e1; }
+        .file-chip__name { font-weight:600; }
+        .file-chip__meta { font-size:12px; color:#6b7280; }
       `}</style>
     </>,
     document.body
   );
 
-  function closeAll() {
-    setTaskId(null);
-    setDayIso(null);
-    setNoteId(null);
-    setNewNote(null);
-    setExpanded(new Set());
-    setEditNoteMode(false);
-    setDayFilter('all');
+  function toggle(key: string) {
+    const next = new Set(expanded);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setExpanded(next);
   }
-
-  function tabCls(active: boolean) {
-    return `tab ${active ? 'tab--active' : ''}`;
+  function closeAll() {
+    setTaskId(null); setDayIso(null); setNoteId(null); setNewNote(null);
+    setExpanded(new Set()); setEditNoteMode(false); setDayFilter('all');
+  }
+  function tabCls(active: boolean) { return `btn ${active ? 'btn--brand' : 'btn--ghost'}`; }
+  function renderAssignees(list: AssigneeLite[]) {
+    if (list.length <= 7) return list.map(a => <span key={a.id} className="chip">{a.name ?? 'Без имени'}</span>);
+    const first = list.slice(0, 7); const rest = list.length - 7;
+    return (<>{first.map(a => <span key={a.id} className="chip">{a.name ?? 'Без имени'}</span>)}<span className="chip">+{rest}</span></>);
   }
 }
 
-/** ===== helpers ===== */
+/* helpers */
 function fmtRu(dOrIso: string | Date) {
   const d = typeof dOrIso === 'string' ? new Date(dOrIso) : dOrIso;
   return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(d).replace('.', '');
 }
 function ymd(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-function truncate(s: string, max = 140) { const clean = s.trim().replace(/\s+/g, ' '); return clean.length <= max ? clean : clean.slice(0, max - 1).trimEnd() + '…'; }
 function sortTasks(a: Task, b: Task) {
   const ap = (a.priority ?? 'normal') === 'high' ? 0 : 1;
   const bp = (b.priority ?? 'normal') === 'high' ? 0 : 1;
   if (ap !== bp) return ap - bp;
   return (a.title || '').localeCompare(b.title || '', 'ru');
 }
+function fmtSize(n: number) {
+  if (!Number.isFinite(n) || n < 0) return '';
+  const k = 1024;
+  if (n < k) return `${n} B`;
+  const units = ['KB','MB','GB','TB'];
+  let i = -1; let val = n;
+  do { val /= k; i++; } while (val >= k && i < units.length - 1);
+  const s = Math.round(val * 10) / 10;
+  return `${s} ${units[i]}`;
+}
 
-/** ==== Универсальная форма заметки (без вложенных form) ==== */
+/* форма заметки */
 function NoteForm(props: {
   mode: 'create' | 'edit';
   submitLabel: string;
   action: (formData: FormData) => Promise<void>;
-  defaults: {
-    noteId?: string;
-    dateISO: string;
-    allDay: boolean;
-    title: string;
-    text: string;
-  };
+  defaults: { noteId?: string; dateISO: string; allDay: boolean; title: string; text: string; };
   onCancel: () => void;
   extraRightAction?: { action: (formData: FormData) => Promise<void>, name: string, value: string, label: string };
 }) {
@@ -530,9 +543,7 @@ function NoteForm(props: {
   return (
     <>
       <form id={formId} action={props.action} className="form-root">
-        {props.mode === 'edit' && (
-          <input type="hidden" name="noteId" value={props.defaults.noteId} />
-        )}
+        {props.mode === 'edit' && <input type="hidden" name="noteId" value={props.defaults.noteId} />}
 
         <div className="form-grid-2">
           <label className="label">
@@ -543,22 +554,9 @@ function NoteForm(props: {
           <div className="label">
             <span className="label__text">Время</span>
             <div className="time-row">
-              <input
-                name="time"
-                type="time"
-                className="input"
-                disabled={allDay}
-                defaultValue={props.defaults.allDay ? '' : `${hh}:${mm}`}
-                placeholder="чч:мм"
-              />
+              <input name="time" type="time" className="input" disabled={allDay} defaultValue={props.defaults.allDay ? '' : `${hh}:${mm}`} placeholder="чч:мм" />
               <label className="label-inline">
-                <input
-                  name="allDay"
-                  type="checkbox"
-                  defaultChecked={props.defaults.allDay}
-                  onChange={(e) => setAllDay(e.currentTarget.checked)}
-                  className="checkbox"
-                />
+                <input name="allDay" type="checkbox" defaultChecked={props.defaults.allDay} onChange={(e) => setAllDay(e.currentTarget.checked)} className="checkbox" />
                 Весь день
               </label>
             </div>
@@ -566,30 +564,18 @@ function NoteForm(props: {
 
           <label className="label span-2">
             <span className="label__text">Заголовок</span>
-            <input
-              name="title"
-              type="text"
-              defaultValue={props.defaults.title}
-              placeholder="необязательно"
-              className="input"
-            />
+            <input name="title" type="text" defaultValue={props.defaults.title} placeholder="необязательно" className="input" />
           </label>
 
           <label className="label span-2">
             <span className="label__text">Текст</span>
-            <textarea
-              name="text"
-              rows={8}
-              defaultValue={props.defaults.text}
-              placeholder="Текст заметки..."
-              className="textarea"
-            />
+            <textarea name="text" rows={8} defaultValue={props.defaults.text} placeholder="Текст заметки..." className="textarea" />
           </label>
         </div>
       </form>
 
       <div className="actions">
-        <button form={formId} type="submit" className="btn btn--primary">{props.submitLabel}</button>
+        <button form={formId} type="submit" className="btn btn--brand">{props.submitLabel}</button>
         <button type="button" className="btn btn--ghost" onClick={props.onCancel}>Отмена</button>
 
         {props.extraRightAction && (
@@ -599,6 +585,22 @@ function NoteForm(props: {
           </form>
         )}
       </div>
+
+      <style jsx>{`
+        .form-root { display: grid; gap: 10px; }
+        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .span-2 { grid-column: 1 / -1; }
+        .label { display: grid; gap: 6px; font-size: 12px; color: #374151; }
+        .label__text { font-weight: 600; color: #111827; }
+        .label-inline { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #374151; }
+        .input, .textarea { width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #111827; font-size: 13px; outline: none; transition: border-color .12s ease, box-shadow .12s ease; }
+        .textarea { resize: vertical; min-height: 140px; }
+        .input:focus, .textarea:focus { border-color: ${BRAND}; box-shadow: 0 0 0 3px rgba(141,40,40,.12); }
+        .input:disabled { background:#f3f4f6; color:#6b7280; cursor:not-allowed; }
+        .time-row { display: flex; gap: 10px; align-items: center; }
+        .checkbox { width: 16px; height: 16px; accent-color: ${BRAND}; }
+        .actions { display:flex; gap:8px; margin-top:4px; }
+      `}</style>
     </>
   );
 }
