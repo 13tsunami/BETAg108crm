@@ -96,7 +96,6 @@ export default function Sidebar({
 
   const [collapsed, setCollapsed] = useState(false);
 
-  // старт: на узких экранах свернуто
   useEffect(() => {
     const preferCollapsed =
       typeof window !== 'undefined' &&
@@ -105,7 +104,6 @@ export default function Sidebar({
     setCollapsed(preferCollapsed);
   }, []);
 
-  // вместо класса — data-атрибут на #app-shell (работает с CSS-модулем)
   useEffect(() => {
     const shell = document.getElementById('app-shell');
     if (!shell) return;
@@ -113,7 +111,6 @@ export default function Sidebar({
     else shell.removeAttribute('data-collapsed');
   }, [collapsed]);
 
-  // счётчики (как было)
   const [unread, setUnread] = useState(unreadChats);
   useEffect(() => setUnread(unreadChats), [unreadChats]);
   useEffect(() => {
@@ -121,8 +118,15 @@ export default function Sidebar({
     window.addEventListener('app:unread-bump', onBump as any);
     return () => window.removeEventListener('app:unread-bump', onBump as any);
   }, []);
+
   const [tasksUnread, setTasksUnread] = useState(unreadTasks);
   useEffect(() => setTasksUnread(unreadTasks), [unreadTasks]);
+
+  // обнуляем счётчик на любых страницах раздела задач (включая подстраницы), чтобы не залипал
+  useEffect(() => {
+    if (pathname?.startsWith('/inboxtasks')) setTasksUnread(0);
+  }, [pathname]);
+
   useEffect(() => {
     const onSet = (e: Event) => {
       const d = (e as CustomEvent).detail;
@@ -137,7 +141,7 @@ export default function Sidebar({
     };
   }, []);
 
-  // ── НОВОЕ: счётчик для страницы проверки назначенных задач ─────────
+  // ── счётчик «Проверка задач» ──
   const [reviewsUnread, setReviewsUnread] = useState(0);
   useEffect(() => {
     const onSet = (e: Event) => {
@@ -152,7 +156,6 @@ export default function Sidebar({
       window.removeEventListener('reviews:unread-bump', onBump as any);
     };
   }, []);
-  // ───────────────────────────────────────────────────────────────────
 
   const ArrowIcon = useMemo(() => (
     collapsed ? (
@@ -166,9 +169,7 @@ export default function Sidebar({
     )
   ), [collapsed]);
 
-  // ── НОВОЕ: кто видит плитку «Проверка задач» ───────────────────────
   const canSeeReviewTile = authed && roleSlug !== 'teacher';
-  // ───────────────────────────────────────────────────────────────────
 
   return (
     <aside className={`wrap ${collapsed ? 'collapsed' : ''}`}>
@@ -189,7 +190,7 @@ export default function Sidebar({
               {authed && (
                 <Link href="/settings" aria-label="Настройки" className="gear" prefetch={false}>
                   <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-                    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" fill="none" strokeWidth="2"/>
+                    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" fill="none" strokeWidth="2"/>
                     <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.05.06a2 2 0 1 1-3-.01l-.05-.05a1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87.34l.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.7 1.7 0 0 0-.6 1c0 .38.2.74.6 1.13.22.22.41.47.56.74.15.27.26.56.31.86Z" stroke="currentColor" fill="none" strokeWidth="1.5"/>
                   </svg>
                 </Link>
@@ -214,12 +215,19 @@ export default function Sidebar({
             <div className="grid">
               <Tile href="/dashboard"   label="Главное"     active={pathname === '/dashboard'} />
               <Tile href="/teachers"    label="Педагоги"    active={pathname === '/teachers'} />
-              <Tile href="/inboxtasks"  label="Задачи"      active={pathname === '/inboxtasks'} unread={pathname === '/inboxtasks' ? 0 : tasksUnread} />
+              <Tile
+                href="/inboxtasks"
+                label="Задачи"
+                active={pathname?.startsWith('/inboxtasks') || false}
+                unread={pathname?.startsWith('/inboxtasks') ? 0 : tasksUnread}
+              />
               <Tile href="/calendar"    label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"    label="Расписание"  active={pathname === '/schedule'} />
               <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
 
-              {/* НОВОЕ: плитка "Проверка задач" — видна всем, кроме teacher */}
+              {/* новая плитка — видят все роли */}
+              <Tile href="/showmyfiles" label="Мои файлы" active={pathname === '/showmyfiles'} />
+
               {canSeeReviewTile && (
                 <Tile
                   href="/reviews"
