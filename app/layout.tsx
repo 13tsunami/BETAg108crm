@@ -3,7 +3,17 @@ import type { ReactNode } from 'react';
 import Providers from './providers';
 import '@/styles/globals.css';
 
-export const metadata = { title: 'G108 CRM' };
+export const metadata = {
+  title: 'G108 CRM',
+  icons: {
+    icon: [
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: { url: '/apple-touch-icon.png', sizes: '180x180' },
+  },
+};
 
 // Глобальный SSE-клиент
 
@@ -20,9 +30,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="ru">
       <body>
         <Providers>{children}</Providers>
-
       </body>
     </html>
   );
 }
-
