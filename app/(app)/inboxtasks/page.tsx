@@ -1,4 +1,4 @@
-﻿import { Suspense } from 'react';
+﻿﻿import { Suspense } from 'react';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
@@ -106,8 +106,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     );
   }
 
- 
-
   const [users, groups, subjects] = await Promise.all([
     prisma.user.findMany({
       orderBy: { name: 'asc' },
@@ -126,7 +124,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const [mineInProgress, assignedByMe] = await Promise.all([
     prisma.task.findMany({
       where: {
-        hidden: { not: true }, // NULL-safe
+        hidden: { not: true },
         assignees: { some: { userId: meId, status: 'in_progress' } }
       },
       select: {
@@ -149,7 +147,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       orderBy: { dueDate: 'asc' as const },
     }),
     prisma.task.findMany({
-      where: { createdById: meId, hidden: { not: true } }, // NULL-safe
+      where: { createdById: meId, hidden: { not: true } },
       select: {
         id: true, number: true, title: true, description: true, dueDate: true,
         priority: true, hidden: true, createdById: true, createdByName: true,
@@ -238,7 +236,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           </header>
 
           <div className="lists">
-            {/* Назначенные мне */}
             {activeTab === 'mine' && (
               <section>
                 {mineInProgress.length === 0 ? (
@@ -256,26 +253,26 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                             <span className="taskMeta">
                               до {fmtRuDateTimeYekb(t.dueDate)}
                               {t.priority === 'high' ? ' • высокий приоритет' : ''}
-                              {t.createdByName ? ` • назначил: ${t.createdByName}` : ''}
-                              {requiresReview && lastComment ? ' • есть комментарий проверяющего' : ''}
+                              {t.createdByName ? <> • назначил: <span style={{ color: '#8d2828' }}>{t.createdByName}</span></> : ''}
+                              {requiresReview && lastComment ? <> • <span style={{ color: '#ef4444' }}>есть комментарий проверяющего</span></> : ''}
                             </span>
                           </div>
                         </summary>
 
                         <div className="taskBody">
                           {t.description && (
-                            <div className="taskSection">
-                              <h4>Описание</h4>
+                            <div className="taskSection" style={{ borderColor: '#8d2828' }}>
+                              <h4 style={{ color: '#8d2828' }}>Описание</h4>
                               <div style={{ whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{t.description}</div>
                             </div>
                           )}
 
-                          <div className="taskSection">
-                            <h4>Вложения</h4>
+                          <div className="taskSection" style={{ borderColor: '#8d2828' }}>
+                            <h4 style={{ color: '#8d2828' }}>Вложения</h4>
                             <TaskAttachments items={t.attachments} />
                           </div>
 
-                          <div className="taskSection">
+                          <div className="taskSection" style={{ borderColor: '#8d2828' }}>
                             {requiresReview ? (
                               <ReviewSubmitForm taskId={t.id} disabled={myAssn?.status === 'done' || myAssn?.status === 'submitted'} />
                             ) : (
@@ -289,10 +286,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                           </div>
 
                           {myAssn && (
-                            <div className="taskSection">
+                            <div className="taskSection" style={{ borderColor: '#8d2828' }}>
                               <div>Мой статус: <b>{statusRu(myAssn.status)}</b></div>
                               {requiresReview && lastComment && (
-                                <div style={{ marginTop: 4 }}>Комментарий проверяющего: {lastComment}</div>
+                                <div style={{ marginTop: 4 }}>
+                                  <span style={{ color: '#ef4444' }}>Комментарий проверяющего:</span> {lastComment}
+                                </div>
                               )}
                             </div>
                           )}
@@ -304,7 +303,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               </section>
             )}
 
-            {/* Назначенные мной */}
             {activeTab === 'byme' && mayCreate && (
               <section>
                 {assignedByMe.length === 0 ? (
@@ -340,19 +338,19 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
                         <div className="taskBody">
                           {t.description && (
-                            <div className="taskSection">
-                              <h4>Описание</h4>
+                            <div className="taskSection" style={{ borderColor: '#8d2828' }}>
+                              <h4 style={{ color: '#8d2828' }}>Описание</h4>
                               <div style={{ whiteSpace:'pre-wrap' }}>{t.description}</div>
                             </div>
                           )}
 
-                          <div className="taskSection">
-                            <h4>Вложения</h4>
+                          <div className="taskSection" style={{ borderColor: '#8d2828' }}>
+                            <h4 style={{ color: '#8d2828' }}>Вложения</h4>
                             <TaskAttachments items={t.attachments} />
                           </div>
 
-                          <div className="taskSection">
-                            <h4>Исполнители</h4>
+                          <div className="taskSection" style={{ borderColor: '#8d2828' }}>
+                            <h4 style={{ color: '#8d2828' }}>Исполнители</h4>
                             <div style={{ display:'grid', gap:6 }}>
                               {visible.map(a => {
                                 const lastComment = a.submissions?.[0]?.reviewerComment;
@@ -364,7 +362,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                                     </div>
                                     {a.status === 'submitted' && <a href={`/reviews/${a.id}`} className="btnGhost">Открыть проверку</a>}
                                     {t.reviewRequired && lastComment && (
-                                      <div style={{ fontSize:13, color:'#374151' }}>Комментарий проверяющего: {lastComment}</div>
+                                      <div style={{ fontSize:13, color:'#374151' }}>
+                                        <span style={{ color: '#ef4444' }}>Комментарий проверяющего:</span> {lastComment}
+                                      </div>
                                     )}
                                   </div>
                                 );
@@ -385,7 +385,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                                           </div>
                                           {a.status === 'submitted' && <a href={`/reviews/${a.id}`} className="btnGhost">Открыть проверку</a>}
                                           {t.reviewRequired && lastComment && (
-                                            <div style={{ fontSize:13, color:'#374151' }}>Комментарий проверяющего: {lastComment}</div>
+                                            <div style={{ fontSize:13, color:'#374151' }}>
+                                              <span style={{ color: '#ef4444' }}>Комментарий проверяющего:</span> {lastComment}
+                                            </div>
                                           )}
                                         </div>
                                       );
@@ -396,7 +398,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                             </div>
                           </div>
 
-                          <div className="taskSection">
+                          <div className="taskSection" style={{ borderColor: '#8d2828' }}>
                             <details>
                               <summary style={{ cursor:'pointer', fontSize:13 }}>Редактировать</summary>
                               <form id={updateFormId} action={updateTaskAction} style={{ display:'grid', gap:8, marginTop:8 }}>

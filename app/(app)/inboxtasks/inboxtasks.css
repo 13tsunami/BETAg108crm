@@ -135,3 +135,57 @@ textarea { height:auto; }
   font-weight: 600;
   color: #374151;
 }
+/* ==== Брендинг и разведение задач (добавить в конец файла) ==== */
+
+/* Кнопка «Отправить на проверку»: бренд + белый текст, ширина как раньше — на всю строку */
+.btnBrand {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #8d2828;
+  background: #8d2828;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btnBrand:disabled { opacity: .6; cursor: not-allowed; }
+.btnBlock { width: 20%; }
+
+/* Внешняя рамка задачи — толще и бордовая (у вас уже есть) */
+.rightCol .taskCard {
+  border-color: #8d2828;
+  border-width: 2px;
+  margin: 10px 0 12px;
+}
+
+/* Внутренние секции — светло-серые рамки */
+.rightCol .taskCard .taskSection {
+  border: 1px solid #e5e7eb !important; /* принудительно обнуляем бордовую */
+}
+
+/* Заголовки внутренних секций остаются бордовыми */
+.rightCol .taskCard .taskSection h4 {
+  color: #8d2828;
+}
+
+/* Кнопка бренда уже описана; без ширины на 100% */
+.btnBrand {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #8d2828;
+  background: #8d2828;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btnBrand:disabled { opacity: .6; cursor: not-allowed; }
+

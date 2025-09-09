@@ -20,7 +20,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "vercel-build": "prisma generate && prisma migrate deploy && next build",
-     "repo:audit": "node tools/audit-repo.cjs"
+    "repo:audit": "node tools/audit-repo.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",
@@ -32,9 +32,9 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/node": "^24.2.1",
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7",
+    "@types/node": "^24.3.1",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
     "prisma": "^6.14.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"

@@ -1,4 +1,4 @@
-// app/(app)/calendar/CalendarModals.tsx
+﻿// app/(app)/calendar/CalendarModals.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -28,7 +28,10 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [dayIso, setDayIso] = useState<string | null>(null);
   const [noteId, setNoteId] = useState<string | null>(null);
+
+  // для создания новой заметки
   const [newNote, setNewNote] = useState<{ atISO: string; allDay: boolean } | null>(null);
+
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editNoteMode, setEditNoteMode] = useState<boolean>(false);
   const [dayFilter, setDayFilter] = useState<'all' | 'tasks' | 'notes'>('all');
@@ -158,7 +161,13 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                   <ul className="files__list meta-val">
                     {task.attachments.map(a => (
                       <li key={a.id} className="file-chip">
-                        <a href={`/uploads/${a.name}`} download={a.originalName ?? undefined} className="file-chip__link" target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={`/api/files/${encodeURIComponent(a.name)}`}
+                          download={a.originalName ?? undefined}
+                          className="file-chip__link"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           <span className="file-chip__name wb clamp1">{a.originalName || a.name}</span>
                           <span className="file-chip__meta">{a.mime} · {fmtSize(a.size)}</span>
                         </a>
@@ -242,7 +251,13 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                                 <ul className="files__list">
                                   {t.attachments.map(a => (
                                     <li key={a.id}>
-                                      <a href={`/uploads/${a.name}`} download={a.originalName ?? undefined} className="file-chip__link" target="_blank" rel="noopener noreferrer">
+                                      <a
+                                        href={`/api/files/${encodeURIComponent(a.name)}`}
+                                        download={a.originalName ?? undefined}
+                                        className="file-chip__link"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
                                         <span className="file-chip__name wb clamp1">{a.originalName || a.name}</span>
                                         <span className="file-chip__meta">{fmtSize(a.size)}</span>
                                       </a>
@@ -313,7 +328,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         </div>
       )}
 
-      {/* модалка заметки */}
+      {/* модалка существующей заметки */}
       {note && (
         <div role="dialog" aria-modal className="cal-modal__backdrop">
           <div className="cal-modal glass" onClick={(e) => e.stopPropagation()}>
@@ -364,7 +379,32 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         </div>
       )}
 
-      {/* global — чтобы стили стабильно применялись к узлам портала */}
+      {/* модалка НОВОЙ заметки */}
+      {newNote && (
+        <div role="dialog" aria-modal className="cal-modal__backdrop">
+          <div className="cal-modal glass" onClick={(e) => e.stopPropagation()}>
+            <header className="cal-modal__header">
+              <div className="cal-modal__title"><strong className="wb">Новая заметка</strong></div>
+              <button className="cal-close" onClick={() => setNewNote(null)} aria-label="Закрыть">×</button>
+            </header>
+
+            <NoteForm
+              mode="create"
+              submitLabel="Создать"
+              action={createNoteAction}
+              defaults={{
+                dateISO: newNote.atISO,
+                allDay: newNote.allDay,
+                title: '',
+                text: '',
+              }}
+              onCancel={() => setNewNote(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* styles — глобально, но строго в пределах .cal-modal, чтобы не ломать сайдбар */}
       <style jsx global>{`
         :root { --brand: ${BRAND}; --tile-w: 180px; --tile-h: 120px; }
 
@@ -377,22 +417,22 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
           .cal-modal--day { width: 100vw; height: 100svh; max-height: 100svh; }
         }
 
-        .cal-modal__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-        .cal-modal__title { display:flex; align-items:center; gap:8px; font-weight:800; }
-        .cal-close { border:1px solid var(--glass-brd, #e5e7eb); background:#fff; border-radius:8px; width:28px; height:28px; cursor:pointer; }
+        .cal-modal .cal-modal__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+        .cal-modal .cal-modal__title { display:flex; align-items:center; gap:8px; font-weight:800; }
+        .cal-modal .cal-close { border:1px solid var(--glass-brd, #e5e7eb); background:#fff; border-radius:8px; width:28px; height:28px; cursor:pointer; }
 
-        .badge { font-size:10px; border-radius:999px; padding:0 6px; }
-        .badge--urgent { color:#fff; background: var(--brand); }
+        .cal-modal .badge { font-size:10px; border-radius:999px; padding:0 6px; }
+        .cal-modal .badge--urgent { color:#fff; background: var(--brand); }
 
-        .wb { word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; }
-        .clamp1 { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
-        .clamp2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-        .muted { color:#6b7280; font-size:12px; }
+        .cal-modal .wb { word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .cal-modal .clamp1 { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+        .cal-modal .clamp2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .cal-modal .muted { color:#6b7280; font-size:12px; }
 
-        .day-filter { display:flex; gap:6px; margin: 4px 0 10px; }
+        .cal-modal .day-filter { display:flex; gap:6px; margin: 4px 0 10px; }
 
-        /* кнопки — аккуратные, бордовая с белым текстом */
-        .btn {
+        /* кнопки — только внутри модалки */
+        .cal-modal .btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -405,33 +445,33 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
           cursor: pointer;
           transition: filter .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
         }
-        .btn--brand  { background: var(--brand); border: 1px solid var(--brand); color: #fff !important; box-shadow: 0 1px 0 rgba(0,0,0,.05); }
-        .btn--brand:hover  { filter: brightness(1.05); }
-        .btn--brand:active { filter: brightness(.95); }
+        .cal-modal .btn--brand  { background: var(--brand); border: 1px solid var(--brand); color: #fff !important; box-shadow: 0 1px 0 rgba(0,0,0,.05); }
+        .cal-modal .btn--brand:hover  { filter: brightness(1.05); }
+        .cal-modal .btn--brand:active { filter: brightness(.95); }
 
-        .btn--ghost  { border: 1px solid #e5e7eb; background: #fff; color: #111827; }
-        .btn--ghost:hover  { background: #f7f7f7; }
+        .cal-modal .btn--ghost  { border: 1px solid #e5e7eb; background: #fff; color: #111827; }
+        .cal-modal .btn--ghost:hover  { background: #f7f7f7; }
 
-        .btn--danger { border: 1px solid #ef4444; background: #ef4444; color: #fff; }
-        .btn--danger:hover  { filter: brightness(1.05); }
-        .btn--danger:active { filter: brightness(.95); }
+        .cal-modal .btn--danger { border: 1px solid #ef4444; background: #ef4444; color: #fff; }
+        .cal-modal .btn--danger:hover  { filter: brightness(1.05); }
+        .cal-modal .btn--danger:active { filter: brightness(.95); }
 
-        /* сетка плиток; скролл появляется при избытке контента */
-        .tiles {
+        /* сетка плиток — только в модалке дня */
+        .cal-modal .tiles {
           display: grid;
           grid-auto-flow: dense;
           grid-template-columns: repeat(auto-fill, minmax(var(--tile-w), 1fr));
           gap: 8px;
           padding-right: 4px;
-          overflow: auto;            /* скролл внутри области плиток */
+          overflow: auto;
           flex: 1;
           align-content: start;
         }
-        .tiles::-webkit-scrollbar { width: 8px; height: 8px; }
-        .tiles::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 8px; }
-        .tiles:hover::-webkit-scrollbar-thumb { background: #d1d5db; }
+        .cal-modal .tiles::-webkit-scrollbar { width: 8px; height: 8px; }
+        .cal-modal .tiles::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 8px; }
+        .cal-modal .tiles:hover::-webkit-scrollbar-thumb { background: #d1d5db; }
 
-        .tile {
+        .cal-modal .tile {
           border: 1px solid #e5e7eb;
           border-radius: 14px;
           background: #fff;
@@ -443,18 +483,18 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
           height: var(--tile-h);
           overflow: hidden;
         }
-        .tile--task { background: #FEF9E7; border-color: #F59E0B; }
-        .tile--note  { background: #F0F7FF; border-color: #60a5fa; }
-        .tile--urgent { box-shadow: inset 3px 0 0 var(--brand); }
-        .tile--open { grid-column: 1 / -1; height: auto; align-self: start; border-radius: 14px; }
+        .cal-modal .tile--task { background: #FEF9E7; border-color: #F59E0B; }
+        .cal-modal .tile--note  { background: #F0F7FF; border-color: #60a5fa; }
+        .cal-modal .tile--urgent { box-shadow: inset 3px 0 0 var(--brand); }
+        .cal-modal .tile--open { grid-column: 1 / -1; height: auto; align-self: start; border-radius: 14px; }
 
-        .tile__hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; cursor: pointer; }
-        .tile__ttl { font-size: 13px; font-weight: 800; line-height: 1.2; }
-        .tile__chev { border: 0; background: transparent; font-size: 14px; padding: 0 2px; cursor: pointer; }
-        .tile__meta-inline { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:#6b7280; }
+        .cal-modal .tile__hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; cursor: pointer; }
+        .cal-modal .tile__ttl { font-size: 13px; font-weight: 800; line-height: 1.2; }
+        .cal-modal .tile__chev { border: 0; background: transparent; font-size: 14px; padding: 0 2px; cursor: pointer; }
+        .cal-modal .tile__meta-inline { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:#6b7280; }
 
-        /* опрятные секции метаданных */
-        .meta-section {
+        /* метаданные */
+        .cal-modal .meta-section {
           border: 1px solid var(--brand);
           border-radius: 12px;
           padding: 10px;
@@ -462,20 +502,20 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
           display: grid;
           gap: 8px;
         }
-        .meta-row   { display:flex; gap:10px; align-items:flex-start; }
-        .meta-label { width: 110px; flex:none; font-size: 12px; font-weight: 700; color: #111; padding-top: 3px; }
-        .meta-val   { display:flex; flex-wrap:wrap; gap:6px; font-size: 13px; color: #111827; }
+        .cal-modal .meta-row   { display:flex; gap:10px; align-items:flex-start; }
+        .cal-modal .meta-label { width: 110px; flex:none; font-size: 12px; font-weight: 700; color: #111; padding-top: 3px; }
+        .cal-modal .meta-val   { display:flex; flex-wrap:wrap; gap:6px; font-size: 13px; color: #111827; }
 
-        .text-box { background:#fafafa; border:1px solid #f3f4f6; border-radius: 10px; padding: 8px 10px; max-height: 40vh; overflow: auto; }
+        .cal-modal .text-box { background:#fafafa; border:1px solid #f3f4f6; border-radius: 10px; padding: 8px 10px; max-height: 40vh; overflow: auto; }
 
-        .assignees { display:flex; flex-wrap:wrap; gap:6px; }
-        .chip { border:1px solid #e5e7eb; background:#fff; border-radius:999px; padding:2px 8px; font-size:12px; }
+        .cal-modal .assignees { display:flex; flex-wrap:wrap; gap:6px; }
+        .cal-modal .chip { border:1px solid #e5e7eb; background:#fff; border-radius:999px; padding:2px 8px; font-size:12px; }
 
-        .files__list { display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; list-style:none; }
-        .file-chip__link { display:inline-grid; grid-template-columns:auto auto; align-items:center; gap:6px; border:1px solid #e5e7eb; border-radius:999px; padding:4px 10px; text-decoration:none; background:#fff; }
-        .file-chip__link:hover { border-color:#cbd5e1; }
-        .file-chip__name { font-weight:600; }
-        .file-chip__meta { font-size:12px; color:#6b7280; }
+        .cal-modal .files__list { display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; list-style:none; }
+        .cal-modal .file-chip__link { display:inline-grid; grid-template-columns:auto auto; align-items:center; gap:6px; border:1px solid #e5e7eb; border-radius:999px; padding:4px 10px; text-decoration:none; background:#fff; }
+        .cal-modal .file-chip__link:hover { border-color:#cbd5e1; }
+        .cal-modal .file-chip__name { font-weight:600; }
+        .cal-modal .file-chip__meta { font-size:12px; color:#6b7280; }
       `}</style>
     </>,
     document.body
