@@ -3,85 +3,85 @@
 
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
-import { normalizeRole, canCreateTasks } from '@/lib/roles';
+import { normalizeRole, hasFullAccess } from '@/lib/roles';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-/** Массовое принятие выбранных исполнителей */
-export async function approveSelectedAction(formData: FormData): Promise<void> {
-  const session = await auth();
-  const meId = session?.user?.id ?? null;
-  const role = normalizeRole(session?.user?.role);
-  if (!meId || !canCreateTasks(role)) {
-    redirect('/inboxtasks');
-  }
-
-  const ids = formData.getAll('taskAssigneeId').map(String).filter(Boolean);
-
-  if (ids.length > 0) {
-    await prisma.$transaction(async (tx) => {
-      for (const id of ids) {
-        const owner = await tx.taskAssignee.findUnique({
-          where: { id },
-          select: { task: { select: { createdById: true } } },
-        });
-        if (!owner || owner.task.createdById !== meId) continue;
-
-        await tx.taskAssignee.update({
-          where: { id },
-          data: {
-            status: 'done',
-            submissions: {
-              updateMany: {
-                where: { open: true },
-                data: { open: false, reviewedAt: new Date() },
-              },
-            },
-          },
-        });
-      }
-    });
-  }
-
-  revalidatePath('/reviews');
+function forbid(): never {
+  redirect('/');
 }
 
-/** Массовый возврат выбранных исполнителей */
-export async function rejectSelectedAction(formData: FormData): Promise<void> {
+/**
+ * Массовое ревью: принимает форму с выбранными назначениями.
+ * В форме есть кнопки submit с name="__op" value="approve|reject".
+ */
+export async function bulkReviewAction(formData: FormData): Promise<void> {
   const session = await auth();
-  const meId = session?.user?.id ?? null;
+  const reviewerId = session?.user?.id ?? null;
   const role = normalizeRole(session?.user?.role);
-  if (!meId || !canCreateTasks(role)) {
-    redirect('/inboxtasks');
+  if (!reviewerId) forbid();
+
+  const op = String(formData.get('__op') ?? '');
+  const ids = (formData.getAll('ids') as string[]).map((s) => s.trim()).filter(Boolean);
+  const reason = ((formData.get('reason') ?? '') as string).trim() || null;
+
+  if (!op || ids.length === 0) {
+    revalidatePath('/reviews');
+    redirect('/reviews');
   }
 
-  const ids = formData.getAll('taskAssigneeId').map(String).filter(Boolean);
-  const reason = String(formData.get('reason') ?? '').trim() || null;
+  // Проверка доступа: все выбранные назначения должны принадлежать задачам, где reviewer — автор
+  // (или роль с полным доступом).
+  const rows = await prisma.taskAssignee.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, task: { select: { createdById: true } } },
+  });
+  if (rows.length === 0) {
+    revalidatePath('/reviews');
+    redirect('/reviews');
+  }
 
-  if (ids.length > 0) {
-    await prisma.$transaction(async (tx) => {
-      for (const id of ids) {
-        const owner = await tx.taskAssignee.findUnique({
-          where: { id },
-          select: { task: { select: { createdById: true } } },
-        });
-        if (!owner || owner.task.createdById !== meId) continue;
+  if (!hasFullAccess(role)) {
+    for (const r of rows) {
+      if (r.task?.createdById !== reviewerId) forbid();
+    }
+  }
 
-        await tx.taskAssignee.update({
-          where: { id },
-          data: {
-            status: 'rejected',
-            submissions: {
-              updateMany: {
-                where: { open: true },
-                data: { open: false, reviewedAt: new Date(), reviewerComment: reason },
-              },
-            },
-          },
-        });
-      }
+  await prisma.$transaction(async (tx) => {
+    // Закрыть все открытые сдачи по выбранным назначениям
+    await tx.submission.updateMany({
+      where: { taskAssigneeId: { in: ids }, open: true },
+      data: {
+        open: false,
+        reviewedAt: new Date(),
+        reviewedById: reviewerId,
+        reviewerComment: op === 'reject' ? reason : undefined,
+      },
     });
-  }
+
+    // Обновить статусы назначений
+    if (op === 'approve') {
+      await tx.taskAssignee.updateMany({
+        where: { id: { in: ids } },
+        data: {
+          status: 'done',
+          reviewedAt: new Date(),
+          reviewedById: reviewerId,
+          completedAt: new Date(),
+        },
+      });
+    } else if (op === 'reject') {
+      await tx.taskAssignee.updateMany({
+        where: { id: { in: ids } },
+        data: {
+          status: 'in_progress',
+          reviewedAt: new Date(),
+          reviewedById: reviewerId,
+        },
+      });
+    }
+  });
 
   revalidatePath('/reviews');
+  redirect('/reviews');
 }
