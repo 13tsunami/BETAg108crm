@@ -29,8 +29,8 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
   const [dayIso, setDayIso] = useState<string | null>(null);
   const [noteId, setNoteId] = useState<string | null>(null);
 
-  // для создания новой заметки
-  const [newNote, setNewNote] = useState<{ atISO: string; allDay: boolean } | null>(null);
+  // для создания новой заметки - единообразно поле at (ISO string)
+  const [newNote, setNewNote] = useState<{ at: string; allDay: boolean } | null>(null);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editNoteMode, setEditNoteMode] = useState<boolean>(false);
@@ -62,11 +62,13 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
   const notesByDay = useMemo(() => {
     const m = new Map<string, NoteLite[]>();
     for (const n of notes) {
-      const key = ymd(new Date(n.at));
+      // поддержать варианты поля даты в NoteLite: at или atISO или date
+      const raw = (n as any).at ?? (n as any).atISO ?? (n as any).date ?? (n as any).dateISO ?? '';
+      const key = raw ? ymd(new Date(raw)) : 'invalid';
       (m.get(key) ?? m.set(key, []).get(key)!)!.push(n);
     }
     for (const [, arr] of m) {
-      arr.sort((a, b) => (a.title ?? '').localeCompare(b.title ?? '', 'ru'));
+      arr.sort((a, b) => ((a.title ?? '') as string).localeCompare((b.title ?? '') as string, 'ru'));
     }
     return m;
   }, [notes]);
@@ -91,10 +93,10 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
       if (id) { setNoteId(id); setTaskId(null); setDayIso(null); setNewNote(null); setEditNoteMode(editing); }
     };
     const onOpenNewNote = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { atISO?: string; allDay?: boolean } | undefined;
-      const atISO = detail?.atISO ?? new Date().toISOString();
+      const detail = (e as CustomEvent).detail as { at?: string; atISO?: string; dateISO?: string; allDay?: boolean } | undefined;
+      const at = detail?.at ?? detail?.atISO ?? detail?.dateISO ?? new Date().toISOString();
       const alld = detail?.allDay ?? true;
-      setNewNote({ atISO, allDay: alld });
+      setNewNote({ at, allDay: alld });
       setTaskId(null); setDayIso(null); setNoteId(null); setExpanded(new Set()); setEditNoteMode(false);
     };
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAll(); };
@@ -290,6 +292,8 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                 {filteredDayNotes.map(n => {
                   const key = `n:${n.id}`;
                   const isOpen = expanded.has(key);
+                  // взять дату заметки из возможных полей
+                  const raw = (n as any).at ?? (n as any).atISO ?? (n as any).date ?? (n as any).dateISO ?? '';
                   return (
                     <article key={n.id} className={`tile tile--note ${isOpen ? 'tile--open' : ''}`}>
                       <header className="tile__hdr" onClick={() => toggle(key)}>
@@ -297,8 +301,8 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                         <button className="tile__chev" aria-expanded={isOpen}>{isOpen ? '▴' : '▾'}</button>
                       </header>
                       <div className="tile__meta-inline">
-                        <span>{n.allDay ? 'Весь день' : 'Время'}</span>
-                        <span>· {fmtRu(n.at)}</span>
+                        <span>{(n as any).allDay ? 'Весь день' : 'Время'}</span>
+                        <span>· {raw ? fmtRu(raw) : ''}</span>
                       </div>
 
                       {isOpen && (
@@ -306,7 +310,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                           <section className="meta-section">
                             <div className="meta-row">
                               <span className="meta-label">Текст</span>
-                              <div className="meta-val"><div className="text-box wb">{n.text}</div></div>
+                              <div className="meta-val"><div className="text-box wb">{(n as any).text ?? (n as any).content ?? ''}</div></div>
                             </div>
                           </section>
 
@@ -340,13 +344,13 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
             {!editNoteMode ? (
               <>
                 <section className="meta-section">
-                  <div className="meta-row"><span className="meta-label">Когда</span><span className="meta-val">{note.allDay ? 'Весь день' : 'Время'} · {fmtRu(note.at)}</span></div>
+                  <div className="meta-row"><span className="meta-label">Когда</span><span className="meta-val">{(note as any).allDay ? 'Весь день' : 'Время'} · {fmtRu((note as any).at ?? (note as any).atISO ?? (note as any).date ?? (note as any).dateISO ?? '')}</span></div>
                 </section>
-                {note.text && (
+                {(note as any).text && (
                   <section className="meta-section">
                     <div className="meta-row">
                       <span className="meta-label">Текст</span>
-                      <div className="meta-val"><div className="text-box wb">{note.text}</div></div>
+                      <div className="meta-val"><div className="text-box wb">{(note as any).text}</div></div>
                     </div>
                   </section>
                 )}
@@ -366,10 +370,10 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
                 action={updateNoteAction}
                 defaults={{
                   noteId: note.id,
-                  dateISO: note.at,
-                  allDay: note.allDay,
+                  dateISO: (note as any).at ?? (note as any).atISO ?? (note as any).date ?? (note as any).dateISO ?? new Date().toISOString(),
+                  allDay: !!(note as any).allDay,
                   title: note.title ?? '',
-                  text: note.text ?? '',
+                  text: (note as any).text ?? (note as any).content ?? '',
                 }}
                 onCancel={() => setEditNoteMode(false)}
                 extraRightAction={{ action: deleteNoteAction, name: 'noteId', value: note.id, label: 'Удалить' }}
@@ -393,7 +397,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
               submitLabel="Создать"
               action={createNoteAction}
               defaults={{
-                dateISO: newNote.atISO,
+                dateISO: newNote.at,
                 allDay: newNote.allDay,
                 title: '',
                 text: '',
@@ -404,7 +408,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         </div>
       )}
 
-      {/* styles — глобально, но строго в пределах .cal-modal, чтобы не ломать сайдбар */}
+      {/* styles - глобально, но строго в пределах .cal-modal, чтобы не ломать сайдбар */}
       <style jsx global>{`
         :root { --brand: ${BRAND}; --tile-w: 180px; --tile-h: 120px; }
 
@@ -431,7 +435,7 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
 
         .cal-modal .day-filter { display:flex; gap:6px; margin: 4px 0 10px; }
 
-        /* кнопки — только внутри модалки */
+        /* кнопки - только внутри модалки */
         .cal-modal .btn {
           display: inline-flex;
           align-items: center;
@@ -456,11 +460,15 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         .cal-modal .btn--danger:hover  { filter: brightness(1.05); }
         .cal-modal .btn--danger:active { filter: brightness(.95); }
 
-        /* сетка плиток — только в модалке дня */
+        /* сетка плиток - только в модалке дня
+           заменил плотное заполнение на обычный поток по строкам и
+           задал автоповерхности рядов minmax(var(--tile-h), auto) чтобы
+           раскрытая карточка занимала полный ряд и выдавала соседей вниз вместо наложения */
         .cal-modal .tiles {
           display: grid;
-          grid-auto-flow: dense;
+          grid-auto-flow: row;
           grid-template-columns: repeat(auto-fill, minmax(var(--tile-w), 1fr));
+          grid-auto-rows: minmax(var(--tile-h), auto);
           gap: 8px;
           padding-right: 4px;
           overflow: auto;
@@ -486,7 +494,8 @@ export default function CalendarModals({ tasks, meId, notes = [] }: Props) {
         .cal-modal .tile--task { background: #FEF9E7; border-color: #F59E0B; }
         .cal-modal .tile--note  { background: #F0F7FF; border-color: #60a5fa; }
         .cal-modal .tile--urgent { box-shadow: inset 3px 0 0 var(--brand); }
-        .cal-modal .tile--open { grid-column: 1 / -1; height: auto; align-self: start; border-radius: 14px; }
+        /* раскрытая карточка занимает полный ряд и находится выше соседей */
+        .cal-modal .tile--open { grid-column: 1 / -1; height: auto; align-self: start; border-radius: 14px; position: relative; z-index: 2; }
 
         .cal-modal .tile__hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; cursor: pointer; }
         .cal-modal .tile__ttl { font-size: 13px; font-weight: 800; line-height: 1.2; }

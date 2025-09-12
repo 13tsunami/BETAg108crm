@@ -19,7 +19,6 @@ type TaskForReview = Prisma.TaskGetPayload<{
     assignees: {
       include: {
         user: { select: { id: true; name: true } };
-        // Берём только открытую (последнюю) сдачу для индикаторов
         submissions: {
           where: { open: true };
           orderBy: { createdAt: 'desc' };
@@ -136,6 +135,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             .filter(Boolean)
             .sort((a, b) => +new Date(b as Date) - +new Date(a as Date))[0];
 
+          const bulkFormId = `bulk-${t.id}`;
+
           return (
             <details key={t.id} className="revCard">
               <summary className="revHeader">
@@ -154,7 +155,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               </summary>
 
               <div className="revBody">
-                {/* Массовые действия (липкая панель) */}
                 <details>
                   <summary className="revShowAll">Массовые действия</summary>
                   <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -165,19 +165,17 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                       </button>
                     </form>
                     <span style={{ fontSize: 12, color: '#6b7280' }}>
-                      Выберите галочками исполнителей ниже и используйте панель «Принять выбранных / Вернуть выбранных».
+                      Отмечайте галочками исполнителей ниже. Внизу карточки — панель «Принять выбранных / Вернуть выбранных».
                     </span>
                   </div>
                 </details>
 
-                {/* Описание задачи (если есть) */}
                 {t.description && (
                   <div className="revTaskDesc">
                     {t.description}
                   </div>
                 )}
 
-                {/* Вложенные исходные файлы задачи */}
                 <div>
                   <div className="revSectionTitle">Файлы задачи</div>
                   {t.attachments.length === 0 ? (
@@ -207,89 +205,15 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   )}
                 </div>
 
-                {/* На проверке */}
                 <div>
                   <div className="revSectionTitle">На проверке</div>
                   {onReviewAll.length === 0 ? (
                     <div className="revEmpty">Пока никого.</div>
                   ) : (
                     <>
-                      {/* Одна форма для массовых действий: чекбоксы внутри этой формы */}
-                      <form action={bulkReviewAction} className="bulkForm">
+                      {/* bulk-форма отдельно; чекбоксы будут связаны с ней через form="<id>" */}
+                      <form id={bulkFormId} action={bulkReviewAction} className="bulkForm">
                         <input type="hidden" name="taskId" value={t.id} />
-                        <div style={{ display: 'grid', gap: 8 }}>
-                          {onReviewFirst.map((a, idx) => {
-                            const os = a.submissions[0];
-                            const filesCount = os?._count?.attachments ?? 0;
-                            return (
-                              <div key={a.id} className="revRow">
-                                <input type="checkbox" name="ids" value={a.id} className="revChk" />
-                                <span className="revIdx">{idx + 1}.</span>
-
-                                <a href={`/reviews/${a.id}`} className="revPill" title="Открыть карточку исполнения">
-                                  {a.user?.name ?? a.user?.id ?? a.id}
-                                </a>
-
-                                <span className="revWhen">
-                                  {os?.createdAt ? `отправлено ${fmtTime(os.createdAt)}` : 'без отметки времени'}
-                                  {filesCount ? ` • файлов: ${filesCount}` : ' • файлов: 0'}
-                                </span>
-
-                                {/* Быстрые одиночные действия */}
-                                <form action={approveSubmissionAction}>
-                                  <input type="hidden" name="taskAssigneeId" value={a.id} />
-                                  <button type="submit" className="btnBrand">Принять</button>
-                                </form>
-
-                                <form action={rejectSubmissionAction} className="revRejectForm">
-                                  <input type="hidden" name="taskAssigneeId" value={a.id} />
-                                  <button type="submit" className="btnGhost">Вернуть</button>
-                                  <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
-                                </form>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {onReviewRest.length > 0 && (
-                          <details style={{ marginTop: 6 }}>
-                            <summary className="revShowAll">Показать всех исполнителей ({onReviewRest.length})</summary>
-                            <div style={{ display: 'grid', gap: 8, marginTop: 6 }}>
-                              {onReviewRest.map((a, jdx) => {
-                                const idx = 5 + jdx;
-                                const os = a.submissions[0];
-                                const filesCount = os?._count?.attachments ?? 0;
-                                return (
-                                  <div key={a.id} className="revRow">
-                                    <input type="checkbox" name="ids" value={a.id} className="revChk" />
-                                    <span className="revIdx">{idx + 1}.</span>
-
-                                    <a href={`/reviews/${a.id}`} className="revPill" title="Открыть карточку исполнения">
-                                      {a.user?.name ?? a.user?.id ?? a.id}
-                                    </a>
-
-                                    <span className="revWhen">
-                                      {os?.createdAt ? `отправлено ${fmtTime(os.createdAt)}` : 'без отметки времени'}
-                                      {filesCount ? ` • файлов: ${filesCount}` : ' • файлов: 0'}
-                                    </span>
-
-                                    <form action={approveSubmissionAction}>
-                                      <input type="hidden" name="taskAssigneeId" value={a.id} />
-                                      <button type="submit" className="btnBrand">Принять</button>
-                                    </form>
-
-                                    <form action={rejectSubmissionAction} className="revRejectForm">
-                                      <input type="hidden" name="taskAssigneeId" value={a.id} />
-                                      <button type="submit" className="btnGhost">Вернуть</button>
-                                      <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
-                                    </form>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </details>
-                        )}
-
                         {/* Липкая панель массовых действий */}
                         <div className="bulkBar">
                           <div className="brandHSmall">Массовые действия</div>
@@ -298,14 +222,87 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                             <button type="submit" name="__op" value="reject" className="btnGhost">Вернуть выбранных</button>
                             <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
                           </div>
-                          <div className="bulkHint">Галочки выше попадут в это действие. Панель закреплена снизу карточки.</div>
+                          <div className="bulkHint">Галочки в строках выше попадут в эту операцию.</div>
                         </div>
                       </form>
+
+                      {/* Список строк: чекбокс связан с bulk-формой, быстрые действия — отдельные мини-формы */}
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        {onReviewFirst.map((a, idx) => {
+                          const os = a.submissions[0];
+                          const filesCount = os?._count?.attachments ?? 0;
+                          return (
+                            <div key={a.id} className="revRow">
+                              <input type="checkbox" form={bulkFormId} name="ids" value={a.id} className="revChk" />
+                              <span className="revIdx">{idx + 1}.</span>
+
+                              <a href={`/reviews/${a.id}`} className="revPill" title="Открыть карточку исполнения">
+                                {a.user?.name ?? a.user?.id ?? a.id}
+                              </a>
+
+                              <span className="revWhen">
+                                {os?.createdAt ? `отправлено ${fmtTime(os.createdAt)}` : 'без отметки времени'}
+                                {filesCount ? ` • файлов: ${filesCount}` : ' • файлов: 0'}
+                              </span>
+
+                              {/* Быстрые одиночные действия — отдельные формы, не внутри bulk-формы */}
+                              <form action={approveSubmissionAction}>
+                                <input type="hidden" name="taskAssigneeId" value={a.id} />
+                                <button type="submit" className="btnBrand">Принять</button>
+                              </form>
+
+                              <form action={rejectSubmissionAction} className="revRejectForm">
+                                <input type="hidden" name="taskAssigneeId" value={a.id} />
+                                <button type="submit" className="btnGhost">Вернуть</button>
+                                <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
+                              </form>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {onReviewRest.length > 0 && (
+                        <details style={{ marginTop: 6 }}>
+                          <summary className="revShowAll">Показать всех исполнителей ({onReviewRest.length})</summary>
+                          <div style={{ display: 'grid', gap: 8, marginTop: 6 }}>
+                            {onReviewRest.map((a, jdx) => {
+                              const idx = 5 + jdx;
+                              const os = a.submissions[0];
+                              const filesCount = os?._count?.attachments ?? 0;
+                              return (
+                                <div key={a.id} className="revRow">
+                                  <input type="checkbox" form={bulkFormId} name="ids" value={a.id} className="revChk" />
+                                  <span className="revIdx">{idx + 1}.</span>
+
+                                  <a href={`/reviews/${a.id}`} className="revPill" title="Открыть карточку исполнения">
+                                    {a.user?.name ?? a.user?.id ?? a.id}
+                                  </a>
+
+                                  <span className="revWhen">
+                                    {os?.createdAt ? `отправлено ${fmtTime(os.createdAt)}` : 'без отметки времени'}
+                                    {filesCount ? ` • файлов: ${filesCount}` : ' • файлов: 0'}
+                                  </span>
+
+                                  <form action={approveSubmissionAction}>
+                                    <input type="hidden" name="taskAssigneeId" value={a.id} />
+                                    <button type="submit" className="btnBrand">Принять</button>
+                                  </form>
+
+                                  <form action={rejectSubmissionAction} className="revRejectForm">
+                                    <input type="hidden" name="taskAssigneeId" value={a.id} />
+                                    <button type="submit" className="btnGhost">Вернуть</button>
+                                    <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
+                                  </form>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </details>
+                      )}
                     </>
                   )}
                 </div>
 
-                {/* Принято */}
                 <div>
                   <div className="revSectionTitle">Принято</div>
                   {acceptedAll.length === 0 ? (

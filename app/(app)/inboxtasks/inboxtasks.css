@@ -1,9 +1,7 @@
-/* app/(app)/inboxtasks/inboxtasks.css */
-
 /* Колонки */
 .leftCol { display:flex; flex-direction:column; gap:12px; }
 
-/* Правая колонка — добавлены рамка, скругление и внутренние отступы */
+/* Правая колонка - добавлены рамка, скругление и внутренние отступы */
 .rightCol {
   min-width: 0;
   border: 1px solid #8d2828;
@@ -56,7 +54,7 @@ textarea { height:auto; }
   height:32px; padding:0 12px; border-radius:10px; border:1px solid #059669; background:#10b981; color:#fff; cursor:pointer; font-size:13px;
 }
 .btnDanger {
-  height:32px; padding:0 12px; border-radius:10px; border:1px solid #dc2626; background:#ef4444; color:#fff; cursor:pointer; font-size:13px;
+  height:32px; padding:0 12px; border-radius:10px; border:1px solid #ef4444; background:#ef4444; color:#fff; cursor:pointer; font-size:13px;
 }
 .btnGhost {
   height:32px; padding:0 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; color:#111827;
@@ -65,41 +63,27 @@ textarea { height:auto; }
 
 /* ===== Правый столбец: бордовые рамки у карточек ===== */
 
-/* Каждая карточка задачи в правой колонке — бордовая рамка */
+/* Каждая карточка задачи в правой колонке - бордовая рамка */
 .rightCol .taskCard {
   border: 1px solid #8d2828;
   border-radius: 12px;
-  background: #fff;
 }
 
-/* Ховер по карточке в правой колонке — лёгкий оттенок */
-.rightCol .taskCard:hover {
-  box-shadow: 0 1px 6px rgba(141, 40, 40, 0.15);
-}
-
-/* ===== High priority: толще рамка + бейдж + пульсация =====
-   На карточках с высоким приоритетом в JSX уже проставляется inline-style borderColor: '#8d2828'.
-   Используем это как селектор: [style*="#8d2828"] применится только к high. */
-
-/* Толще рамка и позиционирование для бейджа */
-.rightCol .taskCard[style*="#8d2828"] {
-  border-width: 2px;
+/* Плашка «срочно» в шапке карточки рисуется через псевдоэлемент */
+.rightCol .taskCard .taskHeader {
   position: relative;
 }
-
-/* Бейдж "срочно" после заголовка */
-.rightCol .taskCard[style*="#8d2828"] .taskTitle::after {
-  content: "срочно";
-  display: inline-block;
-  margin-left: 8px;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  text-transform: uppercase;
+.rightCol .taskCard[style*="#8d2828"] .taskHeader::before {
+  content: 'срочно';
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  font-weight: 800;
+  font-size: 10px;
   letter-spacing: .03em;
   color: #fff;
   background: #8d2828;
+  padding: 2px 8px;
   border-radius: 999px;
 }
 
@@ -114,78 +98,60 @@ textarea { height:auto; }
   animation: pulseBorder 1.8s ease-out infinite;
 }
 
-/* На раскрытой high-card немного усилим фон заголовка для читаемости (необязательно) */
+/* На раскрытой high-card немного усилим фон заголовка для читаемости */
 .rightCol .taskCard[style*="#8d2828"][open] .taskHeader {
   background: rgba(141, 40, 40, 0.03);
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
 }
+
 /* ===== Секции внутри раскрытой карточки ===== */
 .taskSection {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 10px;
-  background: #fff;
 }
 
-.taskSection h4 {
-  margin: 0 0 6px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-}
-/* ==== Брендинг и разведение задач (добавить в конец файла) ==== */
+/* ===== Чипсы, крестики - унификация поведения ===== */
 
-/* Кнопка «Отправить на проверку»: бренд + белый текст, ширина как раньше — на всю строку */
-.btnBrand {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid #8d2828;
-  background: #8d2828;
-  color: #fff;
+/* Кликается только крестик внутри чипсы */
+.tf-chip { pointer-events: none; position: relative; }
+.tf-chip__label { pointer-events: none; position: relative; z-index: 1; }
+.tf-chip__meter { pointer-events: none; position: relative; z-index: 1; }
+.tf-chip__x, .chip__x { pointer-events: auto; position: relative; z-index: 2; }
+
+/* Крестик - компактная кнопка 16×16 (точный размер для глобальных мест).
+   Внутри TaskForm для своих чипсов он переопределяется на 18×18 через styled-jsx. */
+.tf-chip__x,
+.chip__x {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin-left: 4px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1;
   cursor: pointer;
-  font-size: 13px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  transition: border-color .12s ease, color .12s ease, background .12s ease, box-shadow .12s ease, transform .06s ease;
 }
-.btnBrand:disabled { opacity: .6; cursor: not-allowed; }
-.btnBlock { width: 20%; }
-
-/* Внешняя рамка задачи — толще и бордовая (у вас уже есть) */
-.rightCol .taskCard {
-  border-color: #8d2828;
-  border-width: 2px;
-  margin: 10px 0 12px;
+.tf-chip__x:hover,
+.chip__x:hover {
+  border-color:#8d2828;
+  color:#8d2828;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
+.tf-chip__x:active,
+.chip__x:active { transform: translateY(1px); }
+/* Для клавиатуры - видимая фокус-рамка только на самом крестике */
+.tf-chip__x:focus-visible,
+.chip__x:focus-visible { outline: 2px solid #8d2828; outline-offset: 2px; }
 
-/* Внутренние секции — светло-серые рамки */
-.rightCol .taskCard .taskSection {
-  border: 1px solid #e5e7eb !important; /* принудительно обнуляем бордовую */
-}
-
-/* Заголовки внутренних секций остаются бордовыми */
-.rightCol .taskCard .taskSection h4 {
-  color: #8d2828;
-}
-
-/* Кнопка бренда уже описана; без ширины на 100% */
-.btnBrand {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid #8d2828;
-  background: #8d2828;
-  color: #fff;
-  cursor: pointer;
-  font-size: 13px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.btnBrand:disabled { opacity: .6; cursor: not-allowed; }
-
+/* ВАЖНО: НЕ глушим pointer-events на всём .tf-chips (это ломало хитбоксы) */
