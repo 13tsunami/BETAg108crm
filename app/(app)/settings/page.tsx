@@ -1,3 +1,4 @@
+// app/(app)/settings/page.tsx
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -5,6 +6,7 @@ import UserForm from '@/components/UserForm';
 import { updateSelfAction } from './actions';
 import SettingsToast from './SettingsToast';
 import { Suspense } from 'react';
+import { normalizeRole, canViewAdmin } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -34,8 +36,9 @@ export default async function SettingsPage() {
   if (!me) redirect('/sign-in');
 
   const meSafe = me as NonNullable<typeof me>;
-  const role = meSafe.role || 'teacher';
-  const isRestricted = role === 'teacher' || role === 'teacher_plus' || role === 'deputy';
+  const roleNorm = normalizeRole(meSafe.role ?? null);
+  // только админ-уровень (director, deputy_plus) НЕ ограничен
+  const isRestricted = !canViewAdmin(roleNorm);
 
   return (
     <main style={{ padding: 16 }}>

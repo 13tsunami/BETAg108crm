@@ -8,6 +8,8 @@ import { Prisma } from '@prisma/client';
 import ConfirmDeleteUser from '@/components/ConfirmDeleteUser';
 import { Suspense } from 'react';
 import TeachersToast from './TeachersToast';
+import { normalizeRole, canViewAdmin, type Role } from '@/lib/roles';
+import { ROLE_LABELS } from '@/lib/roleLabels';
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
@@ -32,14 +34,6 @@ function dateToInputYMD(date: Date): string {
 }
 
 const clean = (x?: string | null) => x ?? '—';
-const ruRole = (r?: string | null) =>
-  r === 'director' ? 'Директор'
-  : r === 'deputy_plus' ? 'Заместитель +'
-  : r === 'deputy' ? 'Заместитель'
-  : r === 'teacher_plus' ? 'Педагог +'
-  : r === 'teacher' ? 'Педагог'
-  : r === 'archived' ? 'В архиве'
-  : (r || '—');
 
 export default async function TeachersPage(props: { searchParams?: Search }) {
   const sp = (props.searchParams ? await props.searchParams : undefined) ?? {};
@@ -50,8 +44,9 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
   const error = errorRaw && !/^NEXT_REDIRECT/.test(errorRaw) ? errorRaw : undefined;
 
   const session = await auth();
-  const role = (session?.user as any)?.role as string | undefined;
-  const canManage = role === 'director' || role === 'deputy_plus';
+  const roleRaw = (session?.user as any)?.role as string | undefined;
+  const roleNorm = normalizeRole(roleRaw ?? null);
+  const canManage = canViewAdmin(roleNorm);
 
   const s = q.trim();
   const or: Prisma.UserWhereInput[] = s
@@ -140,7 +135,12 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                 >
                   <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 700 }}>{u.name}</span>
-                    <span style={{ opacity: .75 }}>{ruRole(u.role)}</span>
+                    <span style={{ opacity: .75 }}>
+                      {(() => {
+                        const r = normalizeRole(u.role ?? null) as Role | null;
+                        return r ? (ROLE_LABELS[r] ?? r) : '—';
+                      })()}
+                    </span>
                     <span style={{
                       fontSize: 12,
                       padding: '2px 8px',

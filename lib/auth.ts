@@ -3,12 +3,14 @@ import NextAuth, { NextAuthOptions, getServerSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import * as RBAC from "@/lib/rbac";
 
 function isRootUserSafe(user: any): boolean {
   try {
-    if (typeof (RBAC as any)?.isRootUser === "function") {
-      return !!(RBAC as any).isRootUser(user);
+    // Сохраняем «мягкий» путь: если где-то в проекте динамически появится isRootUser,
+    // не упадём. Прямых импортов RBAC больше нет.
+    const maybeGlobal = (globalThis as any)?.RBAC;
+    if (maybeGlobal && typeof maybeGlobal.isRootUser === "function") {
+      return !!maybeGlobal.isRootUser(user);
     }
   } catch {}
   return user?.name === "Евжик Иван Сергеевич";

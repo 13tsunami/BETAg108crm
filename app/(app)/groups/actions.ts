@@ -3,17 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth.config';
-import { normalizeRole, type Role } from '@/lib/roles';
-
-function ensureAccess(role: Role | null | undefined) {
-  const ok = role === 'director' || role === 'deputy_plus';
-  if (!ok) throw new Error('forbidden');
-}
+import { normalizeRole, canViewAdmin } from '@/lib/roles';
 
 async function guard() {
   const session = await auth();
   const role = normalizeRole((session?.user as any)?.role ?? null);
-  ensureAccess(role);
+  if (!canViewAdmin(role)) throw new Error('forbidden');
 }
 
 // ===== ГРУППЫ =====

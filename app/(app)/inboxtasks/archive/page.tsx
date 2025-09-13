@@ -79,7 +79,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   const prRaw = Array.isArray(sp.priority) ? sp.priority[0] : sp.priority;
   const pr = prRaw === 'high' ? 'high' : prRaw === 'normal' ? 'normal' : undefined;
-  const priorityFilter: Prisma.TaskWhereInput | undefined = pr ? { priority: pr } as Prisma.TaskWhereInput : undefined;
+  const priorityFilter: Prisma.TaskWhereInput | undefined = pr ? ({ priority: pr } as Prisma.TaskWhereInput) : undefined;
 
   const hasFiles = (Array.isArray(sp.hasFiles) ? sp.hasFiles[0] : sp.hasFiles) === '1';
   const filesFilter: Prisma.TaskWhereInput | undefined = hasFiles ? { attachments: { some: {} } } : undefined;
@@ -87,10 +87,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const periodRaw = Array.isArray(sp.period) ? sp.period[0] : sp.period;
   const now = new Date();
   const since =
-    periodRaw === '30d' ? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) :
-    periodRaw === 'quarter' ? new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) :
-    periodRaw === 'year' ? new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000) :
-    undefined;
+    periodRaw === '30d'
+      ? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      : periodRaw === 'quarter'
+      ? new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+      : periodRaw === 'year'
+      ? new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+      : undefined;
   const periodFilter: Prisma.TaskWhereInput | undefined = since ? { updatedAt: { gte: since } } : undefined;
 
   const where: Prisma.TaskWhereInput =
@@ -120,17 +123,25 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   return (
     <main className="archive" style={{ padding: 16 }}>
-      <header style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 8, flexWrap: 'wrap' }}>
+      <header
+        style={{
+          marginBottom: 12,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'end',
+          gap: 8,
+          flexWrap: 'wrap',
+        }}
+      >
         <div>
           <h1 style={{ margin: 0, fontSize: 22 }}>Архив задач</h1>
-          <div style={{ fontSize: 13, color: '#6b7280' }}>Доступ только для чтения: описание, вложения, история сдач.</div>
+          <div style={{ fontSize: 13, color: '#6b7280' }}>
+            Доступ только для чтения: описание, вложения, история сдач.
+          </div>
         </div>
 
         <nav className="tabs">
-          <a
-            href={`/inboxtasks/archive?tab=mine`}
-            className={`tab ${effectiveTab === 'mine' ? 'tab--active' : ''}`}
-          >
+          <a href={`/inboxtasks/archive?tab=mine`} className={`tab ${effectiveTab === 'mine' ? 'tab--active' : ''}`}>
             Назначенные мне
           </a>
 
@@ -149,15 +160,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         </nav>
       </header>
 
-      {/* ФИЛЬТРЫ / ПОИСК */}
       <form method="get" className="filters">
         <input type="hidden" name="tab" value={effectiveTab} />
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Поиск по названию и описанию"
-          className="input inputSearch"
-        />
+        <input name="q" defaultValue={q} placeholder="Поиск по названию и описанию" className="input inputSearch" />
         <select name="priority" defaultValue={pr ?? ''} className="input">
           <option value="">Приоритет: любой</option>
           <option value="high">Только высокий</option>
@@ -187,9 +192,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         <section style={{ display: 'grid', gap: 10 }}>
           {tasks.map((t) => {
             const total = t.assignees.length;
-            const done = t.assignees.filter(a => a.status === 'done').length;
+            const done = t.assignees.filter((a) => a.status === 'done').length;
             const lastActivity = t.assignees
-              .map(a => a.submissions[0]?.createdAt)
+              .map((a) => a.submissions[0]?.createdAt)
               .filter(Boolean)
               .sort((a, b) => +new Date(b as Date) - +new Date(a as Date))[0];
 
@@ -197,7 +202,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               <article key={t.id} className="card">
                 <header className="cardHead">
                   <div>
-                    <a href={`/inboxtasks/archive/${t.id}`} className="titleLink">{t.title}</a>
+                    <a href={`/inboxtasks/archive/${t.id}`} className="titleLink">
+                      {t.title}
+                    </a>
                     <div className="meta">
                       Дедлайн: {fmtRuDate(t.dueDate)} • Завершено {done} из {total}
                       {t.priority === 'high' ? ' • Срочно' : ''}
@@ -208,7 +215,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                       {lastActivity ? ` • последняя активность: ${fmtTime(lastActivity as Date)}` : ''}
                     </div>
                   </div>
-                  <a href={`/inboxtasks/archive/${t.id}`} className="btnBrand">Открыть задачу</a>
+                  <a href={`/inboxtasks/archive/${t.id}`} className="btnBrand">
+                    Открыть задачу
+                  </a>
                 </header>
 
                 {t.description && (
@@ -221,12 +230,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   <div className="chips">
                     {t.assignees.slice(0, 6).map((a, idx) => (
                       <span key={idx} className={`chip ${a.status === 'done' ? 'chipDone' : ''}`}>
-                        {a.user?.name ?? '—'}{a.status === 'done' ? ' ✓' : ''}
+                        {a.user?.name ?? '—'}
+                        {a.status === 'done' ? ' ✓' : ''}
                       </span>
                     ))}
-                    {t.assignees.length > 6 && (
-                      <span className="chip">и ещё {t.assignees.length - 6}</span>
-                    )}
+                    {t.assignees.length > 6 && <span className="chip">и ещё {t.assignees.length - 6}</span>}
                   </div>
                 )}
               </article>
@@ -246,15 +254,14 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         .tab--active { border-color: var(--brand); }
         .tab--disabled { opacity: .5; pointer-events: none; }
 
-        /* --- Форма фильтров: фиксируем width:auto и inline-бокс --- */
         .filters {
           display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:10px;
         }
         .filters .input,
         .filters .btn {
-          width:auto !important;           /* переопределяет глобальное 100% */
-          display:inline-block;            /* чтобы не растягивались */
-          flex: 0 0 auto;                  /* не тянуться в flex-контейнере */
+          width:auto !important;
+          display:inline-block;
+          flex: 0 0 auto;
         }
         .input {
           height: 32px; padding: 0 10px; border:1px solid #e5e7eb; border-radius: 8px; background:#fff; font-size:13px;
@@ -266,6 +273,16 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         }
         .btnBrand {
           height: 32px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--brand); background: var(--brand); color: #fff; cursor: pointer; font-size: 13px; text-decoration:none; display:inline-flex; align-items:center;
+        }
+        /* фикс цвета и жирности для прод-сборки: перебиваем глобальный a{color:inherit} */
+        .archive a.btnBrand,
+        .archive a.btnBrand:visited,
+        .archive a.btnBrand:hover,
+        .archive a.btnBrand:active,
+        .archive a.btnBrand:focus {
+          color: #fff !important;
+          font-weight: 600;
+          text-decoration: none;
         }
 
         .card {

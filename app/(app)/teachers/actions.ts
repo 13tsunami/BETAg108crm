@@ -6,7 +6,7 @@ import { headers } from 'next/headers';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { normalizeRole } from '@/lib/roles';
+import { normalizeRole, canViewAdmin } from '@/lib/roles';
 
 const s = (v: FormDataEntryValue | null) => (typeof v === 'string' ? v.trim() : '');
 const b = (v: FormDataEntryValue | null) =>
@@ -30,8 +30,7 @@ async function returnToWithQuery(q: string): Promise<string> {
 export async function createUser(fd: FormData): Promise<void> {
   const session = await auth();
   const role = normalizeRole((session?.user as any)?.role ?? null);
-  const canManage = role === 'director' || role === 'deputy_plus';
-  if (!canManage) redirect('/');
+  if (!canViewAdmin(role)) redirect('/');
 
   const name = s(fd.get('name'));
   const username = s(fd.get('username')) || null;
@@ -88,8 +87,7 @@ export async function createUser(fd: FormData): Promise<void> {
 export async function updateUser(fd: FormData): Promise<void> {
   const session = await auth();
   const role = normalizeRole((session?.user as any)?.role ?? null);
-  const canManage = role === 'director' || role === 'deputy_plus';
-  if (!canManage) redirect('/');
+  if (!canViewAdmin(role)) redirect('/');
 
   const id = s(fd.get('id'));
   if (!id) {
@@ -122,7 +120,7 @@ export async function updateUser(fd: FormData): Promise<void> {
     notifyEmail,
     notifyTelegram,
   };
- if (birthday) data.birthday = new Date(`${birthday}T00:00:00Z`);
+  if (birthday) data.birthday = new Date(`${birthday}T00:00:00Z`);
   if (newPassword) {
     if (newPassword.length < 6) {
       revalidatePath('/teachers');
@@ -147,8 +145,7 @@ export async function updateUser(fd: FormData): Promise<void> {
 export async function deleteUser(fd: FormData): Promise<void> {
   const session = await auth();
   const role = normalizeRole((session?.user as any)?.role ?? null);
-  const canManage = role === 'director' || role === 'deputy_plus';
-  if (!canManage) redirect('/');
+  if (!canViewAdmin(role)) redirect('/');
 
   const id = s(fd.get('id'));
   if (!id) {
