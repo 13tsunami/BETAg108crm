@@ -1,45 +1,61 @@
 import { auth } from '@/auth.config';
-import { normalizeRole, canProcessRequests } from '@/lib/roles';
+import { prisma } from '@/lib/prisma';
+import { redirect } from 'next/navigation';
 import RequestView from '../RequestView';
+import { replyRequestAction, closeRequestAction, reopenRequestAction } from '../actions';
 import ReplyForm from '../ReplyForm';
-import { replyRequestAction, takeRequestAction, closeRequestAction } from '../actions';
 import '../requests.css';
 
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+function processorTarget(raw: unknown): 'deputy_axh' | 'sysadmin' | null {
+  const r = typeof raw === 'string' ? raw.trim() : '';
+  if (r === 'deputy_axh') return 'deputy_axh';
+  if (r === 'sysadmin') return 'sysadmin';
+  return null;
+}
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-export default async function Page(props: { params: Promise<{ id: string }>; searchParams: SearchParams }) {
-  const { id } = await props.params;
+export default async function Page({ params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session) return redirect('/');
 
-  const role = normalizeRole(session.user.role);
-  const canProcess = canProcessRequests(role);
+  const meId = session.user.id as string;
+  const pTarget = processorTarget((session.user as any).role);
+
+  const req = await prisma.request.findUnique({
+    where: { id: params.id },
+    include: {
+      author: true,
+      processedBy: true,
+      messages: { include: { author: true }, orderBy: { createdAt: 'asc' } },
+    },
+  });
+  if (!req) return redirect('/requests');
+
+  // Право просмотра: автор ИЛИ обработчик с совпадающим target
+  const canView =
+    req.authorId === meId || (pTarget !== null && req.target === pTarget);
+  if (!canView) return redirect('/requests');
+
+  // Авто-взятие в работу — только для "своих" адресных заявок
+  if (req.status === 'new' && pTarget !== null && req.target === pTarget) {
+    await prisma.request.update({
+      where: { id: req.id },
+      data: { status: 'in_progress', processedById: meId },
+    });
+    return redirect(`/requests/${req.id}`);
+  }
+
+  const canProcess = pTarget !== null && req.target === pTarget;
 
   return (
     <div className="req-page">
-      <div className="req-top">
-        <h1 className="page-title">Заявка</h1>
-      </div>
-
-      <div className="grid">
-        <div className="left">
-          <RequestView id={id} />
-        </div>
-        <div className="right">
-          <div className="sticky">
-            <h2 className="block-title">Ответ</h2>
-            <ReplyForm
-              requestId={id}
-              replyAction={replyRequestAction}
-              takeAction={canProcess ? takeRequestAction : undefined}
-              closeAction={canProcess ? closeRequestAction : undefined}
-              canProcess={!!canProcess}
-            />
-          </div>
-        </div>
+      <div className="left">
+        <RequestView req={req} />
+        <ReplyForm
+          requestId={req.id}
+          replyAction={replyRequestAction}
+          closeAction={canProcess && req.status === 'in_progress' ? closeRequestAction : undefined}
+          reopenAction={req.authorId === meId && req.status === 'done' ? reopenRequestAction : undefined}
+        />
       </div>
     </div>
   );

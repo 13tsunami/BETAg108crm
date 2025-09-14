@@ -1,75 +1,65 @@
-import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
-type Props = { id: string };
+type RequestFull = Prisma.RequestGetPayload<{
+  include: {
+    author: true;
+    processedBy: true;
+    messages: { include: { author: true } };
+  };
+}>;
 
-function fmtRuDateTime(d: Date): string {
-  const f = new Intl.DateTimeFormat('ru-RU', {
-    timeZone: 'Asia/Yekaterinburg',
-    day: '2-digit',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(d);
-  return f;
-}
-
-export default async function RequestView({ id }: Props) {
-  const req = await prisma.request.findUnique({
-    where: { id },
-    include: {
-      author: { select: { id: true, name: true } },
-      processedBy: { select: { id: true, name: true } },
-      messages: {
-        orderBy: { createdAt: 'asc' },
-        include: { author: { select: { id: true, name: true } } },
-      },
-    },
-  });
-
-  if (!req) {
-    return <div className="req-empty">Заявка не найдена</div>;
-  }
-
+export default function RequestView({ req }: { req: RequestFull }) {
   return (
-    <div className="req-view">
-      <div className="req-header">
-        <div className="req-numline">
-          <span className="req-tag">{req.target}</span>
-          <span className="req-gn">#{req.globalNumber}</span>
-          {req.targetNumber ? <span className="req-tn">/{req.targetNumber}</span> : null}
-        </div>
-        <div className={`req-status s-${req.status}`}>{req.status}</div>
+    <div className="req-view req-card">
+      <h2 className="req-h2">{req.title}</h2>
+
+      <div className={`req-status ${req.status}${req.closedAt === null && req.status === 'in_progress' ? ' updated' : ''}`}>
+        {req.status}
       </div>
 
-      <h1 className="req-title">{req.title}</h1>
-
       <div className="req-meta">
-        <span>Автор: {req.author?.name ?? '—'}</span>
-        <span className="req-dot">•</span>
-        <span>Создано: {fmtRuDateTime(req.createdAt)}</span>
+        Автор: <span className="req-name">{req.author?.name}</span>
+        {' • '}
+        Создано: {req.createdAt.toLocaleString('ru-RU')}
+        {req.processedBy ? (
+          <>
+            {' • '}Исполнитель: <span className="req-name">{req.processedBy.name}</span>
+          </>
+        ) : null}
         {req.closedAt ? (
           <>
-            <span className="req-dot">•</span>
-            <span>Закрыто: {fmtRuDateTime(req.closedAt)}</span>
+            {' • '}Закрыто: {req.closedAt.toLocaleString('ru-RU')}
           </>
         ) : null}
       </div>
 
-      {req.rejectedReason ? (
-        <div className="req-reason">Причина отклонения: {req.rejectedReason}</div>
-      ) : null}
+      {req.body ? <p className="req-body">{req.body}</p> : null}
 
-      <div className="req-messages">
-        {req.messages.map((m) => (
-          <div key={m.id} className="req-msg">
-            <div className="req-msg-meta">
-              <span className="req-msg-author">{m.author?.name ?? '—'}</span>
-              <span className="req-dot">•</span>
-              <span className="req-msg-date">{fmtRuDateTime(m.createdAt)}</span>
+      {/* чат сообщений */}
+      <div className="chat">
+        {req.messages.map((m) => {
+          const fromAuthor = m.authorId === req.authorId;
+          const fromProcessor =
+            !!req.processedBy && m.authorId === req.processedBy.id;
+
+          const sideClass = fromProcessor ? 'from-processor' : 'from-author'; // по умолчанию считаем автором
+
+          return (
+            <div key={m.id} className={`msg-row ${sideClass}`}>
+              <div className="msg-bubble">
+                <div className="msg-head">
+                  <span className="msg-name">
+                    {m.author?.name ?? 'Без имени'}
+                  </span>
+                  <span className="msg-ts">
+                    {m.createdAt.toLocaleString('ru-RU')}
+                  </span>
+                </div>
+                <div className="msg-text">{m.body}</div>
+              </div>
             </div>
-            <div className="req-msg-body">{m.body}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

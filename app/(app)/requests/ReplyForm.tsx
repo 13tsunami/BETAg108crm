@@ -1,68 +1,60 @@
 'use client';
-
-import { useFormStatus } from 'react-dom';
+import React from 'react';
 
 type Props = {
   requestId: string;
   replyAction: (fd: FormData) => Promise<void>;
-  takeAction?: (fd: FormData) => Promise<void>;
   closeAction?: (fd: FormData) => Promise<void>;
-  canProcess: boolean;
+  reopenAction?: (fd: FormData) => Promise<void>;
 };
 
-function SubmitBtn({ children }: { children: string }) {
-  const { pending } = useFormStatus();
+export default function ReplyForm({ requestId, replyAction, closeAction, reopenAction }: Props) {
   return (
-    <button className="btn-primary" type="submit" disabled={pending}>
-      {pending ? 'Отправка…' : children}
-    </button>
-  );
-}
-
-function ReplyFormInner({
-  requestId,
-  replyAction,
-  takeAction,
-  closeAction,
-  canProcess,
-}: Props) {
-  return (
-    <div className="reply-wrap">
-      <form className="reply-form" action={replyAction}>
+    <section className="reply-form">
+      {/* строка: комментарий + отправить */}
+      <form className="row row-comment" action={replyAction}>
         <input type="hidden" name="requestId" value={requestId} />
-        <textarea className="inp" name="body" rows={3} placeholder="Ответ..." required />
-        <div className="actions">
-          <SubmitBtn>Отправить</SubmitBtn>
-        </div>
+        <textarea className="txt comment" name="body" placeholder="Комментарий" required />
+        <button className="btn btn-outline send" type="submit">Отправить</button>
       </form>
 
-      {canProcess && takeAction ? (
-        <form className="inline-form" action={takeAction}>
-          <input type="hidden" name="requestId" value={requestId} />
-          <button className="btn-outline" type="submit">Взять в работу</button>
-        </form>
-      ) : null}
-
-      {canProcess && closeAction ? (
-        <div className="close-forms">
-          <form className="inline-form" action={closeAction}>
+      {/* блок действий исполнителя */}
+      {closeAction && (
+        <div className="actions">
+          <form className="inline" action={closeAction}>
             <input type="hidden" name="requestId" value={requestId} />
             <input type="hidden" name="action" value="done" />
-            <button className="btn-success" type="submit">Закрыть</button>
+            <button
+              className="btn btn-success"
+              type="submit"
+              onClick={(e) => { if (!confirm('Выполнить заявку?')) e.preventDefault(); }}
+            >
+              Выполнить
+            </button>
           </form>
 
-          <form className="inline-form" action={closeAction}>
+          <form className="inline reject" action={closeAction}>
             <input type="hidden" name="requestId" value={requestId} />
             <input type="hidden" name="action" value="rejected" />
-            <input className="inp reason" type="text" name="reason" placeholder="Причина отклонения" />
-            <button className="btn-danger" type="submit">Отклонить</button>
+            <input className="inp reason" name="reason" placeholder="Причина отклонения" required />
+            <button
+              className="btn btn-danger"
+              type="submit"
+              onClick={(e) => { if (!confirm('Отклонить заявку?')) e.preventDefault(); }}
+            >
+              Отклонить
+            </button>
           </form>
         </div>
-      ) : null}
-    </div>
-  );
-}
+      )}
 
-export default function ReplyForm(props: Props) {
-  return <ReplyFormInner {...props} />;
+      {/* кнопка переоткрытия для автора закрытой заявки */}
+      {reopenAction && (
+        <form className="reopen" action={reopenAction}>
+          <input type="hidden" name="requestId" value={requestId} />
+          <button className="btn btn-outline" type="submit">Возобновить</button>
+        </form>
+      )}
+    </section>
+  );
 }

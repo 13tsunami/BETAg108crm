@@ -1,138 +1,80 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
-import { canCreateRequests, canProcessRequests, normalizeRole } from '@/lib/roles';
+import { normalizeRole, canCreateRequests, canProcessRequests } from '@/lib/roles';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
-function asNonEmpty(v: unknown, field: string, max = 500): string {
-  const s = String(v ?? '').trim();
-  if (!s) throw new Error(`Поле "${field}" обязательно`);
-  if (s.length > max) throw new Error(`Поле "${field}" слишком длинное`);
-  return s;
-}
-
-function asOptional(v: unknown, max = 1000): string | null {
-  const s = String(v ?? '').trim();
-  if (!s) return null;
-  if (s.length > max) throw new Error('Слишком длинный текст');
-  return s;
-}
-
-export async function createRequestAction(formData: FormData): Promise<void> {
+export async function createRequestAction(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/');
-
+  if (!session) throw new Error('Нет доступа');
   const role = normalizeRole(session.user.role);
-  if (!canCreateRequests(role)) redirect('/');
-
-  const target = asNonEmpty(formData.get('target'), 'Адресат', 64);
-  const title = asNonEmpty(formData.get('title'), 'Заголовок', 256);
-  const body  = asNonEmpty(formData.get('body'), 'Описание', 4000);
-
-  const req = await prisma.$transaction(async (tx) => {
-    const counter = await tx.requestCounter.upsert({
-      where: { target },
-      create: { target, lastNumber: 1 },
-      update: { lastNumber: { increment: 1 } },
-    });
-    const created = await tx.request.create({
-      data: {
-        authorId: session.user.id,
-        target,
-        title,
-        body,
-        // lastNumber уже либо 1 (create), либо инкрементирован (update)
-        targetNumber: counter.lastNumber,
-        // status и lastMessageAt по умолчанию
-      },
-      select: { id: true },
-    });
-    await tx.requestMessage.create({
-      data: {
-        requestId: created.id,
-        authorId: session.user.id,
-        body,
-      },
-    });
-    return created;
+  if (!canCreateRequests(role)) throw new Error('Нет доступа');
+  const target = String(formData.get('target') || '');
+  const title = String(formData.get('title') || '');
+  const body = String(formData.get('body') || '');
+  const req = await prisma.request.create({
+    data: {
+      authorId: session.user.id,
+      target,
+      title,
+      body,
+      status: 'new',
+      messages: { create: { authorId: session.user.id, body } }
+    }
   });
-
   revalidatePath('/requests');
   redirect(`/requests/${req.id}`);
 }
 
-export async function replyRequestAction(formData: FormData): Promise<void> {
+export async function replyRequestAction(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/');
-
-  const requestId = asNonEmpty(formData.get('requestId'), 'ID заявки', 64);
-  const body = asNonEmpty(formData.get('body'), 'Сообщение', 4000);
-
-  await prisma.$transaction(async (tx) => {
-    await tx.requestMessage.create({
-      data: {
-        requestId,
-        authorId: session.user.id,
-        body,
-      },
-    });
-    await tx.request.update({
-      where: { id: requestId },
-      data: { lastMessageAt: new Date() },
-    });
+  if (!session) throw new Error('Нет доступа');
+  const requestId = String(formData.get('requestId'));
+  const body = String(formData.get('body') || '');
+  await prisma.requestMessage.create({
+    data: { requestId, authorId: session.user.id, body }
   });
-
-  revalidatePath('/requests');
+  await prisma.request.update({ where:{id:requestId}, data:{ lastMessageAt:new Date() }});
   revalidatePath(`/requests/${requestId}`);
 }
 
-export async function takeRequestAction(formData: FormData): Promise<void> {
+export async function closeRequestAction(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/');
-
+  if (!session) throw new Error('Нет доступа');
   const role = normalizeRole(session.user.role);
-  if (!canProcessRequests(role)) redirect('/');
-
-  const requestId = asNonEmpty(formData.get('requestId'), 'ID заявки', 64);
-
-  await prisma.request.update({
-    where: { id: requestId },
-    data: {
-      status: 'in_progress',
-      processedById: session.user.id,
-    },
-  });
-
+  if (!canProcessRequests(role)) throw new Error('Нет доступа');
+  const requestId = String(formData.get('requestId'));
+  const action = String(formData.get('action'));
+  const reason = String(formData.get('reason')||'');
+  if (action === 'done') {
+    await prisma.request.update({
+      where:{id:requestId},
+      data:{ status:'done', closedAt:new Date(), processedById:session.user.id }
+    });
+  } else if (action === 'rejected') {
+    if (!reason) throw new Error('Укажите причину');
+    await prisma.request.update({
+      where:{id:requestId},
+      data:{ status:'rejected', closedAt:new Date(), processedById:session.user.id, rejectedReason:reason }
+    });
+  }
   revalidatePath('/requests');
-  revalidatePath(`/requests/${requestId}`);
+  redirect(`/requests/${requestId}`);
 }
 
-export async function closeRequestAction(formData: FormData): Promise<void> {
+export async function reopenRequestAction(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/');
-
-  const role = normalizeRole(session.user.role);
-  if (!canProcessRequests(role)) redirect('/');
-
-  const requestId = asNonEmpty(formData.get('requestId'), 'ID заявки', 64);
-  const action = asNonEmpty(formData.get('action'), 'Действие', 16); // 'done' | 'rejected'
-  const reason = asOptional(formData.get('reason'), 1000);
-
-  const status = action === 'done' ? 'done' : action === 'rejected' ? 'rejected' : null;
-  if (!status) throw new Error('Некорректное действие');
-
+  if (!session) throw new Error('Нет доступа');
+  const requestId = String(formData.get('requestId'));
+  const req = await prisma.request.findUnique({ where:{id:requestId}});
+  if (!req || req.authorId !== session.user.id) throw new Error('Нет доступа');
+  if (req.status !== 'done') throw new Error('Нельзя переоткрыть');
   await prisma.request.update({
-    where: { id: requestId },
-    data: {
-      status,
-      processedById: session.user.id,
-      closedAt: new Date(),
-      rejectedReason: status === 'rejected' ? reason : null,
-    },
+    where:{id:requestId},
+    data:{ status:'in_progress', closedAt:null }
   });
-
   revalidatePath('/requests');
-  revalidatePath(`/requests/${requestId}`);
+  redirect(`/requests/${requestId}`);
 }
