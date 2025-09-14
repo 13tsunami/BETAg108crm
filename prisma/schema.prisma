@@ -3,11 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-/* ===== Новые типы ===== */
+/**
+ * ===== Новые типы =====
+ */
 enum TaskAssigneeStatus {
   in_progress
   submitted
@@ -15,7 +17,9 @@ enum TaskAssigneeStatus {
   rejected
 }
 
-/* ===== Пользователи и общие сущности ===== */
+/**
+ * ===== Пользователи и общие сущности =====
+ */
 model User {
   id               String    @id @default(uuid())
   name             String
@@ -49,6 +53,14 @@ model User {
 
   reviewedAssignments TaskAssignee[] @relation("TaskReviewedBy")
   reviewedSubmissions Submission[]   @relation("SubmissionReviewedBy")
+
+  // Новые бэк-связи для заявок
+  requestsAuthored   Request[]            @relation("RequestAuthor")
+  requestsProcessed  Request[]            @relation("RequestProcessedBy")
+  RequestMessage     RequestMessage[]
+  DiscussionPost     DiscussionPost[]
+  DiscussionComment  DiscussionComment[]
+  DiscussionReaction DiscussionReaction[]
 }
 
 model Group {
@@ -114,7 +126,9 @@ model MessageHide {
   @@index([userId])
 }
 
-/* ===== Задачи и исполнители ===== */
+/**
+ * ===== Задачи и исполнители =====
+ */
 model Task {
   id          String   @id @default(uuid())
   title       String
@@ -132,11 +146,11 @@ model Task {
 
   createdBy User? @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
-  assignees   TaskAssignee[]
-  tags        TaskTag[]
+  assignees TaskAssignee[]
+  tags      TaskTag[]
 
   // НОВОЕ:
-  number      Int      @unique @default(autoincrement())
+  number      Int              @unique @default(autoincrement())
   attachments TaskAttachment[]
 
   @@index([createdById])
@@ -150,16 +164,16 @@ model TaskAssignee {
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  status        TaskAssigneeStatus @default(in_progress)
-  assignedAt    DateTime  @default(now())
-  completedAt   DateTime?
+  status      TaskAssigneeStatus @default(in_progress)
+  assignedAt  DateTime           @default(now())
+  completedAt DateTime?
 
-  submittedAt   DateTime?
-  reviewedAt    DateTime?
-  reviewedById  String?
-  reviewedBy    User?     @relation("TaskReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  reviewedById String?
+  reviewedBy   User?     @relation("TaskReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
 
-  submissions   Submission[]
+  submissions Submission[]
 
   @@unique([taskId, userId])
   @@index([userId])
@@ -182,7 +196,9 @@ model TaskTag {
   tag    Tag    @relation(fields: [tagId], references: [id])
 }
 
-/* ===== Read marks ===== */
+/**
+ * ===== Read marks =====
+ */
 model ReadMark {
   threadId String
   userId   String
@@ -195,7 +211,9 @@ model ReadMark {
   @@index([userId])
 }
 
-/* ===== Файлы ===== */
+/**
+ * ===== Файлы =====
+ */
 model Attachment {
   id        String   @id @default(uuid())
   messageId String?
@@ -206,18 +224,22 @@ model Attachment {
   mime         String
   size         Int
   data         Bytes?
-  sha256       String? @db.VarChar(64)
+  sha256       String?  @db.VarChar(64)
   createdAt    DateTime @default(now())
 
   submissionLinks SubmissionAttachment[]
 
   // НОВОЕ:
-  taskLinks       TaskAttachment[]
+  taskLinks                   TaskAttachment[]
+  DiscussionPostAttachment    DiscussionPostAttachment[]
+  DiscussionCommentAttachment DiscussionCommentAttachment[]
 
   @@index([messageId])
 }
 
-/* новая сущность */
+/**
+ * новая сущность
+ */
 model TaskAttachment {
   taskId       String
   attachmentId String
@@ -229,7 +251,9 @@ model TaskAttachment {
   @@index([attachmentId])
 }
 
-/* ===== Нормализованные предметы ===== */
+/**
+ * ===== Нормализованные предметы =====
+ */
 model Subject {
   id      String          @id @default(uuid())
   name    String          @unique
@@ -246,7 +270,9 @@ model SubjectMember {
   @@unique([userId, subjectId])
 }
 
-/* ===== Заметки ===== */
+/**
+ * ===== Заметки =====
+ */
 model Note {
   id        String   @id @default(uuid())
   userId    String
@@ -263,20 +289,22 @@ model Note {
   @@index([at])
 }
 
-/* ===== Новые сущности review-flow ===== */
+/**
+ * ===== Новые сущности review-flow =====
+ */
 model Submission {
   id             String   @id @default(uuid())
   taskAssigneeId String
   comment        String?
   createdAt      DateTime @default(now())
 
-  open            Boolean  @default(true)
+  open            Boolean   @default(true)
   reviewedAt      DateTime?
   reviewedById    String?
   reviewerComment String?
 
-  reviewedBy User? @relation("SubmissionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-  assignee   TaskAssignee @relation(fields: [taskAssigneeId], references: [id], onDelete: Cascade)
+  reviewedBy  User?                  @relation("SubmissionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  assignee    TaskAssignee           @relation(fields: [taskAssigneeId], references: [id], onDelete: Cascade)
   attachments SubmissionAttachment[]
 
   @@index([taskAssigneeId])
@@ -292,5 +320,149 @@ model SubmissionAttachment {
   attachment Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
 
   @@id([submissionId, attachmentId])
+  @@index([attachmentId])
+}
+
+/**
+ * ===== Requests (заявки) =====
+ */
+enum RequestStatus {
+  new
+  in_progress
+  done
+  rejected
+}
+
+model Request {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User   @relation("RequestAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  // адресат как строка: "sysadmin" | "ahch" (в дальнейшем расширяем без миграций)
+  target String
+
+  status RequestStatus @default(new)
+
+  title String
+  body  String
+
+  // кто взял/закрыл
+  processedById String?
+  processedBy   User?   @relation("RequestProcessedBy", fields: [processedById], references: [id], onDelete: SetNull)
+
+  closedAt       DateTime?
+  rejectedReason String?
+
+  // сортировка и превью
+  lastMessageAt DateTime @default(now())
+
+  // нумерация
+  globalNumber Int  @unique @default(autoincrement()) // общий сквозной номер
+  targetNumber Int? // счётчик внутри target (выставляется экшеном)
+
+  messages RequestMessage[]
+
+  @@unique([target, targetNumber])
+  @@index([authorId, status, lastMessageAt])
+  @@index([target, status, lastMessageAt])
+  @@index([target, targetNumber])
+}
+
+model RequestMessage {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  requestId String
+  authorId  String
+  body      String
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+}
+
+/**
+ * Служебный счётчик по адресату (строка-ключ = target)
+ */
+model RequestCounter {
+  target     String @id // например, "sysadmin", "ahch"
+  lastNumber Int    @default(0)
+}
+
+/**
+ * ===== Discussions (объявления и обсуждения) =====
+ */
+model DiscussionPost {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  text     String
+  pinned   Boolean @default(false)
+
+  author                   User                       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments                 DiscussionComment[]
+  reactions                DiscussionReaction[]
+  DiscussionPostAttachment DiscussionPostAttachment[]
+
+  @@index([createdAt])
+}
+
+model DiscussionComment {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  postId   String
+  authorId String
+  text     String
+
+  post                        DiscussionPost                @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author                      User                          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  DiscussionCommentAttachment DiscussionCommentAttachment[]
+
+  @@index([postId, createdAt])
+}
+
+/**
+ * одна реакция "like" на пользователя; тип — строкой на будущее
+ */
+model DiscussionReaction {
+  postId String
+  userId String
+  kind   String @default("like")
+
+  post DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+}
+
+/**
+ * Опционально: связь с существующим Attachment (UI можно не включать сразу)
+ */
+model DiscussionPostAttachment {
+  postId       String
+  attachmentId String
+
+  post       DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attachment Attachment     @relation(fields: [attachmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([postId, attachmentId])
+  @@index([attachmentId])
+}
+
+model DiscussionCommentAttachment {
+  commentId    String
+  attachmentId String
+
+  comment    DiscussionComment @relation(fields: [commentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attachment Attachment        @relation(fields: [attachmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([commentId, attachmentId])
   @@index([attachmentId])
 }
