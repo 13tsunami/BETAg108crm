@@ -341,27 +341,21 @@ model Request {
   authorId String
   author   User   @relation("RequestAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
-  // адресат как строка: "sysadmin" | "ahch" (в дальнейшем расширяем без миграций)
   target String
-
   status RequestStatus @default(new)
 
   title String
   body  String
 
-  // кто взял/закрыл
   processedById String?
   processedBy   User?   @relation("RequestProcessedBy", fields: [processedById], references: [id], onDelete: SetNull)
 
   closedAt       DateTime?
   rejectedReason String?
+  lastMessageAt  DateTime @default(now())
 
-  // сортировка и превью
-  lastMessageAt DateTime @default(now())
-
-  // нумерация
-  globalNumber Int  @unique @default(autoincrement()) // общий сквозной номер
-  targetNumber Int? // счётчик внутри target (выставляется экшеном)
+  globalNumber Int  @unique @default(autoincrement())
+  targetNumber Int?
 
   messages RequestMessage[]
 
@@ -370,6 +364,7 @@ model Request {
   @@index([target, status, lastMessageAt])
   @@index([target, targetNumber])
 }
+
 
 model RequestMessage {
   id        String   @id @default(uuid())

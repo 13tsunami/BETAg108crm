@@ -87,9 +87,7 @@ export default function Sidebar({
   const roleNorm = normalizeRole(roleSlug);
   const roleRu = roleNorm ? (ROLE_LABELS[roleNorm as Role] ?? roleNorm) : null;
 
-  // админ-блок теперь по централизованной проверке
   const hasAdminBlock = canViewAdmin(roleNorm);
-
   const fio = splitFio((data?.user?.name as string) || null);
 
   const [collapsed, setCollapsed] = useState(false);
@@ -165,7 +163,6 @@ export default function Sidebar({
     )
   ), [collapsed]);
 
-  // как и было: «Проверка задач» скрыта для teacher
   const canSeeReviewTile = authed && roleSlug !== 'teacher';
 
   return (
@@ -224,6 +221,18 @@ export default function Sidebar({
 
               {/* новая плитка — видят все роли */}
               <Tile href="/showmyfiles" label="Мои файлы" active={pathname === '/showmyfiles'} />
+
+              {/* ДОБАВЛЕНО: Заявки и Объявления */}
+              <Tile
+                href="/requests"
+                label="Заявки"
+                active={pathname?.startsWith('/requests') || false}
+              />
+              <Tile
+                href="/discussions"
+                label="Объявления"
+                active={pathname?.startsWith('/discussions') || false}
+              />
 
               {canSeeReviewTile && (
                 <Tile

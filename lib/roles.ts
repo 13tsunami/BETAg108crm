@@ -37,7 +37,7 @@ export const roleOrder: Role[] = [
 const CANONICAL: Partial<Record<Role, Role>> = {
   deputy_axh: 'deputy',
   sysadmin: 'teacher',
-  food_dispatcher: 'staff',     // пока как техперсонал
+  food_dispatcher: 'staff',
   psychologist: 'teacher',
   librarian: 'teacher_plus',
   education_adviser: 'deputy',
@@ -58,7 +58,7 @@ export function normalizeRole(value: unknown): Role | null {
   return isRole(v) ? (v as Role) : null;
 }
 
-// ====== проверки доступа ======
+// ====== проверки доступа (админка и задачи) ======
 
 export function canViewAdmin(role: Role | null | undefined): boolean {
   const r = canon(role);
@@ -82,4 +82,34 @@ export function canViewTasks(role: Role | null | undefined): boolean {
 export function hasFullAccess(role: Role | null | undefined): boolean {
   const r = canon(role);
   return r === 'deputy_plus' || r === 'director';
+}
+
+// ====== проверки доступа (заявки) ======
+
+/**
+ * Создавать заявки: только педагоги и выше.
+ * Соответствует формулировке «педагоги только создают».
+ */
+export function canCreateRequests(role: Role | null | undefined): boolean {
+  const r = canon(role);
+  if (!r) return false;
+  return roleOrder.indexOf(r) >= roleOrder.indexOf('teacher');
+}
+
+/**
+ * Обрабатывать заявки (взять в работу, закрыть, отклонить):
+ * sysadmin, deputy_axh и управленцы (deputy, deputy_plus, director).
+ */
+export function canProcessRequests(role: Role | null | undefined): boolean {
+  const raw = role ?? null;
+  if (!raw) return false;
+
+  // ярлыки с особыми правами
+  if (raw === 'sysadmin' || raw === 'deputy_axh') return true;
+
+  const r = canon(raw);
+  if (!r) return false;
+
+  // управленческий контур
+  return r === 'deputy' || r === 'deputy_plus' || r === 'director';
 }
