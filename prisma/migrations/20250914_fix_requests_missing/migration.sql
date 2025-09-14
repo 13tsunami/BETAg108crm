@@ -1,4 +1,4 @@
-﻿-- Создаём расширение для uuid, если его нет (Prisma обычно использует gen_random_uuid())
+-- Создаём расширение для uuid, если его нет (Prisma обычно использует gen_random_uuid())
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 1) ENUM RequestStatus (если отсутствует)
