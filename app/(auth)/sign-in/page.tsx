@@ -1,44 +1,60 @@
+// app/(auth)/sign-in/page.tsx
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth.config';
 import SignInForm from './SignInForm';
+import './sign-in.css';
 
-export const dynamic = 'force-dynamic';  // Обязательно динамическая страница (не статическая), т.к. зависит от сессии и query-параметров
+export const dynamic = 'force-dynamic';
 
-export default async function SignInPage(props: { 
-  searchParams?: Promise<Record<string, string | string[] | undefined>> 
-}) {
-  // Проверяем наличие активной сессии через auth() (getServerSession). Если пользователь уже залогинен – перенаправляем на главную.
-  const session = await auth();
-  if (session) {
-    redirect('/');  // Если есть сессия, сразу уходим с страницы входа (редирект на главную/дешборд)
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function first(v: string | string[] | undefined): string | undefined {
+  return Array.isArray(v) ? v[0] : v;
+}
+
+function sanitizeCallbackUrl(raw: string | undefined): string {
+  const fallback = '/dashboard';
+  if (!raw) return fallback;
+  if (raw.startsWith('/')) return raw;
+  try {
+    const base = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL) : null;
+    const u = new URL(raw);
+    if (base && u.origin === base.origin) return u.pathname + u.search + u.hash;
+  } catch {}
+  return fallback;
+}
+
+function humanizeError(code: string | undefined): string | null {
+  if (!code) return null;
+  switch (code) {
+    case 'CredentialsSignin': return 'Проверьте логин и пароль.';
+    case 'AccessDenied':      return 'Доступ запрещён.';
+    case 'SessionRequired':   return 'Требуется авторизация.';
+    default:                  return 'Не удалось выполнить вход.';
   }
+}
 
-  // Извлекаем query-параметры (?error=… & callbackUrl=…) из URL, учитывая что searchParams передаются как Promise
-  const sp = props.searchParams ? await props.searchParams : undefined;
-  const errorParam = sp?.error;
-  const callbackParam = sp?.callbackUrl;
-  const error = Array.isArray(errorParam) ? errorParam[0] : errorParam;
-  const callbackUrl = Array.isArray(callbackParam) ? callbackParam[0] : (callbackParam ?? '/dashboard');
-  // ↑ Если callbackUrl не задан, по умолчанию отправим пользователя на "/dashboard" после входа (основная страница после логина)
+export default async function SignInPage(props: { searchParams?: SearchParams }) {
+  const session = await auth();
+  if (session) redirect('/');
+
+  const qp = (await props.searchParams) || {};
+  const errorMsg = humanizeError(first(qp.error));
+  const callbackUrl = sanitizeCallbackUrl(first(qp.callbackUrl));
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-10">
-      {/* Верхний блок с приветствием (визуал как в разработочной версии) */}
-      <div className="mb-8">
-        <div className="text-lg text-neutral-600">Гимназия № 108 имени В. Н. Татищева</div>
-        <h1 className="text-3xl font-semibold mt-1">Добро пожаловать в CRM-систему</h1>
-        <div className="text-neutral-600 mt-2">Необходим вход в систему</div>
-      </div>
+    <main className="signin-wrap">
+      <section className="signin-card" role="region" aria-label="Форма входа">
+        <header className="signin-head">
+          <div className="signin-brand">Гимназия 108 имени В. Н. Татищева</div>
+          <h1 className="signin-title">Вход в G108CRM</h1>
+          <p className="signin-subtitle">Укажите логин и пароль. Продуктивной работы!</p>
+        </header>
 
-      {/* Сообщение об ошибке, если передан параметр error */}
-      {error && (
-        <p className="text-red-600 mb-4">
-          Ошибка авторизации. {error === 'CredentialsSignin' ? 'Проверьте логин и пароль.' : error}
-        </p>
-      )}
+        {errorMsg && <p className="signin-error" role="alert">{errorMsg}</p>}
 
-      {/* Форма входа (вынесена в отдельный компонент) */}
-      <SignInForm callbackUrl={callbackUrl} />
+        <SignInForm callbackUrl={callbackUrl} />
+      </section>
     </main>
   );
 }
