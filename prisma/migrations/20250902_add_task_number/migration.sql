@@ -1,1 +1,1 @@
-ÿþALTER TABLE "Task" ADD COLUMN "number" SERIAL UNIQUE;
+-- noop to keep history in sync
