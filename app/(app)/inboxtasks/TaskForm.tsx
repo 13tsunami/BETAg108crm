@@ -54,6 +54,7 @@ export default function TaskForm({
   subjectMembers,
   createAction,                 // server action: Promise<void> с redirect()/revalidatePath()
   allowReviewControls = true,
+  initialCollapsed = false,     // ← добавлено: начальная свёрнутость от сервера
 }: {
   users: SimpleUser[];
   groups: SimpleGroup[];
@@ -62,6 +63,7 @@ export default function TaskForm({
   subjectMembers: SubjectMember[];
   createAction: (fd: FormData) => Promise<void>;
   allowReviewControls?: boolean;
+  initialCollapsed?: boolean;   // ← добавлено
 }) {
   const todayStr = useMemo(() => todayYekbYMD(), []);
   const [due, setDue] = useState(todayStr);
@@ -70,19 +72,22 @@ export default function TaskForm({
   const [reviewRequired, setReviewRequired] = useState(false);
 
   // сворачивание/разворачивание всей формы
-  const [collapsedAll, setCollapsedAll] = useState(false);
+  const [collapsedAll, setCollapsedAll] = useState<boolean>(initialCollapsed); // ← изменено: берём из пропса
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(COLLAPSE_KEY);
-      if (raw === '1') setCollapsedAll(true);
-    } catch {}
-  }, []);
-  useEffect(() => {
+    // единая синхронизация в localStorage и cookie
     try {
       if (collapsedAll) localStorage.setItem(COLLAPSE_KEY, '1');
       else localStorage.removeItem(COLLAPSE_KEY);
     } catch {}
-  }, [collapsedAll]);
+    try {
+      const maxAge = 60 * 60 * 24 * 180; // 180 дней
+      if (collapsedAll) {
+        document.cookie = `inboxtasks_taskform_collapsed=1; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+      } else {
+        document.cookie = `inboxtasks_taskform_collapsed=; Path=/; Max-Age=0; SameSite=Lax`;
+      }
+    } catch {}
+  }, [collapsedAll]); // ← изменено: больше нет отдельного эффекта чтения из localStorage
 
   // роли из users
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
@@ -296,7 +301,7 @@ export default function TaskForm({
 
             <div className="tf-bottomGrid">
               <div className="tf-files">
-                <span className="tf-label__text">Вложения задачи (до {MAX_TASK_FILES} файлов)</span>
+                <span className="tf-label__text">Вложения задачи (до 12 файлов)</span>
 
                 <div className="tf-filechips">
                   {taskFiles.map((f, idx) => {
@@ -344,13 +349,13 @@ export default function TaskForm({
                     Прикрепить файлы
                   </button>
 
-                  <div className={`tf-gauge ${totalBytes > MAX_BYTES ? 'is-over' : totalPct >= 0.7 ? 'is-warn' : ''}`} role="progressbar"
-                       aria-valuemin={0} aria-valuemax={50} aria-valuenow={Math.min(Number((totalBytes/(1024*1024)).toFixed(1)), 50)}>
-                    <div className="tf-gauge__fill" style={{ width: `${totalPct*100}%` }} />
-                  </div>
-                  <div className={`tf-gaugeLabel ${totalBytes > MAX_BYTES ? 'is-over' : ''}`}>
-                    {totalMbStr} из 50 МБ
-                  </div>
+                    <div className={`tf-gauge ${totalBytes > MAX_BYTES ? 'is-over' : totalPct >= 0.7 ? 'is-warn' : ''}`} role="progressbar"
+                         aria-valuemin={0} aria-valuemax={50} aria-valuenow={Math.min(Number((totalBytes/(1024*1024)).toFixed(1)), 50)}>
+                      <div className="tf-gauge__fill" style={{ width: `${totalPct*100}%` }} />
+                    </div>
+                    <div className={`tf-gaugeLabel ${totalBytes > MAX_BYTES ? 'is-over' : ''}`}>
+                      {totalMbStr} из 50 МБ
+                    </div>
                 </div>
 
                 <div className="tf-help">Поддерживаются PDF, офисные документы и изображения до 50 МБ каждый.</div>

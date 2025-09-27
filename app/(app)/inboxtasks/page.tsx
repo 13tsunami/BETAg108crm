@@ -13,6 +13,7 @@ import {
 import type { Prisma } from '@prisma/client';
 import './inboxtasks.css';
 import ReviewSubmitForm from './ReviewSubmitForm';
+import { cookies } from 'next/headers';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -83,9 +84,49 @@ function TeacherGuide() {
       <ul style={{ margin: 0, paddingLeft: 18 }}>
         <li>Во вкладке «Назначенные мне» вы видите актуальные задачи, назначенные вам руководителями.</li>
         <li>Нажмите «Выполнить», когда закончите работу — она уйдёт в архив.</li>
-        <li>Если задача с проверкой — отправьте на ревью с комментариями и файлами.</li>
+        <li>Если задача с проверкой — отправьте на проверку с комментариями и файлами.</li>
       </ul>
     </div>
+  );
+}
+
+/* Компактный блок «Вложения» с иконками по типу файла */
+function TaskAttachments({
+  items,
+}: {
+  items: { attachment: { id: string; name: string; originalName: string | null; size: number; mime: string } }[];
+}) {
+  if (!items?.length) return <span>Нет вложений</span>;
+  return (
+    <section className="attachBox">
+      <h4 style={{ color: '#8d2828' }}>Вложения (файлы)</h4>
+      <ul className="attachList">
+        {items.map(({ attachment }) => {
+          const name = attachment.originalName || attachment.name;
+          const href = `/api/files/${attachment.name}`;
+          const sizeKb = Math.max(1, Math.round(attachment.size / 1024));
+          const ext = (name.split('.').pop() || '').toLowerCase();
+          return (
+            <li key={attachment.id} className="attachItem" data-ext={ext}>
+              <span className="attachIcon" aria-hidden="true" />
+              <a
+                className="attachLink"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                title={name}
+              >
+                <span className="attachName">{name}</span>
+              </a>
+              <span style={{ color: '#6b7280', marginLeft: 'auto', fontSize: 12 }}>
+                {attachment.mime}, ~{sizeKb} КБ
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -118,7 +159,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   const groupMembers = await prisma.groupMember.findMany({ select: { groupId: true, userId: true } });
   const rawSubjectMembers = await prisma.subjectMember.findMany({
-    select: { userId: true, subject: { select: { name: true } } },
+    select: { userId: true, subject: { select: { name: true} } },
   });
   const subjectMembers = rawSubjectMembers.map((m) => ({ userId: m.userId, subjectName: m.subject.name }));
 
@@ -198,6 +239,10 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   const activeTab = tabParam === 'byme' ? 'byme' : tabParam === 'submitted' ? 'submitted' : 'mine';
 
+  // читаем куку и определяем начальную свёрнутость формы
+  const cookieStore = await cookies();
+  const formCollapsed = cookieStore.get('inboxtasks_taskform_collapsed')?.value === '1';
+
   const statusRu = (s: string) =>
     s === 'in_progress' ? 'в работе'
     : s === 'submitted'  ? 'на проверке'
@@ -226,34 +271,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     return <span style={{ ...base, ...map[kind] }}>{children}</span>;
   }
 
-  function TaskAttachments({ items }: { items: { attachment: { id: string; name: string; originalName: string | null; size: number; mime: string } }[] }) {
-    if (!items?.length) return <span>Нет вложений</span>;
-    return (
-      <ul style={{ margin: 0, paddingLeft: 18 }}>
-        {items.map(({ attachment }) => {
-          const title = attachment.originalName || attachment.name;
-          const href = `/api/files/${attachment.name}`;
-          const sizeKb = Math.max(1, Math.round(attachment.size / 1024));
-          return (
-            <li key={attachment.id} style={{ marginBottom: 4 }}>
-              <a href={href} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                {title}
-              </a>
-              <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>
-                ({attachment.mime}, ~{sizeKb} КБ)
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    );
-  }
-
   return (
     <main style={{ padding: 16 }}>
       <h1 style={{ marginTop: 0 }}>Задачи</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+      <div className="layout">
         <aside className="leftCol">
           {mayCreate ? (
             <section aria-label="Создать задачу" className="card">
@@ -266,6 +288,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   subjectMembers={subjectMembers}
                   createAction={createTaskAction}
                   allowReviewControls={mayCreate}
+                  initialCollapsed={formCollapsed}
                 />
               </Suspense>
             </section>
@@ -294,17 +317,17 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                     const requiresReview = t.reviewRequired === true;
                     const lastComment = myAssn?.submissions?.[0]?.reviewerComment;
                     const showUrgent = t.priority === 'high';
-                    // «переделать»: вернули после ревью (status снова in_progress, но reviewedAt уже есть)
+                    // доработка: вернули после ревью (status снова in_progress, но reviewedAt уже есть)
                     const showRedo = (myAssn?.status === 'in_progress' && !!myAssn?.reviewedAt) || myAssn?.status === 'rejected';
 
                     return (
-                      <details key={t.id} className="taskCard" style={showUrgent ? { borderColor: '#8d2828' } : undefined}>
+                      <details key={t.id} className="taskCard" data-urgent={showUrgent ? 'true' : 'false'}>
                         <summary className="taskHeader">
                           <div className="taskTitle">
                             <b>№{t.number} — {t.title}</b>
                             <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:4 }}>
-                              {/* срочно рисуется CSS-псевдоэлементом, не дублируем */}
-                              {showRedo && <Badge kind="redo">переделать</Badge>}
+                              {/* «срочно» рисуется CSS-псевдоэлементом */}
+                              {showRedo && <Badge kind="redo">доработка</Badge>}
                               <span className="taskMeta">
                                 до {fmtRuDateTimeYekb(t.dueDate)}
                                 {t.createdByName ? <> • назначил: <span style={{ color: '#8d2828' }}>{t.createdByName}</span></> : ''}
@@ -317,22 +340,20 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                           {/* Комментарий проверяющего — сверху */}
                           {requiresReview && lastComment && (
                             <div className="taskSection" style={{ borderColor: '#8d2828' }}>
-                              <h4 style={{ color: '#8d2828', marginTop: 0 }}>Комментарий проверяющего</h4>
+                              <h4 style={{ color: '#fc0202ff', marginTop: 0 }}>Комментарий проверяющего</h4>
                               <div style={{ whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{lastComment}</div>
                             </div>
                           )}
 
                           {t.description && (
                             <div className="taskSection" style={{ borderColor: '#8d2828' }}>
-                              <h4 style={{ color: '#8d2828' }}>Описание</h4>
+                              <h4 style={{ color: '#8d2828' }}>Описание задачи</h4>
                               <div style={{ whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{t.description}</div>
                             </div>
                           )}
 
-                          <div className="taskSection" style={{ borderColor: '#8d2828' }}>
-                            <h4 style={{ color: '#8d2828' }}>Вложения</h4>
-                            <TaskAttachments items={t.attachments} />
-                          </div>
+                          {/* Вложения: выделенный бокс с иконками */}
+                          <TaskAttachments items={t.attachments} />
 
                           <div className="taskSection" style={{ borderColor: '#8d2828' }}>
                             {requiresReview ? (
@@ -372,13 +393,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                     const showRedo = (myAssn?.status === 'in_progress' && !!myAssn?.reviewedAt) || myAssn?.status === 'rejected';
 
                     return (
-                      <details key={t.id} className="taskCard" style={showUrgent ? { borderColor: '#8d2828' } : undefined}>
+                      <details key={t.id} className="taskCard" data-urgent={showUrgent ? 'true' : 'false'}>
                         <summary className="taskHeader">
                           <div className="taskTitle">
                             <b>№{t.number} — {t.title}</b>
                             <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:4 }}>
-                              {/* срочно — только CSS */}
-                              {showRedo && <Badge kind="redo">переделать</Badge>}
+                              {/* «срочно» — только CSS */}
+                              {showRedo && <Badge kind="redo">доработка</Badge>}
                               <span className="taskMeta">
                                 до {fmtRuDateTimeYekb(t.dueDate)}
                                 {t.createdByName ? <> • назначил: <span style={{ color: '#8d2828' }}>{t.createdByName}</span></> : ''}
@@ -391,22 +412,20 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                         <div className="taskBody">
                           {lastComment && (
                             <div className="taskSection" style={{ borderColor: '#8d2828' }}>
-                              <h4 style={{ color: '#8d2828', marginTop: 0 }}>Комментарий проверяющего</h4>
+                              <h4 style={{ color: '#fc0202ff', marginTop: 0 }}>Комментарий проверяющего</h4>
                               <div style={{ whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{lastComment}</div>
                             </div>
                           )}
 
                           {t.description && (
                             <div className="taskSection" style={{ borderColor: '#8d2828' }}>
-                              <h4 style={{ color: '#8d2828' }}>Описание</h4>
+                              <h4 style={{ color: '#8d2828' }}>Описание задачи</h4>
                               <div style={{ whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{t.description}</div>
                             </div>
                           )}
 
-                          <div className="taskSection" style={{ borderColor: '#8d2828' }}>
-                            <h4 style={{ color: '#8d2828' }}>Вложения</h4>
-                            <TaskAttachments items={t.attachments} />
-                          </div>
+                          {/* Вложения: выделенный бокс с иконками */}
+                          <TaskAttachments items={t.attachments} />
                         </div>
                       </details>
                     );
@@ -423,7 +442,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   assignedByMe.map((t) => {
                     const doneCnt = t.assignees.filter(a => a.status === 'done').length;
                     const onReviewCnt = t.assignees.filter(a => a.status === 'submitted').length;
-                    // любое "переделать" среди исполнителей
                     const anyRedo = t.assignees.some(a => (a.status === 'in_progress' && !!a.reviewedAt) || a.status === 'rejected');
                     const totalCnt = t.assignees.length;
                     const updateFormId = `update-${t.id}`;
@@ -432,13 +450,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                     const showUrgent = t.priority === 'high';
 
                     return (
-                      <details key={t.id} className="taskCard" style={showUrgent ? { borderColor: '#8d2828' } : undefined}>
+                      <details key={t.id} className="taskCard" data-urgent={showUrgent ? 'true' : 'false'}>
                         <summary className="taskHeader">
                           <div className="taskTitle">
                             <b>№{t.number} — {t.title}</b>
                             <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:4 }}>
-                              {/* срочно — только CSS */}
-                              {anyRedo && <Badge kind="redo">переделать</Badge>}
+                              {/* «срочно» — только CSS */}
+                              {anyRedo && <Badge kind="redo">доработка</Badge>}
                               <span className="taskMeta">
                                 до {fmtRuDateTimeYekb(t.dueDate)}
                                 {' • '}исполнители: {doneCnt}/{totalCnt}
@@ -457,15 +475,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                         <div className="taskBody">
                           {t.description && (
                             <div className="taskSection" style={{ borderColor: '#8d2828' }}>
-                              <h4 style={{ color: '#8d2828' }}>Описание</h4>
+                              <h4 style={{ color: '#8d2828' }}>Описание задачи</h4>
                               <div style={{ whiteSpace:'pre-wrap' }}>{t.description}</div>
                             </div>
                           )}
 
-                          <div className="taskSection" style={{ borderColor: '#8d2828' }}>
-                            <h4 style={{ color: '#8d2828' }}>Вложения</h4>
-                            <TaskAttachments items={t.attachments} />
-                          </div>
+                          {/* Вложения: выделенный бокс с иконками */}
+                          <TaskAttachments items={t.attachments} />
 
                           <div className="taskSection" style={{ borderColor: '#8d2828' }}>
                             <h4 style={{ color: '#8d2828' }}>Исполнители</h4>
@@ -478,7 +494,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                                     <div style={{ fontSize:13, display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                                       <b>{a.user?.name || a.userId}</b>
                                       <span style={{ color:'#6b7280' }}> • {statusRu(a.status)}</span>
-                                      {redo && <Badge kind="redo">переделать</Badge>}
+                                      {redo && <Badge kind="redo">доработка</Badge>}
                                     </div>
                                     {t.reviewRequired && lastComment && (
                                       <div style={{ fontSize:13, color:'#374151' }}>
@@ -502,7 +518,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                                           <div style={{ fontSize:13, display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                                             <b>{a.user?.name || a.userId}</b>
                                             <span style={{ color:'#6b7280' }}> • {statusRu(a.status)}</span>
-                                            {redo && <Badge kind="redo">переделать</Badge>}
+                                            {redo && <Badge kind="redo">доработка</Badge>}
                                           </div>
                                           {t.reviewRequired && lastComment && (
                                             <div style={{ fontSize:13, color:'#374151' }}>
@@ -524,7 +540,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                               <form id={updateFormId} action={updateTaskAction} style={{ display:'grid', gap:8, marginTop:8 }}>
                                 <input type="hidden" name="taskId" value={t.id} />
                                 <label>Название<input type="text" name="title" defaultValue={t.title} /></label>
-                                <label>Описание<textarea name="description" defaultValue={t.description ?? ''} rows={3} /></label>
+                                <label>Описание задачи<textarea name="description" defaultValue={t.description ?? ''} rows={3} /></label>
                                 <label>Дедлайн
                                   <input type="datetime-local" name="dueDate" defaultValue={new Date(t.dueDate).toISOString().slice(0,16)} />
                                 </label>

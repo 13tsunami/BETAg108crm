@@ -1,0 +1,42 @@
+/* app/(app)/inboxtasks/ReviewSubmitForm.module.css */
+
+.btnBrand {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #8d2828;
+  background: #8d2828;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: background .12s ease, color .12s ease, box-shadow .12s ease, transform .06s ease, opacity .12s ease;
+}
+
+.btnBrand:hover {
+  background: #a53030;
+  border-color: #a53030;
+}
+
+.btnBrand:active {
+  transform: translateY(1px);
+}
+
+.btnBrand:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* Мобильная эргономика — выше и крупнее кегль */
+@media (max-width: 960px) {
+  .btnBrand {
+    height: 40px;
+    padding: 0 14px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+}
