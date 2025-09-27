@@ -208,6 +208,11 @@ export default function Sidebar({
           <>
             <div className="grid">
               <Tile href="/dashboard"   label="Главное"     active={pathname === '/dashboard'} />
+              <Tile
+                href="/discussions"
+                label="Объявления"
+                active={pathname?.startsWith('/discussions') || false}
+              />
               <Tile href="/teachers"    label="Педагоги"    active={pathname === '/teachers'} />
               <Tile
                 href="/inboxtasks"
@@ -215,9 +220,18 @@ export default function Sidebar({
                 active={pathname?.startsWith('/inboxtasks') || false}
                 unread={pathname?.startsWith('/inboxtasks') ? 0 : tasksUnread}
               />
+               <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
+                {canSeeReviewTile && (
+                <Tile
+                  href="/reviews"
+                  label="Проверка задач"
+                  active={pathname === '/reviews'}
+                  unread={pathname === '/reviews' ? 0 : reviewsUnread}
+                />
+              )}
               <Tile href="/calendar"    label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"    label="Расписание"  active={pathname === '/schedule'} />
-              <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
+             
 
               {/* новая плитка — видят все роли */}
               <Tile href="/showmyfiles" label="Мои файлы" active={pathname === '/showmyfiles'} />
@@ -228,20 +242,9 @@ export default function Sidebar({
                 label="Заявки"
                 active={pathname?.startsWith('/requests') || false}
               />
-              <Tile
-                href="/discussions"
-                label="Объявления"
-                active={pathname?.startsWith('/discussions') || false}
-              />
+              
 
-              {canSeeReviewTile && (
-                <Tile
-                  href="/reviews"
-                  label="Проверка задач"
-                  active={pathname === '/reviews'}
-                  unread={pathname === '/reviews' ? 0 : reviewsUnread}
-                />
-              )}
+             
             </div>
 
             {hasAdminBlock && (
