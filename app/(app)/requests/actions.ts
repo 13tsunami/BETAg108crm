@@ -1,80 +1,72 @@
+// app/(app)/requests/actions.ts
 'use server';
 
-import { auth } from '@/auth.config';
-import { prisma } from '@/lib/prisma';
-import { normalizeRole, canCreateRequests, canProcessRequests } from '@/lib/roles';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth.config';
+import { revalidatePath } from 'next/cache';
 
-export async function createRequestAction(formData: FormData) {
+export async function createRequestAction(fd: FormData): Promise<void> {
   const session = await auth();
-  if (!session) throw new Error('Нет доступа');
-  const role = normalizeRole(session.user.role);
-  if (!canCreateRequests(role)) throw new Error('Нет доступа');
-  const target = String(formData.get('target') || '');
-  const title = String(formData.get('title') || '');
-  const body = String(formData.get('body') || '');
+  if (!session?.user?.id) redirect('/');
+
+  const target = String(fd.get('target') || '').trim();
+  const title  = String(fd.get('title')  || '').trim();
+  const body   = String(fd.get('body')   || '').trim();
+
+  if (!target || !title || !body) redirect('/requests');
+
   const req = await prisma.request.create({
     data: {
       authorId: session.user.id,
       target,
+      status: 'new',
       title,
       body,
-      status: 'new',
-      messages: { create: { authorId: session.user.id, body } }
-    }
+      lastMessageAt: new Date(),
+    },
   });
+
   revalidatePath('/requests');
   redirect(`/requests/${req.id}`);
 }
 
-export async function replyRequestAction(formData: FormData) {
+export async function replyRequestAction(fd: FormData): Promise<void> {
   const session = await auth();
-  if (!session) throw new Error('Нет доступа');
-  const requestId = String(formData.get('requestId'));
-  const body = String(formData.get('body') || '');
+  if (!session?.user?.id) redirect('/');
+
+  const requestId = String(fd.get('requestId') || '');
+  const text = String(fd.get('text') || '').trim();
+  if (!requestId || !text) redirect('/requests');
+
   await prisma.requestMessage.create({
-    data: { requestId, authorId: session.user.id, body }
+    data: { requestId, authorId: session.user.id, body: text },
   });
-  await prisma.request.update({ where:{id:requestId}, data:{ lastMessageAt:new Date() }});
-  revalidatePath(`/requests/${requestId}`);
-}
 
-export async function closeRequestAction(formData: FormData) {
-  const session = await auth();
-  if (!session) throw new Error('Нет доступа');
-  const role = normalizeRole(session.user.role);
-  if (!canProcessRequests(role)) throw new Error('Нет доступа');
-  const requestId = String(formData.get('requestId'));
-  const action = String(formData.get('action'));
-  const reason = String(formData.get('reason')||'');
-  if (action === 'done') {
-    await prisma.request.update({
-      where:{id:requestId},
-      data:{ status:'done', closedAt:new Date(), processedById:session.user.id }
-    });
-  } else if (action === 'rejected') {
-    if (!reason) throw new Error('Укажите причину');
-    await prisma.request.update({
-      where:{id:requestId},
-      data:{ status:'rejected', closedAt:new Date(), processedById:session.user.id, rejectedReason:reason }
-    });
-  }
-  revalidatePath('/requests');
-  redirect(`/requests/${requestId}`);
-}
-
-export async function reopenRequestAction(formData: FormData) {
-  const session = await auth();
-  if (!session) throw new Error('Нет доступа');
-  const requestId = String(formData.get('requestId'));
-  const req = await prisma.request.findUnique({ where:{id:requestId}});
-  if (!req || req.authorId !== session.user.id) throw new Error('Нет доступа');
-  if (req.status !== 'done') throw new Error('Нельзя переоткрыть');
   await prisma.request.update({
-    where:{id:requestId},
-    data:{ status:'in_progress', closedAt:null }
+    where: { id: requestId },
+    data: { lastMessageAt: new Date(), updatedAt: new Date(), status: 'in_progress' },
   });
-  revalidatePath('/requests');
+
+  revalidatePath(`/requests/${requestId}`);
   redirect(`/requests/${requestId}`);
+}
+
+export async function deleteRequestAction(fd: FormData): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) redirect('/');
+
+  const requestId = String(fd.get('requestId') || '');
+  if (!requestId) redirect('/requests');
+
+  const req = await prisma.request.findUnique({ where: { id: requestId } });
+  if (!req) redirect('/requests');
+
+  const isOwner = req.authorId === session.user.id;
+  const isAdmin = session.user.role === 'sysadmin' || session.user.role === 'deputy_axh';
+  if (!isOwner && !isAdmin) redirect(`/requests/${requestId}`);
+
+  await prisma.request.delete({ where: { id: requestId } });
+  revalidatePath('/requests');
+  redirect('/requests');
 }

@@ -1,60 +1,51 @@
+// app/(app)/requests/ReplyForm.tsx
 'use client';
-import React from 'react';
 
-type Props = {
-  requestId: string;
-  replyAction: (fd: FormData) => Promise<void>;
-  closeAction?: (fd: FormData) => Promise<void>;
-  reopenAction?: (fd: FormData) => Promise<void>;
-};
+import * as React from 'react';
+import { useFormStatus } from 'react-dom';
+import { replyRequestAction } from './actions';
 
-export default function ReplyForm({ requestId, replyAction, closeAction, reopenAction }: Props) {
+export default function ReplyForm({ requestId }: { requestId: string }) {
+  const taRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // авто-рост textarea до 6 строк
+  const autoGrow = React.useCallback(() => {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const cs = window.getComputedStyle(el);
+    const line = parseFloat(cs.lineHeight || '20'); // px
+    const max = line * 6;                            // максимум ~6 строк
+    el.style.height = Math.min(el.scrollHeight, max) + 'px';
+    // если контента больше 6 строк — включается скролл (overflow:auto в CSS)
+  }, []);
+
+  React.useEffect(() => {
+    autoGrow(); // первичная инициализация
+  }, [autoGrow]);
+
   return (
-    <section className="reply-form">
-      {/* строка: комментарий + отправить */}
-      <form className="row row-comment" action={replyAction}>
-        <input type="hidden" name="requestId" value={requestId} />
-        <textarea className="txt comment" name="body" placeholder="Комментарий" required />
-        <button className="btn btn-outline send" type="submit">Отправить</button>
-      </form>
+    <form action={replyRequestAction} className="composerForm" onSubmit={autoGrow}>
+      <input type="hidden" name="requestId" value={requestId} />
+      <textarea
+        ref={taRef}
+        name="text"
+        className="composerInput"
+        placeholder="Напишите сообщение…"
+        rows={1}
+        onInput={autoGrow}
+        required
+      />
+      <SendButton />
+    </form>
+  );
+}
 
-      {/* блок действий исполнителя */}
-      {closeAction && (
-        <div className="actions">
-          <form className="inline" action={closeAction}>
-            <input type="hidden" name="requestId" value={requestId} />
-            <input type="hidden" name="action" value="done" />
-            <button
-              className="btn btn-success"
-              type="submit"
-              onClick={(e) => { if (!confirm('Выполнить заявку?')) e.preventDefault(); }}
-            >
-              Выполнить
-            </button>
-          </form>
-
-          <form className="inline reject" action={closeAction}>
-            <input type="hidden" name="requestId" value={requestId} />
-            <input type="hidden" name="action" value="rejected" />
-            <input className="inp reason" name="reason" placeholder="Причина отклонения" required />
-            <button
-              className="btn btn-danger"
-              type="submit"
-              onClick={(e) => { if (!confirm('Отклонить заявку?')) e.preventDefault(); }}
-            >
-              Отклонить
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* кнопка переоткрытия для автора закрытой заявки */}
-      {reopenAction && (
-        <form className="reopen" action={reopenAction}>
-          <input type="hidden" name="requestId" value={requestId} />
-          <button className="btn btn-outline" type="submit">Возобновить</button>
-        </form>
-      )}
-    </section>
+function SendButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className="btnPrimary composerSend" disabled={pending}>
+      {pending ? 'Отправляю' : 'Отправить'}
+    </button>
   );
 }
