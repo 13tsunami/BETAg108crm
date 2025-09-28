@@ -8,7 +8,8 @@ import Heartbeat from './heartbeat/Heartbeat';
 import { heartbeat } from './heartbeat/actions';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getUnreadTasksCount } from '@/lib/tasks/getUnreadTasks';
-import styles from './layout.module.css';
+import { getUnreadReviewsCount, getUnreadDiscussionsCount, getUnreadRequestsCount } from '../../lib/unread.server';
+
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -38,15 +39,26 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await auth();
   const uid = (session?.user as any)?.id as string | undefined;
 
-  const [unreadChats, unreadTasks] = await Promise.all([
-    uid ? unreadTotal(uid) : Promise.resolve(0),
-    uid ? getUnreadTasksCount(uid) : Promise.resolve(0),
-  ]);
+  const [unreadChats, unreadTasks, unreadReviews, unreadDiscussions, unreadRequests] = uid
+    ? await Promise.all([
+        unreadTotal(uid),
+        getUnreadTasksCount(uid),
+        getUnreadReviewsCount(uid),
+        getUnreadDiscussionsCount(uid),
+        getUnreadRequestsCount(uid),
+      ])
+    : [0, 0, 0, 0, 0];
 
   return (
     <div id="app-shell" className={styles.appShell}>
       <aside className={styles.appSidebar}>
-        <Sidebar unreadChats={unreadChats} unreadTasks={unreadTasks} />
+        <Sidebar
+          unreadChats={unreadChats}
+          unreadTasks={unreadTasks}
+          unreadReviews={unreadReviews}
+          unreadDiscussions={unreadDiscussions}
+          unreadRequests={unreadRequests}
+        />
       </aside>
       <main className={styles.appMain}>
         {children}
@@ -55,3 +67,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+// ВАЖНО: не забудьте импорт модуля стилей
+import styles from './layout.module.css';

@@ -14,17 +14,18 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 function fmtRuDateTime(d: Date): string {
-  const f = new Intl.DateTimeFormat('ru-RU', {
+  return new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Asia/Yekaterinburg',
     day: '2-digit',
     month: 'long',
     hour: '2-digit',
     minute: '2-digit',
   }).format(d);
-  return f;
 }
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+type Params = Promise<{ id: string }>;
+
+export default async function Page({ params }: { params: Params }) {
   const { id } = await params;
 
   const session = await auth();
@@ -49,6 +50,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   }
 
   const likedByMe = post.reactions.some((r) => r.userId === meId);
+  const canEdit = post.author?.id === meId;
 
   return (
     <div className="disc-page">
@@ -68,28 +70,25 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               <span className="dot">•</span>
               <span className="comments">Комм. {post._count.comments}</span>
             </div>
+
             <div className="post-text">{post.text}</div>
 
             <div className="post-actions">
               <form className="inline" action={toggleReactionAction}>
                 <input type="hidden" name="postId" value={post.id} />
-                <button className={likedByMe ? 'btn-outline active' : 'btn-outline'} type="submit">
+                <button
+                  className={likedByMe ? 'btn-outline active' : 'btn-outline'}
+                  type="submit"
+                >
                   Нравится
                 </button>
               </form>
 
-              {post.author?.id === meId ? (
-                <>
-                  <PostForm
-                    mode="edit"
-                    action={updateDiscussionPostAction}
-                    initial={{ id: post.id, text: post.text, pinned: post.pinned }}
-                  />
-                  <form className="inline" action={deleteDiscussionPostAction}>
-                    <input type="hidden" name="id" value={post.id} />
-                    <button className="btn-danger" type="submit">Удалить</button>
-                  </form>
-                </>
+              {canEdit ? (
+                <form className="inline" action={deleteDiscussionPostAction}>
+                  <input type="hidden" name="id" value={post.id} />
+                  <button className="btn-danger" type="submit">Удалить</button>
+                </form>
               ) : null}
             </div>
           </div>
@@ -111,6 +110,17 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
         <div className="right">
           <div className="sticky">
+            {canEdit ? (
+              <>
+                <h2 className="block-title">Редактирование</h2>
+                <PostForm
+                  mode="edit"
+                  action={updateDiscussionPostAction}
+                  initial={{ id: post.id, text: post.text, pinned: post.pinned }}
+                />
+              </>
+            ) : null}
+
             <h2 className="block-title">Новый комментарий</h2>
             <CommentForm postId={post.id} createAction={createDiscussionCommentAction} />
           </div>

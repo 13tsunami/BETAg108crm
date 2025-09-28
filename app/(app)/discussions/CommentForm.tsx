@@ -20,7 +20,14 @@ export default function CommentForm({ postId, createAction }: Props) {
   return (
     <form className="disc-form" action={createAction}>
       <input type="hidden" name="postId" value={postId} />
-      <textarea className="inp" name="text" rows={3} required maxLength={4000} />
+      <textarea
+        className="inp"
+        name="text"
+        rows={3}
+        required
+        maxLength={4000}
+        placeholder="Напишите комментарий…"
+      />
       <div className="actions">
         <Submit />
       </div>

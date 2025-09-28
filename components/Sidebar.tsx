@@ -75,9 +75,15 @@ function Tile({
 export default function Sidebar({
   unreadChats = 0,
   unreadTasks = 0,
+  unreadReviews = 0,      // нов: можно прокинуть с сервера
+  unreadDiscussions = 0,  // нов: можно прокинуть с сервера
+  unreadRequests = 0,     // нов: можно прокинуть с сервера
 }: {
   unreadChats?: number;
   unreadTasks?: number;
+  unreadReviews?: number;
+  unreadDiscussions?: number;
+  unreadRequests?: number;
 }) {
   const pathname = usePathname();
   const { data } = useSession();
@@ -107,6 +113,7 @@ export default function Sidebar({
     else shell.removeAttribute('data-collapsed');
   }, [collapsed]);
 
+  // Чаты (пока не используется в плитках, оставляю как есть)
   const [unread, setUnread] = useState(unreadChats);
   useEffect(() => setUnread(unreadChats), [unreadChats]);
   useEffect(() => {
@@ -115,13 +122,10 @@ export default function Sidebar({
     return () => window.removeEventListener('app:unread-bump', onBump as any);
   }, []);
 
+  // Задачи
   const [tasksUnread, setTasksUnread] = useState(unreadTasks);
   useEffect(() => setTasksUnread(unreadTasks), [unreadTasks]);
-
-  useEffect(() => {
-    if (pathname?.startsWith('/inboxtasks')) setTasksUnread(0);
-  }, [pathname]);
-
+  useEffect(() => { if (pathname?.startsWith('/inboxtasks')) setTasksUnread(0); }, [pathname]);
   useEffect(() => {
     const onSet = (e: Event) => {
       const d = (e as CustomEvent).detail;
@@ -136,18 +140,57 @@ export default function Sidebar({
     };
   }, []);
 
-  const [reviewsUnread, setReviewsUnread] = useState(0);
+  // Проверка задач
+  const [reviewsUnreadState, setReviewsUnreadState] = useState(unreadReviews);
+  useEffect(() => setReviewsUnreadState(unreadReviews), [unreadReviews]);
+  useEffect(() => { if (pathname === '/reviews') setReviewsUnreadState(0); }, [pathname]);
   useEffect(() => {
     const onSet = (e: Event) => {
       const d = (e as CustomEvent).detail;
-      if (typeof d === 'number') setReviewsUnread(d);
+      if (typeof d === 'number') setReviewsUnreadState(d);
     };
-    const onBump = () => setReviewsUnread(x => x + 1);
+    const onBump = () => setReviewsUnreadState(x => x + 1);
     window.addEventListener('reviews:unread-set', onSet as any);
     window.addEventListener('reviews:unread-bump', onBump as any);
     return () => {
       window.removeEventListener('reviews:unread-set', onSet as any);
       window.removeEventListener('reviews:unread-bump', onBump as any);
+    };
+  }, []);
+
+  // Объявления
+  const [discussionsUnreadState, setDiscussionsUnreadState] = useState(unreadDiscussions);
+  useEffect(() => setDiscussionsUnreadState(unreadDiscussions), [unreadDiscussions]);
+  useEffect(() => { if (pathname?.startsWith('/discussions')) setDiscussionsUnreadState(0); }, [pathname]);
+  useEffect(() => {
+    const onSet = (e: Event) => {
+      const d = (e as CustomEvent).detail;
+      if (typeof d === 'number') setDiscussionsUnreadState(d);
+    };
+    const onBump = () => setDiscussionsUnreadState(x => x + 1);
+    window.addEventListener('discussions:unread-set', onSet as any);
+    window.addEventListener('discussions:unread-bump', onBump as any);
+    return () => {
+      window.removeEventListener('discussions:unread-set', onSet as any);
+      window.removeEventListener('discussions:unread-bump', onBump as any);
+    };
+  }, []);
+
+  // Заявки
+  const [requestsUnreadState, setRequestsUnreadState] = useState(unreadRequests);
+  useEffect(() => setRequestsUnreadState(unreadRequests), [unreadRequests]);
+  useEffect(() => { if (pathname?.startsWith('/requests')) setRequestsUnreadState(0); }, [pathname]);
+  useEffect(() => {
+    const onSet = (e: Event) => {
+      const d = (e as CustomEvent).detail;
+      if (typeof d === 'number') setRequestsUnreadState(d);
+    };
+    const onBump = () => setRequestsUnreadState(x => x + 1);
+    window.addEventListener('requests:unread-set', onSet as any);
+    window.addEventListener('requests:unread-bump', onBump as any);
+    return () => {
+      window.removeEventListener('requests:unread-set', onSet as any);
+      window.removeEventListener('requests:unread-bump', onBump as any);
     };
   }, []);
 
@@ -212,6 +255,7 @@ export default function Sidebar({
                 href="/discussions"
                 label="Объявления"
                 active={pathname?.startsWith('/discussions') || false}
+                unread={pathname?.startsWith('/discussions') ? 0 : discussionsUnreadState}
               />
               <Tile href="/teachers"    label="Педагоги"    active={pathname === '/teachers'} />
               <Tile
@@ -220,31 +264,24 @@ export default function Sidebar({
                 active={pathname?.startsWith('/inboxtasks') || false}
                 unread={pathname?.startsWith('/inboxtasks') ? 0 : tasksUnread}
               />
-               <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
-                {canSeeReviewTile && (
+              <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
+              {canSeeReviewTile && (
                 <Tile
                   href="/reviews"
                   label="Проверка задач"
                   active={pathname === '/reviews'}
-                  unread={pathname === '/reviews' ? 0 : reviewsUnread}
+                  unread={pathname === '/reviews' ? 0 : reviewsUnreadState}
                 />
               )}
               <Tile href="/calendar"    label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"    label="Расписание"  active={pathname === '/schedule'} />
-             
-
-              {/* новая плитка — видят все роли */}
-              <Tile href="/showmyfiles" label="Мои файлы" active={pathname === '/showmyfiles'} />
-
-              {/* ДОБАВЛЕНО: Заявки и Объявления */}
+              <Tile href="/showmyfiles" label="Мои файлы"   active={pathname === '/showmyfiles'} />
               <Tile
                 href="/requests"
                 label="Заявки"
                 active={pathname?.startsWith('/requests') || false}
+                unread={pathname?.startsWith('/requests') ? 0 : requestsUnreadState}
               />
-              
-
-             
             </div>
 
             {hasAdminBlock && (

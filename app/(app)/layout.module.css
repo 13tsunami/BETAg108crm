@@ -1,14 +1,14 @@
 /* app/(app)/layout.module.css */
-
 .appShell {
   --sbw: 280px;
+  --brand: #8d2828;
   display: grid;
   grid-template-columns: var(--sbw) minmax(0, 1fr);
   min-height: 100dvh;
-  background: #f7f7f8;
+  background: #ffffff;
 }
 
-/* Модификатор через data-атрибут, а не класс */
+/* модификатор через data-атрибут */
 .appShell[data-collapsed="true"] {
   --sbw: 56px;
 }
@@ -16,11 +16,11 @@
 .appSidebar {
   position: sticky;
   top: 0;
+  z-index: 10;          /* кнопка свёртки поверх main */
   height: 100dvh;
-  overflow: hidden;
+  overflow: visible;    /* позволяем кнопке выходить за пределы */
   background: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  /* ширина берётся из grid по --sbw */
+  border-right: 1px solid var(--brand);
 }
 
 .appMain {
@@ -29,24 +29,5 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   padding: 12px;
-  background: #f7f7f8;
-}
-.appSidebar {
-  position: sticky;
-  top: 0;
-  z-index: 10;            /* поднимаем слой сайдбара над main */
-  height: 100dvh;
-  overflow: visible;      /* важно: позволяем кнопке выходить за пределы */
   background: #ffffff;
-  border-right: 1px solid var(--brand); /* тонкая бордовая рамка */
-}
-
-
-.appMain {
-  min-width: 0;
-  height: 100dvh;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 12px;
-  background: #ffffff;   /* ← фон как у сайдбара */
 }
