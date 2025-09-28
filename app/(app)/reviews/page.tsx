@@ -4,13 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
 import { redirect } from 'next/navigation';
 import type { Prisma } from '@prisma/client';
-
-import {
-  approveSubmissionAction,
-  rejectSubmissionAction,
-  approveAllInTaskAction,
-} from '@/app/(app)/inboxtasks/review-actions';
 import { bulkReviewAction } from '@/app/(app)/reviews/bulk-actions';
+import s from './reviews.module.css';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -109,19 +104,17 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   });
 
   return (
-    <main className="reviews" style={{ padding: 16 }}>
-      <header style={{ marginBottom: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>Проверка назначенных задач</h1>
-        <div style={{ fontSize: 13, color: '#6b7280' }}>
+    <main className={s.reviews}>
+      <header className={s.pageHead}>
+        <h1 className={s.pageTitle}>Проверка назначенных задач</h1>
+        <div className={s.pageSubtitle}>
           Здесь собраны ваши задачи с включённой проверкой и имеющимися сдачами.
         </div>
       </header>
 
-      {tasks.length === 0 && (
-        <div style={{ fontSize: 14, color: '#6b7280' }}>Пока нет задач, ожидающих проверки.</div>
-      )}
+      {tasks.length === 0 && <div className={s.emptyPage}>Пока нет задач, ожидающих проверки.</div>}
 
-      <section style={{ display: 'grid', gap: 10 }}>
+      <section className={s.grid}>
         {tasks.map((t) => {
           const onReviewAll = t.assignees.filter((a) => a.status === 'submitted');
           const acceptedAll = t.assignees.filter((a) => a.status === 'done');
@@ -138,64 +131,46 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           const bulkFormId = `bulk-${t.id}`;
 
           return (
-            <details key={t.id} className="revCard">
-              <summary className="revHeader">
+            <details key={t.id} className={s.revCard}>
+              <summary className={s.revHeader}>
                 <div>
-                  <div className="revTitle">{t.title}</div>
-                  <div className="revMeta">
+                  <div className={s.revTitle}>{t.title}</div>
+                  <div className={s.revMeta}>
                     Срок: {fmtRuDate(t.dueDate as Date)} • Принято {acceptedAll.length} из {t.assignees.length}
                     {t.attachments.length ? ` • 📎 ${t.attachments.length}` : ''}
                   </div>
-                  <div className="revMeta">
-                    Назначил: <span className="brand">{t.createdByName ?? t.createdById}</span>
+                  <div className={s.revMeta}>
+                    Назначил: <span className={s.brand}>{t.createdByName ?? t.createdById}</span>
                     {' • '}Проверяющий: вы
                     {lastActivity ? ` • последняя активность: ${fmtTime(lastActivity as Date)}` : ''}
                   </div>
                 </div>
               </summary>
 
-              <div className="revBody">
-                <details>
-                  <summary className="revShowAll">Массовые действия</summary>
-                  <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <form action={approveAllInTaskAction}>
-                      <input type="hidden" name="taskId" value={t.id} />
-                      <button type="submit" title="Принять всех со статусом «на проверке»" className="btnBrand">
-                        Принять всех
-                      </button>
-                    </form>
-                    <span style={{ fontSize: 12, color: '#6b7280' }}>
-                      Отмечайте галочками исполнителей ниже. Внизу карточки — панель «Принять выбранных / Вернуть выбранных».
-                    </span>
-                  </div>
-                </details>
-
-                {t.description && (
-                  <div className="revTaskDesc">
-                    {t.description}
-                  </div>
-                )}
+              <div className={s.revBody}>
+                {t.description && <div className={s.revTaskDesc}>{t.description}</div>}
 
                 <div>
-                  <div className="revSectionTitle">Файлы задачи</div>
+                  <div className={s.revSectionTitle}>Файлы задачи</div>
                   {t.attachments.length === 0 ? (
-                    <div className="revEmpty">Нет вложений.</div>
+                    <div className={s.revEmpty}>Нет вложений.</div>
                   ) : (
-                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    <ul className={s.filesList}>
                       {t.attachments.map(({ attachment }) => {
                         const title = attachment.originalName || attachment.name;
                         const sizeKb = Math.max(1, Math.round((attachment.size ?? 0) / 1024));
                         return (
-                          <li key={attachment.id} style={{ marginBottom: 4 }}>
+                          <li key={attachment.id} className={s.fileItem}>
                             <a
                               href={`/api/files/${encodeURIComponent(attachment.name)}`}
                               target="_blank"
                               rel="noreferrer"
-                              style={{ fontWeight: 500, color: '#8d2828', textDecoration: 'underline' }}
+                              className={s.fileLink}
+                              title={title}
                             >
                               {title}
                             </a>
-                            <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>
+                            <span className={s.fileMeta}>
                               {attachment.mime} • ~{sizeKb} КБ
                             </span>
                           </li>
@@ -206,93 +181,77 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                 </div>
 
                 <div>
-                  <div className="revSectionTitle">На проверке</div>
+                  <div className={s.revSectionTitle}>На проверке</div>
                   {onReviewAll.length === 0 ? (
-                    <div className="revEmpty">Пока никого.</div>
+                    <div className={s.revEmpty}>Пока никого.</div>
                   ) : (
                     <>
-                      {/* bulk-форма отдельно; чекбоксы будут связаны с ней через form="<id>" */}
-                      <form id={bulkFormId} action={bulkReviewAction} className="bulkForm">
+                      {/* ЕДИНСТВЕННЫЕ массовые действия: чекбоксы + нижняя панель */}
+                      <form id={bulkFormId} action={bulkReviewAction} className={s.bulkForm}>
                         <input type="hidden" name="taskId" value={t.id} />
-                        {/* Липкая панель массовых действий */}
-                        <div className="bulkBar">
-                          <div className="brandHSmall">Массовые действия</div>
-                          <div className="bulkControls">
-                            <button type="submit" name="__op" value="approve" className="btnBrand">Принять выбранных</button>
-                            <button type="submit" name="__op" value="reject" className="btnGhost">Вернуть выбранных</button>
-                            <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
+                        <div className={s.bulkBar}>
+                          <div className={s.brandHSmall}>Массовые действия</div>
+                          <div className={s.bulkControls}>
+                            <button type="submit" name="__op" value="approve" className={s.btnBrand}>
+                              Принять выбранных
+                            </button>
+                            <button type="submit" name="__op" value="reject" className={s.btnGhost}>
+                              Вернуть выбранных
+                            </button>
+                            <input name="reason" placeholder="Комментарий (опц.)" className={s.revReason} />
                           </div>
-                          <div className="bulkHint">Галочки в строках выше попадут в эту операцию.</div>
+                          <div className={s.bulkHint}>
+                            Отметьте галочками исполнителей ниже и нажмите действие.
+                          </div>
                         </div>
                       </form>
 
-                      {/* Список строк: чекбокс связан с bulk-формой, быстрые действия — отдельные мини-формы */}
-                      <div style={{ display: 'grid', gap: 8 }}>
+                      {/* Список строк: ТОЛЬКО чекбоксы + ссылка, без быстрых одиночных кнопок */}
+                      <div className={s.rows}>
                         {onReviewFirst.map((a, idx) => {
                           const os = a.submissions[0];
                           const filesCount = os?._count?.attachments ?? 0;
                           return (
-                            <div key={a.id} className="revRow">
-                              <input type="checkbox" form={bulkFormId} name="ids" value={a.id} className="revChk" />
-                              <span className="revIdx">{idx + 1}.</span>
+                            <div key={a.id} className={s.revRow}>
+                              <input type="checkbox" form={bulkFormId} name="ids" value={a.id} className={s.revChk} />
+                              <span className={s.revIdx}>{idx + 1}.</span>
 
-                              <a href={`/reviews/${a.id}`} className="revPill" title="Открыть карточку исполнения">
+                              <a href={`/reviews/${a.id}`} className={s.revPill} title="Открыть карточку исполнения">
                                 {a.user?.name ?? a.user?.id ?? a.id}
                               </a>
 
-                              <span className="revWhen">
+                              <span className={s.revWhen}>
                                 {os?.createdAt ? `отправлено ${fmtTime(os.createdAt)}` : 'без отметки времени'}
                                 {filesCount ? ` • файлов: ${filesCount}` : ' • файлов: 0'}
                               </span>
-
-                              {/* Быстрые одиночные действия — отдельные формы, не внутри bulk-формы */}
-                              <form action={approveSubmissionAction}>
-                                <input type="hidden" name="taskAssigneeId" value={a.id} />
-                                <button type="submit" className="btnBrand">Принять</button>
-                              </form>
-
-                              <form action={rejectSubmissionAction} className="revRejectForm">
-                                <input type="hidden" name="taskAssigneeId" value={a.id} />
-                                <button type="submit" className="btnGhost">Вернуть</button>
-                                <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
-                              </form>
                             </div>
                           );
                         })}
                       </div>
 
                       {onReviewRest.length > 0 && (
-                        <details style={{ marginTop: 6 }}>
-                          <summary className="revShowAll">Показать всех исполнителей ({onReviewRest.length})</summary>
-                          <div style={{ display: 'grid', gap: 8, marginTop: 6 }}>
+                        <details className={s.moreBlock}>
+                          <summary className={s.revShowAll}>
+                            Показать всех исполнителей ({onReviewRest.length})
+                          </summary>
+                          <div className={s.rowsMore}>
                             {onReviewRest.map((a, jdx) => {
                               const idx = 5 + jdx;
                               const os = a.submissions[0];
                               const filesCount = os?._count?.attachments ?? 0;
                               return (
-                                <div key={a.id} className="revRow">
-                                  <input type="checkbox" form={bulkFormId} name="ids" value={a.id} className="revChk" />
-                                  <span className="revIdx">{idx + 1}.</span>
+                                <div key={a.id} className={s.revRow}>
+                                  <input type="checkbox" form={bulkFormId} name="ids" value={a.id} className={s.revChk} />
+                                  <span className={s.revIdx}>{idx + 1}.</span>
 
-                                  <a href={`/reviews/${a.id}`} className="revPill" title="Открыть карточку исполнения">
+                                  <a href={`/reviews/${a.id}`} className={s.revPill} title="Открыть карточку исполнения">
                                     {a.user?.name ?? a.user?.id ?? a.id}
                                   </a>
 
-                                  <span className="revWhen">
+                                  <span className={s.revWhen}>
                                     {os?.createdAt ? `отправлено ${fmtTime(os.createdAt)}` : 'без отметки времени'}
                                     {filesCount ? ` • файлов: ${filesCount}` : ' • файлов: 0'}
                                   </span>
-
-                                  <form action={approveSubmissionAction}>
-                                    <input type="hidden" name="taskAssigneeId" value={a.id} />
-                                    <button type="submit" className="btnBrand">Принять</button>
-                                  </form>
-
-                                  <form action={rejectSubmissionAction} className="revRejectForm">
-                                    <input type="hidden" name="taskAssigneeId" value={a.id} />
-                                    <button type="submit" className="btnGhost">Вернуть</button>
-                                    <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
-                                  </form>
                                 </div>
                               );
                             })}
@@ -304,24 +263,24 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                 </div>
 
                 <div>
-                  <div className="revSectionTitle">Принято</div>
+                  <div className={s.revSectionTitle}>Принято</div>
                   {acceptedAll.length === 0 ? (
-                    <div className="revEmpty">Пока никого.</div>
+                    <div className={s.revEmpty}>Пока никого.</div>
                   ) : (
                     <>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <div className={s.acceptedList}>
                         {acceptedFirst.map((a) => (
-                          <span key={a.id} title="Принято" className="revAccepted">
+                          <span key={a.id} title="Принято" className={s.revAccepted}>
                             {a.user?.name ?? a.user?.id ?? a.id} ✓
                           </span>
                         ))}
                       </div>
                       {acceptedRest.length > 0 && (
-                        <details style={{ marginTop: 6 }}>
-                          <summary className="revShowAll">Показать всех ({acceptedRest.length})</summary>
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                        <details className={s.moreBlock}>
+                          <summary className={s.revShowAll}>Показать всех ({acceptedRest.length})</summary>
+                          <div className={s.acceptedMore}>
                             {acceptedRest.map((a) => (
-                              <span key={a.id} title="Принято" className="revAccepted">
+                              <span key={a.id} title="Принято" className={s.revAccepted}>
                                 {a.user?.name ?? a.user?.id ?? a.id} ✓
                               </span>
                             ))}
@@ -336,91 +295,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           );
         })}
       </section>
-
-      <style>{`
-        .reviews { --brand:#8d2828; }
-
-        .revCard { border: 2px solid var(--brand); border-radius: 12px; background: #fff; margin: 10px 0 12px; }
-        .revHeader { padding: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .revTitle { font-weight: 600; }
-        .revMeta  { font-size: 12px; color: #374151; }
-
-        .revBody { padding: 10px; border-top: 1px solid #f3f4f6; display: grid; gap: 12px; }
-
-        .revTaskDesc { border:1px solid #e5e7eb; border-radius:12px; padding:8px; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; }
-
-        .revSectionTitle { font-size: 13px; color: var(--brand); margin-bottom: 6px; }
-        .revEmpty { font-size: 13px; color: #9ca3af; }
-
-        .revRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; }
-        .revIdx { font-size: 12px; color: #6b7280; min-width: 24px; text-align: right; }
-        .revChk { width: 16px; height: 16px; }
-        .revWhen { font-size: 12px; color: #6b7280; }
-
-        .revPill {
-          border: 1px solid var(--brand);
-          border-radius: 999px;
-          padding: 2px 10px;
-          font-size: 12px;
-          background: #fff;
-          text-decoration: none;
-          color: #111827;
-        }
-
-        .revRejectForm { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-        .revReason { height: 28px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--brand); font-size: 13px; min-width: 180px; }
-
-        .revShowAll { cursor: pointer; font-size: 13px; color: var(--brand); }
-
-        .btnBrand {
-          height: 28px;
-          padding: 0 10px;
-          border-radius: 8px;
-          border: 1px solid var(--brand);
-          background: var(--brand);
-          color: #fff;
-          cursor: pointer;
-          font-size: 13px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .btnBrand:disabled { opacity: .6; cursor: not-allowed; }
-
-        .btnGhost {
-          height: 28px;
-          padding: 0 10px;
-          border-radius: 8px;
-          border: 1px solid #e5e7eb;
-          background: #fff;
-          color: #111827;
-          cursor: pointer;
-          font-size: 13px;
-          white-space: nowrap;
-        }
-
-        .revAccepted {
-          border: 1px solid #e5e7eb;
-          border-radius: 999px;
-          padding: 2px 8px;
-          font-size: 12px;
-          background: #ecfdf5;
-        }
-
-        /* Липкая панель массовых действий */
-        .bulkForm { position: relative; }
-        .bulkBar {
-          position: sticky;
-          bottom: 0;
-          background: linear-gradient(#fff 60%, rgba(255,255,255,0.9));
-          border-top: 1px solid #f3f4f6;
-          padding-top: 8px;
-          margin-top: 8px;
-        }
-        .brandHSmall { font-size: 13px; color: var(--brand); margin-bottom: 6px; }
-        .bulkControls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .bulkHint { font-size: 12px; color:#6b7280; margin-top: 4px; }
-      `}</style>
     </main>
   );
 }

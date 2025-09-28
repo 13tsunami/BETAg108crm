@@ -7,6 +7,7 @@ import {
   approveSubmissionAction,
   rejectSubmissionAction,
 } from '../../inboxtasks/review-actions';
+import s from './review-details.module.css';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -25,13 +26,11 @@ function fmtRuDate(d?: Date | string | null): string {
 function fmtRuDateTime(d?: Date | string | null): string {
   if (!d) return '';
   const dt = typeof d === 'string' ? new Date(d) : d;
-  const date = fmtRuDate(dt);
-  const time = new Intl.DateTimeFormat('ru-RU', {
+  return `${fmtRuDate(dt)}, ${new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Asia/Yekaterinburg',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(dt);
-  return `${date}, ${time}`;
+  }).format(dt)}`;
 }
 function fmtBytes(n?: number | null): string {
   if (!n || n <= 0) return '0 B';
@@ -109,75 +108,72 @@ export default async function Page({ params }: { params: Params }) {
     : [];
 
   return (
-    <main className="reviews" style={{ padding: 16 }}>
-      <a href="/reviews" className="linkBack" style={{ textDecoration: 'none', fontSize: 13 }}>
-        &larr; Назад к списку
-      </a>
+    <main className={s.wrap}>
+      <a href="/reviews" className={s.linkBack}>&larr; Назад к списку</a>
 
-      {/* Заголовок и базовые метки */}
-      <header style={{ marginTop: 6, marginBottom: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>{assn.task.title}</h1>
-        <div style={{ fontSize: 13, color: '#6b7280' }}>
-          Срок: {fmtRuDate(assn.task.dueDate)} • Приоритет: {(assn.task.priority ?? 'обычный') === 'high' ? 'высокий' : 'обычный'}
+      {/* Заголовок и мета */}
+      <header className={s.head}>
+        <h1 className={s.title}>{assn.task.title}</h1>
+        <div className={s.metaRow}>
+          Срок: {fmtRuDate(assn.task.dueDate)} • Приоритет:{' '}
+          {(assn.task.priority ?? 'normal') === 'high' ? 'высокий' : 'обычный'}
           {assn.task.reviewRequired ? ' • Требует проверки' : null}
         </div>
-        <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+        <div className={s.metaRow}>
           Исполнитель: {assn.user?.name ?? assn.userId} • Статус: {statusLabel}
         </div>
       </header>
 
-      {/* Участники: назначил, исполнитель, проверяющий */}
-      <section className="cardSoft">
-        <h2 className="brandH">Участники</h2>
-        <div className="actors">
-          <span className="pill">
-            <span className="muted">Назначил:</span>
-            <b className="brandText">{assn.task.createdByName ?? assn.task.createdById}</b>
+      {/* Участники */}
+      <section className={s.cardSoft}>
+        <h2 className={s.brandH}>Участники</h2>
+        <div className={s.actors}>
+          <span className={s.pill}>
+            <span className={s.muted}>Назначил:</span>
+            <b className={s.brandText}>{assn.task.createdByName ?? assn.task.createdById}</b>
           </span>
-          <span className="pill">
-            <span className="muted">Исполнитель:</span>
+          <span className={s.pill}>
+            <span className={s.muted}>Исполнитель:</span>
             <b>{assn.user?.name ?? assn.userId}</b>
-            <span className={`chip chip-${assn.status}`}>{statusLabel}</span>
+            <span className={`${s.chip} ${s['chip-' + assn.status]}`}>{statusLabel}</span>
           </span>
-          <span className="pill">
-            <span className="muted">Проверяющий:</span>
+          <span className={s.pill}>
+            <span className={s.muted}>Проверяющий:</span>
             <b>вы</b>
           </span>
         </div>
       </section>
 
-      {/* Описание задачи — стеклянная карточка со светло-серой рамкой */}
+      {/* Описание */}
       {assn.task.description && (
-        <section className="cardSoft">
-          <h2 className="brandH">Описание задачи</h2>
-          <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-            {assn.task.description}
-          </div>
+        <section className={s.cardSoft}>
+          <h2 className={s.brandH}>Описание задачи</h2>
+          <div className={s.prewrap}>{assn.task.description}</div>
         </section>
       )}
 
-      {/* Файлы задачи (исходные вложения) */}
-      <section className="cardSoft">
-        <h2 className="brandH">Файлы задачи</h2>
+      {/* Файлы задачи */}
+      <section className={s.cardSoft}>
+        <h2 className={s.brandH}>Файлы задачи</h2>
         {assn.task.attachments.length === 0 ? (
-          <div style={{ fontSize: 13, color: '#9ca3af' }}>Нет вложений.</div>
+          <div className={s.emptyText}>Нет вложений.</div>
         ) : (
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {assn.task.attachments.map(({ attachment }) => {
-              const a = attachment;
+          <ul className={s.fileList}>
+            {assn.task.attachments.map(({ attachment: a }) => {
               const title = a.originalName || a.name;
               const size = fmtBytes(a.size);
               return (
-                <li key={a.id} style={{ marginBottom: 4 }}>
+                <li key={a.id} className={s.fileItem}>
                   <a
                     href={`/api/files/${encodeURIComponent(a.name)}`}
-                    style={{ fontWeight: 500, color: '#8d2828', textDecoration: 'underline' }}
+                    className={s.fileLink}
                     target="_blank"
                     rel="noreferrer"
+                    title={title}
                   >
                     {title}
                   </a>
-                  <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>
+                  <span className={s.fileMeta}>
                     {a.mime} • {size} • загружено {fmtRuDateTime(a.createdAt)}
                   </span>
                 </li>
@@ -187,11 +183,11 @@ export default async function Page({ params }: { params: Params }) {
         )}
       </section>
 
-      {/* Текущая сдача — «тяжёлая» карточка с бордовой рамкой */}
-      <section className="cardBrand">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-          <h2 className="brandH">Текущая сдача</h2>
-          <div style={{ fontSize: 12, color: '#6b7280' }}>
+      {/* Текущая сдача */}
+      <section className={s.cardBrand}>
+        <div className={s.brandHeadRow}>
+          <h2 className={s.brandH}>Текущая сдача</h2>
+          <div className={s.metaSmall}>
             {openSubmission ? `Создано: ${fmtRuDateTime(openSubmission.createdAt)}` : 'Нет открытой сдачи'}
           </div>
         </div>
@@ -199,32 +195,31 @@ export default async function Page({ params }: { params: Params }) {
         {openSubmission ? (
           <>
             {openSubmission.comment && (
-              <div style={{ marginTop: 8 }}>
-                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 2 }}>Комментарий исполнителя</div>
-                <div style={{ whiteSpace: 'pre-wrap' }}>{openSubmission.comment}</div>
+              <div className={s.block}>
+                <div className={s.mutedSmall}>Комментарий исполнителя</div>
+                <div className={s.prewrap}>{openSubmission.comment}</div>
               </div>
             )}
 
-            <div style={{ marginTop: 8 }}>
-              <div className="brandHSmall">Вложения</div>
+            <div className={s.block}>
+              <div className={s.brandHSmall}>Вложения</div>
               {validOpenFiles.length === 0 ? (
-                <div style={{ fontSize: 13, color: '#9ca3af' }}>Файлы не прикреплены.</div>
+                <div className={s.emptyText}>Файлы не прикреплены.</div>
               ) : (
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                <ul className={s.fileList}>
                   {validOpenFiles.map((sa) => {
                     const a = sa.attachment!;
                     const displayName =
-                      a.originalName && a.originalName.toLowerCase() !== 'blob' ? a.originalName : a.name || 'без имени';
+                      a.originalName && a.originalName.toLowerCase() !== 'blob'
+                        ? a.originalName
+                        : a.name || 'без имени';
                     return (
-                      <li key={a.name} style={{ marginBottom: 4 }}>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                          <a
-                            href={`/api/files/${encodeURIComponent(a.name)}`}
-                            style={{ fontWeight: 500, color: '#8d2828', textDecoration: 'underline' }}
-                          >
+                      <li key={a.name} className={s.fileItem}>
+                        <div className={s.fileRow}>
+                          <a href={`/api/files/${encodeURIComponent(a.name)}`} className={s.fileLink}>
                             {displayName}
                           </a>
-                          <span style={{ fontSize: 12, color: '#6b7280' }}>
+                          <span className={s.fileMeta}>
                             {a.mime} • {fmtBytes(a.size)} • загружено {fmtRuDateTime(a.createdAt)}
                           </span>
                         </div>
@@ -235,174 +230,89 @@ export default async function Page({ params }: { params: Params }) {
               )}
             </div>
 
-            <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className={s.actionsRow}>
               <form action={approveSubmissionAction}>
                 <input type="hidden" name="taskAssigneeId" value={taskAssigneeId} />
-                <button type="submit" className="btnBrand">Принять</button>
+                <button type="submit" className={s.btnBrand}>Принять</button>
               </form>
 
-              <form action={rejectSubmissionAction} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+              <form action={rejectSubmissionAction} className={s.rejectForm}>
                 <input type="hidden" name="taskAssigneeId" value={taskAssigneeId} />
-                <button type="submit" className="btnGhost">Вернуть на доработку</button>
-                <input name="reason" placeholder="Комментарий (опц.)" className="revReason" />
+                <button type="submit" className={s.btnGhost}>Вернуть на доработку</button>
+                <input name="reason" placeholder="Комментарий (опц.)" className={s.revReason} />
               </form>
             </div>
           </>
         ) : (
-          <div style={{ fontSize: 14, color: '#6b7280', marginTop: 6 }}>Открытой сдачи нет. Ожидаем отправку на проверку.</div>
+          <div className={s.emptyTextLg}>Открытой сдачи нет. Ожидаем отправку на проверку.</div>
         )}
       </section>
 
-      {/* История сдач */}
-      <section className="cardBrand">
-        <h2 className="brandH">История сдач</h2>
-        {closedSubmissions.length === 0 ? (
-          <div style={{ fontSize: 14, color: '#6b7280' }}>Пока пусто.</div>
-        ) : (
-          <div style={{ display: 'grid', gap: 10 }}>
-            {closedSubmissions.map((s) => {
-              const validFiles = s.attachments.filter((sa) => {
-                const a = sa.attachment;
-                return !!a && typeof a.size === 'number' && a.size > 0;
-              });
+     {/* История сдач */}
+<section className={s.cardBrand}>
+  <h2 className={s.brandH}>История сдач</h2>
+  {closedSubmissions.length === 0 ? (
+    <div className={s.emptyTextLg}>Пока пусто.</div>
+  ) : (
+    <div className={s.history}>
+      {closedSubmissions.map((sub) => {
+        const validFiles = sub.attachments.filter((sa) => {
+          const a = sa.attachment;
+          return !!a && typeof a.size === 'number' && a.size > 0;
+        });
 
-              return (
-                <div key={`${String(s.createdAt)}-${String(s.reviewedAt)}`} style={{ borderTop: '1px solid #f3f4f6', paddingTop: 8 }}>
-                  <div style={{ fontSize: 13, color: '#6b7280' }}>
-                    Создано: {fmtRuDateTime(s.createdAt)} • Проверено: {fmtRuDateTime(s.reviewedAt)}
-                  </div>
+        return (
+          <div key={`${String(sub.createdAt)}-${String(sub.reviewedAt)}`} className={s.historyItem}>
+            <div className={s.metaSmall}>
+              Создано: {fmtRuDateTime(sub.createdAt)} • Проверено: {fmtRuDateTime(sub.reviewedAt)}
+            </div>
 
-                  {s.comment && (
-                    <div style={{ marginTop: 6 }}>
-                      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 2 }}>Комментарий исполнителя</div>
-                      <div style={{ whiteSpace: 'pre-wrap' }}>{s.comment}</div>
-                    </div>
-                  )}
+            {sub.comment && (
+              <div className={s.block}>
+                <div className={s.mutedSmall}>Комментарий исполнителя</div>
+                <div className={s.prewrap}>{sub.comment}</div>
+              </div>
+            )}
 
-                  {s.reviewerComment && (
-                    <div style={{ marginTop: 6 }}>
-                      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 2 }}>Комментарий проверяющего</div>
-                      <div style={{ whiteSpace: 'pre-wrap' }}>{s.reviewerComment}</div>
-                    </div>
-                  )}
+            {sub.reviewerComment && (
+              <div className={s.block}>
+                <div className={s.mutedSmall}>Комментарий проверяющего</div>
+                <div className={s.prewrap}>{sub.reviewerComment}</div>
+              </div>
+            )}
 
-                  <div style={{ marginTop: 8 }}>
-                    <div className="brandHSmall">Вложения</div>
-                    {validFiles.length === 0 ? (
-                      <div style={{ fontSize: 13, color: '#9ca3af' }}>Файлы не прикреплены.</div>
-                    ) : (
-                      <ul style={{ margin: 0, paddingLeft: 18 }}>
-                        {validFiles.map((sa) => {
-                          const a = sa.attachment!;
-                          const displayName =
-                            a.originalName && a.originalName.toLowerCase() !== 'blob' ? a.originalName : a.name || 'без имени';
-                          return (
-                            <li key={`${a.name}-${String(a.createdAt)}`} style={{ marginBottom: 4 }}>
-                              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                                <a
-                                  href={`/api/files/${encodeURIComponent(a.name)}`}
-                                  style={{ fontWeight: 500, color: '#8d2828', textDecoration: 'underline' }}
-                                >
-                                  {displayName}
-                                </a>
-                                <span style={{ fontSize: 12, color: '#6b7280' }}>
-                                  {a.mime} • {fmtBytes(a.size)} • загружено {fmtRuDateTime(a.createdAt)}
-                                </span>
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            <div className={s.block}>
+              <div className={s.brandHSmall}>Вложения</div>
+              {validFiles.length === 0 ? (
+                <div className={s.emptyText}>Файлы не прикреплены.</div>
+              ) : (
+                <ul className={s.fileList}>
+                  {validFiles.map((sa) => {
+                    const a = sa.attachment!;
+                    const displayName =
+                      a.originalName && a.originalName.toLowerCase() !== 'blob' ? a.originalName : a.name || 'без имени';
+                    return (
+                      <li key={`${a.name}-${String(a.createdAt)}`} className={s.fileItem}>
+                        <div className={s.fileRow}>
+                          <a href={`/api/files/${encodeURIComponent(a.name)}`} className={s.fileLink}>
+                            {displayName}
+                          </a>
+                          <span className={s.fileMeta}>
+                            {a.mime} • {fmtBytes(a.size)} • загружено {fmtRuDateTime(a.createdAt)}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </div>
-        )}
-      </section>
-
-      <style>{`
-        .reviews { --brand:#8d2828; }
-        .brandText { color: var(--brand); }
-
-        /* Тяжёлые бордовые карточки */
-        .cardBrand {
-          border: 2px solid var(--brand);
-          border-radius: 12px;
-          padding: 12px;
-          background: #fff;
-          margin-bottom: 12px;
-        }
-
-        /* Лёгкие стеклянные карточки (внутренние секции) */
-        .cardSoft {
-          border: 1px solid #e5e7eb;
-          border-radius: 12px;
-          padding: 12px;
-          background: #fff;
-          margin-bottom: 12px;
-        }
-
-        .brandH { margin: 0 0 6px 0; font-size: 18px; color: var(--brand); }
-        .brandHSmall { font-size: 13px; color: var(--brand); margin-bottom: 6px; }
-
-        .actors { display: flex; gap: 8px; flex-wrap: wrap; }
-        .pill {
-          border: 1px solid #e5e7eb;
-          border-radius: 999px;
-          padding: 4px 10px;
-          font-size: 13px;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #fff;
-        }
-        .muted { color: #6b7280; }
-        .chip {
-          border: 1px solid #e5e7eb;
-          border-radius: 999px;
-          padding: 2px 8px;
-          font-size: 12px;
-          line-height: 1.4;
-          color: #374151;
-          background: #f9fafb;
-        }
-        .chip-done { background: #ecfdf5; border-color: #d1fae5; }
-        .chip-submitted { background: #fffbeb; border-color: #fde68a; }
-        .chip-rejected { background: #fef2f2; border-color: #fecaca; }
-
-        .btnBrand {
-          height: 32px;
-          padding: 0 12px;
-          border-radius: 10px;
-          border: 1px solid var(--brand);
-          background: var(--brand);
-          color: #fff;
-          cursor: pointer;
-          font-size: 13px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .btnBrand:disabled { opacity: .6; cursor: not-allowed; }
-
-        .btnGhost {
-          height: 32px;
-          padding: 0 12px;
-          border-radius: 10px;
-          border: 1px solid #e5e7eb;
-          background: #d32121ff;
-          color: #f7f8faff;
-          cursor: pointer;
-          font-size: 13px;
-          white-space: nowrap;
-        }
-
-        .revReason { height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--brand); font-size: 13px; min-width: 200px; flex: 1; }
-
-        .linkBack { color:#111827; }
-      `}</style>
+        );
+      })}
+    </div>
+  )}
+</section> 
     </main>
   );
 }

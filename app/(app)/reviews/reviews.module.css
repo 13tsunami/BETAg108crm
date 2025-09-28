@@ -1,0 +1,142 @@
+/* app/(app)/reviews/reviews.module.css */
+
+.reviews {
+  --brand: #8d2828;
+  --brand-border: rgba(141, 40, 40, 0.25);
+  --brand-focus: rgba(141, 40, 40, 0.15);
+  --text: #111827;
+  --muted: #6b7280;
+  --muted-2: #374151;
+  --border: #e5e7eb;
+
+  padding: 16px;
+}
+
+.pageHead { margin-bottom: 12px; }
+.pageTitle { margin: 0; font-size: 22px; font-weight: 800; color: var(--text); }
+.pageSubtitle { font-size: 13px; color: var(--muted); }
+.emptyPage { font-size: 14px; color: var(--muted); }
+
+.grid { display: grid; gap: 10px; }
+
+/* Карточка задачи */
+.revCard {
+  border: 2px solid var(--brand);
+  border-radius: 12px;
+  background: #fff;
+  margin: 10px 0 12px;
+}
+.revHeader {
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.revTitle { font-weight: 600; }
+.revMeta { font-size: 12px; color: var(--muted-2); }
+.brand { color: var(--brand); }
+
+.revBody { padding: 10px; border-top: 1px solid #f3f4f6; display: grid; gap: 12px; }
+
+.revTaskDesc {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.revSectionTitle { font-size: 13px; color: var(--brand); margin-bottom: 6px; }
+.revEmpty { font-size: 13px; color: #9ca3af; }
+
+/* Файлы */
+.filesList { margin: 0; padding-left: 18px; }
+.fileItem { margin-bottom: 4px; }
+.fileLink { font-weight: 600; color: var(--brand); text-decoration: underline; }
+.fileMeta { color: var(--muted); margin-left: 6px; font-size: 12px; }
+
+/* Строки исполнителей */
+.rows, .rowsMore { display: grid; gap: 8px; }
+.revRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; }
+.revIdx { font-size: 12px; color: var(--muted); min-width: 24px; text-align: right; }
+.revChk { width: 16px; height: 16px; }
+.revWhen { font-size: 12px; color: var(--muted); }
+.revPill {
+  border: 1px solid var(--brand);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  background: #fff;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.moreBlock { margin-top: 6px; }
+.revShowAll { cursor: pointer; font-size: 13px; color: var(--brand); }
+
+/* Липкая панель массовых действий — ЕДИНСТВЕННАЯ */
+.bulkForm { position: relative; }
+.bulkBar {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(#fff 60%, rgba(255,255,255,0.9));
+  border-top: 1px solid #f3f4f6;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+.brandHSmall { font-size: 13px; color: var(--brand); margin-bottom: 6px; }
+.bulkControls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.revReason {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--brand);
+  font-size: 13px;
+  min-width: 180px;
+}
+.bulkHint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* Кнопки — фирменный язык */
+.btnBrand {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(141, 40, 40, 0.18);
+  transition: transform .04s ease, box-shadow .12s ease, opacity .2s ease;
+}
+.btnBrand:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(141, 40, 40, 0.22); }
+.btnBrand:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(141, 40, 40, 0.18); }
+.btnBrand:disabled { opacity: .6; cursor: not-allowed; }
+
+.btnGhost {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Принято */
+.acceptedList, .acceptedMore { display: flex; gap: 8px; flex-wrap: wrap; }
+.revAccepted {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  background: #ecfdf5;
+}
