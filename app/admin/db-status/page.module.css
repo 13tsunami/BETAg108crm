@@ -1,63 +1,187 @@
-.page { display:grid; gap:12px; }
+/* app/admin/db-status/page.module.css */
 
-.head { padding:14px 16px; border-radius:16px; }
-.title { margin:0; font-weight:900; font-size:22px; color:#0f172a; }
-.subtitle { margin:6px 0 0; font-size:14px; color:#374151; }
+.page {
+  /* Палитра синхронизирована с (auth)/sign-in */
+  --brand: #8d2828;
+  --brand-border: rgba(141, 40, 40, 0.25);
+  --brand-focus: rgba(141, 40, 40, 0.15);
 
-.note { padding:10px 12px; border-radius:12px; font-size:14px; }
-.ok { border:1px solid #c8e6c9; background:#f0fbf1; color:#166534; }
-.err { border:1px solid #fecaca; background:#fff1f2; color:#991b1b; }
+  --text: #0f172a;
+  --muted: #374151;
+  --border: #e5e7eb;
 
-.panel { padding:12px 14px; border-radius:16px; }
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-blur: 10px;
+  --glass-shadow: 0 10px 30px rgba(17,24,39,0.10);
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,0.6);
 
-.h2 { margin:0 0 10px; font-size:16px; font-weight:800; color:#0f172a; }
+  display: grid;
+  gap: 12px;
+}
 
-.tableWrap { padding:8px; border-radius:14px; }
+/* Шапка блока */
+.head {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--brand-border);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+}
+.title { margin: 0; font-weight: 900; font-size: 22px; color: var(--text); }
+.subtitle { margin: 6px 0 0; font-size: 14px; color: #6b7280; }
+
+/* Нотификации (успех/ошибка) — в фирменной гамме */
+.note {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  background: rgba(255,255,255,0.75);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.ok  { border: 1px solid #c8e6c9; background: rgba(240,251,241,0.8); color: #166534; }
+.err { border: 1px solid #fecaca; background: rgba(255,241,242,0.8); color: #991b1b; }
+
+/* Панели-обёртки */
+.panel {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--brand-border);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+}
+
+.h2 { margin: 0 0 10px; font-size: 16px; font-weight: 800; color: var(--text); }
+
+/* Таблица */
+.tableWrap {
+  padding: 8px;
+  border-radius: 14px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background: rgba(255,255,255,0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(229,231,235,0.7);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+}
+
 .table {
-  width:100%; border-collapse:separate; border-spacing:0; font-size:14px;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  min-width: 720px;
 }
+
 .table thead th {
-  text-align:left; font-weight:800; color:#0f172a; padding:8px;
-  border-bottom:1px solid rgba(229,231,235,.9); text-transform:none;
+  text-align: left;
+  font-weight: 800;
+  color: var(--text);
+  padding: 8px;
+  border-bottom: 1px solid rgba(229,231,235,.9);
+  white-space: nowrap;
 }
+
 .table tbody td {
-  padding:8px; border-bottom:1px solid rgba(229,231,235,.6); color:#111827;
+  padding: 8px;
+  border-bottom: 1px solid rgba(229,231,235,.6);
+  color: #111827;
+  vertical-align: top;
 }
-.table tbody tr:last-child td { border-bottom:0; }
+.table tbody tr:last-child td { border-bottom: 0; }
 
-.actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-
-.form { display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:8px; align-items:center; }
-
-.input{
-  border:1px solid rgba(229,231,235,.9);
-  background:#fff; border-radius:10px; padding:8px 10px; font-size:14px; color:#0f172a; outline:none;
+/* Действия в строке */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
-.input:focus { border-color:#cfe3ff; box-shadow:0 0 0 3px rgba(207,227,255,.4); }
 
-.btn{
-  height:34px; border-radius:10px; padding:0 12px;
-  border:1px solid rgba(229,231,235,.9); background:#fff; color:#0f172a;
-  cursor:pointer; transition:filter 120ms ease, box-shadow 120ms ease, transform 120ms ease;
-  text-decoration:none;
+/* Поля ввода (используются в форме сброса пароля) */
+.input {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.9);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
 }
-.btn:hover { filter:brightness(.98); }
-.primary{ background:var(--brand); color:#fff; border-color:var(--brand); }
-.primary:hover{ filter:brightness(.96); }
-.ghost{ background:rgba(255,255,255,.6); }
+.input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-focus);
+  background: #fff;
+}
 
-.glass{
-  background:linear-gradient(180deg,rgba(255,255,255,.68),rgba(255,255,255,.4));
-  backdrop-filter:saturate(180%) blur(10px);
-  -webkit-backdrop-filter:saturate(180%) blur(10px);
-  border:1px solid rgba(229,231,235,.8);
-  box-shadow:0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);
+/* Кнопки — как на sign-in */
+.btn {
+  height: 34px;
+  border-radius: 12px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .04s ease, box-shadow .12s ease, opacity .2s ease, filter .12s ease;
+  text-decoration: none;
+  box-shadow: 0 6px 14px rgba(17,24,39,0.08);
 }
-.glassLite{
-  background:rgba(255,255,255,.55);
-  backdrop-filter:saturate(160%) blur(6px);
-  -webkit-backdrop-filter:saturate(160%) blur(6px);
-  border:1px solid rgba(229,231,235,.7);
-  border-radius:14px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
+.btn:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(17,24,39,0.12); }
+.btn:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(17,24,39,0.08); }
+.btn:disabled { opacity: .65; transform: none; box-shadow: none; cursor: default; }
+
+.primary {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+  box-shadow: 0 6px 14px rgba(141,40,40,0.25);
+}
+.primary:hover { box-shadow: 0 10px 18px rgba(141,40,40,0.28); }
+.primary:active { box-shadow: 0 6px 14px rgba(141,40,40,0.25); }
+
+.ghost { background: rgba(255,255,255,0.75); }
+
+/* Ссылки-имена пользователей */
+.linkName {
+  color: var(--brand);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.linkName:hover,
+.linkName:focus-visible {
+  border-bottom-color: var(--brand);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--brand-focus);
+  border-radius: 4px;
+}
+
+/* Форма сброса пароля */
+.resetForm { display: flex; gap: 8px; }
+
+/* Совместимость со старой разметкой (если .form где-то осталась) */
+.form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  align-items: center;
+}
+
+/* Адаптив */
+@media (max-width: 1100px) {
+  .form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .form { grid-template-columns: 1fr; }
 }

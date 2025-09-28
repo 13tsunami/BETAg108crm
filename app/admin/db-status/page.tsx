@@ -2,11 +2,12 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
-import { deleteUser, forceResetPassword, upsertUser } from './actions';
+import Link from 'next/link';
+import { deleteUser, forceResetPassword } from './actions';
 import styles from './page.module.css';
 
 import { normalizeRole, canViewAdmin, type Role } from '@/lib/roles';
-import { ROLE_LABELS, VISIBLE_ROLES } from '@/lib/roleLabels';
+import { ROLE_LABELS } from '@/lib/roleLabels';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,8 +15,6 @@ type UserRow = {
   id: string;
   name: string;
   username: string | null;
-  email: string | null;
-  phone: string | null;
   role: string | null;
 };
 
@@ -32,9 +31,9 @@ export default async function DbStatusPage(props: {
   const ok = Array.isArray(okParam) ? okParam[0] : okParam;
   const error = Array.isArray(errorParam) ? errorParam[0] : errorParam;
 
-  const users = await prisma.user.findMany({
+  const users: UserRow[] = await prisma.user.findMany({
     orderBy: { name: 'asc' },
-    select: { id: true, name: true, username: true, email: true, phone: true, role: true },
+    select: { id: true, name: true, username: true, role: true },
   });
 
   return (
@@ -70,22 +69,33 @@ export default async function DbStatusPage(props: {
               <tr>
                 <th>имя</th>
                 <th>логин</th>
-                <th>email</th>
-                <th>телефон</th>
                 <th>роль</th>
                 <th>действия</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u: UserRow) => {
+              {users.map((u) => {
                 const r = normalizeRole(u.role ?? null) as Role | null;
                 const roleLabel = r ? (ROLE_LABELS[r] ?? r) : '—';
+                const canLink = !!u.username && u.username.trim().length > 0;
+
                 return (
                   <tr key={u.id}>
-                    <td>{u.name}</td>
+                    <td>
+                      {canLink ? (
+                        <Link
+                          href={`/u/${encodeURIComponent(u.username!)}`}
+                          className={styles.linkName}
+                          prefetch={false}
+                          title={`Открыть профиль: ${u.name}`}
+                        >
+                          {u.name}
+                        </Link>
+                      ) : (
+                        u.name
+                      )}
+                    </td>
                     <td>{u.username ?? '—'}</td>
-                    <td>{u.email ?? '—'}</td>
-                    <td>{u.phone ?? '—'}</td>
                     <td>
                       <span
                         style={{
@@ -104,36 +114,21 @@ export default async function DbStatusPage(props: {
                     <td className={styles.actions}>
                       <form action={deleteUser}>
                         <input type="hidden" name="id" value={u.id} />
-                        <button
-                          className={`${styles.btn} ${styles.ghost}`}
-                          type="submit"
-                          style={{ borderRadius: 10 }}
-                        >
+                        <button className={`${styles.btn} ${styles.ghost}`} type="submit" style={{ borderRadius: 10 }}>
                           удалить
                         </button>
                       </form>
+
                       <form action={forceResetPassword} className={styles.resetForm} style={{ display: 'flex', gap: 8 }}>
-                        <input
-                          name="id"
-                          type="hidden"
-                          value={u.id}
-                        />
+                        <input name="id" type="hidden" value={u.id} />
                         <input
                           name="newPassword"
                           placeholder="Новый пароль"
                           className={styles.input}
                           required
-                          style={{
-                            borderRadius: 10,
-                            border: '1px solid rgba(229,231,235,.9)',
-                            padding: '6px 10px',
-                          }}
+                          style={{ borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', padding: '6px 10px' }}
                         />
-                        <button
-                          className={`${styles.btn} ${styles.ghost}`}
-                          type="submit"
-                          style={{ borderRadius: 10 }}
-                        >
+                        <button className={`${styles.btn} ${styles.ghost}`} type="submit" style={{ borderRadius: 10 }}>
                           сбросить
                         </button>
                       </form>
@@ -144,44 +139,6 @@ export default async function DbStatusPage(props: {
             </tbody>
           </table>
         </div>
-      </section>
-
-      <section className={styles.panel + ' ' + styles.glass} style={{ borderRadius: 16 }}>
-        <h2 className={styles.h2} style={{ marginTop: 0 }}>создать/обновить пользователя</h2>
-        <form action={upsertUser} className={styles.form} style={{ display: 'grid', gap: 8 }}>
-          <input name="id" placeholder="id (опц.)" className={styles.input}
-            style={{ borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', padding: '6px 10px' }} />
-          <input name="name" placeholder="Имя" className={styles.input} required
-            style={{ borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', padding: '6px 10px' }} />
-          <input name="username" placeholder="Логин" className={styles.input}
-            style={{ borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', padding: '6px 10px' }} />
-          <input name="email" placeholder="Email" className={styles.input}
-            style={{ borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', padding: '6px 10px' }} />
-          <input name="phone" placeholder="Телефон" className={styles.input}
-            style={{ borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', padding: '6px 10px' }} />
-
-          {/* список ролей из общей конфигурации */}
-          <select name="role" className={styles.input}
-            style={{ borderRadius: 10, border: '1px solid rgba(229,231,235,.9)', padding: '6px 10px' }}>
-            <option value="">—</option>
-            {VISIBLE_ROLES.map((r: Role) => (
-              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-            ))}
-          </select>
-
-          <button
-            className={`${styles.btn} ${styles.primary}`}
-            type="submit"
-            style={{
-              borderRadius: 12,
-              padding: '8px 14px',
-              fontWeight: 800,
-              boxShadow: '0 8px 18px rgba(0,0,0,.06)',
-            }}
-          >
-            сохранить
-          </button>
-        </form>
       </section>
     </main>
   );

@@ -4,25 +4,32 @@ import { prisma } from '@/lib/prisma';
 import { normalizeRole, canProcessRequests, type Role } from '@/lib/roles';
 
 /**
- * Открытые сабмишены на вашу проверку.
- * Считаются Submission.open = true, где:
- *  - reviewedById = вы, ИЛИ
- *  - у связанного исполнителя assignee.reviewedById = вы.
+ * Проверки задач.
+ * Считаем КОЛИЧЕСТВО исполнителей, у которых есть хотя бы одна открытая отправка,
+ * и вы являетесь ревьюером по одному из правил:
+ *  1) submission.reviewedById = вы
+ *  2) assignee.reviewedById = вы
+ *  3) task.reviewRequired = true И task.createdById = вы  ← покрывает первую отправку
  */
 export async function getUnreadReviewsCount(userId: string): Promise<number> {
   noStore();
-  const count = await prisma.submission.count({
+
+  const count = await prisma.taskAssignee.count({
     where: {
-      open: true,
-      OR: [{ reviewedById: userId }, { assignee: { reviewedById: userId } }],
+      submissions: { some: { open: true } },
+      OR: [
+        { reviewedById: userId },
+        { submissions: { some: { open: true, reviewedById: userId } } },
+        { task: { reviewRequired: true, createdById: userId } },
+      ],
     },
   });
+
   return count;
 }
 
 /**
- * Новые объявления/комментарии после lastSeen пользователя.
- * Автором не являетесь вы.
+ * Объявления: новые посты/комментарии после lastSeen, автор не вы.
  */
 export async function getUnreadDiscussionsCount(userId: string): Promise<number> {
   noStore();
@@ -48,15 +55,17 @@ export async function getUnreadDiscussionsCount(userId: string): Promise<number>
 }
 
 /**
- * Непрочитанные/требующие внимания заявки.
+ * Заявки (Requests).
  *
- * Если пользователь может обрабатывать заявки (sysadmin, deputy_axh, управленцы):
- *  - считаем все status = 'new' по релевантным целям (target),
- *  - плюс назначенные на пользователя (processedById = вы) в работе (in_progress) с активностью > lastSeen,
- *  - плюс авторские заявки (authorId = вы) с активностью > lastSeen, пока они не закрыты.
+ * Если пользователь МОЖЕТ обрабатывать заявки (sysadmin, deputy_axh, управленцы):
+ *  - все status='new' по релевантным target — ВСЕГДА (без учёта lastSeen);
+ *  - ПЛЮС назначенные на пользователя (processedById=вы) в статусах in_progress/rejected
+ *    с активностью после lastSeen;
+ *  - ПЛЮС авторские заявки (authorId=вы), у которых была активность после lastSeen
+ *    и статус не 'done'.
  *
  * Если пользователь НЕ может обрабатывать:
- *  - только его авторские заявки с активностью > lastSeen и статусом не 'done'.
+ *  - только свои заявки с активностью после lastSeen и статусом не 'done'.
  */
 export async function getUnreadRequestsCount(userId: string): Promise<number> {
   noStore();
@@ -70,20 +79,18 @@ export async function getUnreadRequestsCount(userId: string): Promise<number> {
   const since = user?.lastSeen ?? new Date(0);
   const processor = canProcessRequests(roleNorm);
 
-  // Определяем релевантные цели для "новых" заявок, если пользователь — процессор.
-  // Для управленцев (deputy/deputy_plus/director) показываем все цели.
-  // Для sysadmin — только target = 'sysadmin'; для deputy_axh — только 'ahch'.
+  // Релевантные цели для «новых» заявок у процессоров.
+  // Управленцы видят все (targets = [] → без фильтра).
   const targets: string[] | null = (() => {
     if (!processor) return null;
     if (roleNorm === 'sysadmin') return ['sysadmin'];
     if (roleNorm === 'deputy_axh') return ['ahch'];
-    // управленческий контур видит всё
     if (roleNorm === 'deputy' || roleNorm === 'deputy_plus' || roleNorm === 'director') return [];
-    return []; // по умолчанию — все
+    return [];
   })();
 
   if (processor) {
-    // 1) Все новые по релевантным целям
+    // 1) Все новые по релевантным целям (без учёта lastSeen)
     const newByTarget = await prisma.request.count({
       where: {
         status: 'new',
@@ -91,11 +98,11 @@ export async function getUnreadRequestsCount(userId: string): Promise<number> {
       },
     });
 
-    // 2) Назначенные на меня и в работе, активность после lastSeen
-    const assignedToMeActive = await prisma.request.count({
+    // 2) Назначенные на меня, активность после lastSeen
+    const assignedActive = await prisma.request.count({
       where: {
         processedById: userId,
-        status: 'in_progress',
+        status: { in: ['in_progress', 'rejected'] },
         lastMessageAt: { gt: since },
       },
     });
@@ -109,10 +116,10 @@ export async function getUnreadRequestsCount(userId: string): Promise<number> {
       },
     });
 
-    return newByTarget + assignedToMeActive + myActive;
+    return newByTarget + assignedActive + myActive;
   }
 
-  // Не процессор: считаем только свои активные после lastSeen, не 'done'
+  // Не процессор: только свои активные после lastSeen, не 'done'
   const myUnread = await prisma.request.count({
     where: {
       authorId: userId,

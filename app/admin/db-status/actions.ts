@@ -5,10 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { normalizeRole, Role } from '@/lib/roles';
-
-// остальной код без изменений
-
+import { auth } from '@/auth.config';
+import { normalizeRole, canViewAdmin, type Role } from '@/lib/roles';
 
 function requireString(v: FormDataEntryValue | null, field: string): string {
   if (typeof v !== 'string' || v.trim() === '') {
@@ -25,49 +23,75 @@ function pickRole(v: FormDataEntryValue | null): Role | null {
   return normalizeRole(typeof v === 'string' ? v : null);
 }
 
+async function requireAdmin(): Promise<void> {
+  const session = await auth();
+  const role = normalizeRole((session?.user as any)?.role ?? null);
+  if (!canViewAdmin(role)) {
+    redirect('/'); // немедленный отказ без утечки статуса операции
+  }
+}
+
 export async function upsertUser(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const id = optionalString(formData.get('id'));
   const name = requireString(formData.get('name'), 'name');
-  const username = optionalString(formData.get('username'));
+  const usernameRaw = optionalString(formData.get('username'));
+  const username = usernameRaw ? usernameRaw.toLowerCase() : null; // единый регистр
   const email = optionalString(formData.get('email'));
   const phone = optionalString(formData.get('phone'));
-  const role = pickRole(formData.get('role')); // Role | null — тип совпадает с нашими предикатами
+  const role = pickRole(formData.get('role')); // Role | null
+  const subjects = optionalString(formData.get('subjects'));
+  const methodicalGroups = optionalString(formData.get('methodicalGroups'));
 
-  await prisma.user.upsert({
-    where: { id: id ?? '00000000-0000-0000-0000-000000000000' }, // заведомо несуществующий, чтобы сработал create
-    update: { name, username, email, phone, role },
-    create: {
-      name,
-      username,
-      email,
-      phone,
-      role,
-    },
-  });
+  try {
+    await prisma.user.upsert({
+      // при отсутствии id используем заведомо пустой UUID, чтобы сработал create
+      where: { id: id ?? '00000000-0000-0000-0000-000000000000' },
+      update: { name, username, email, phone, role, subjects, methodicalGroups },
+      create: { name, username, email, phone, role, subjects, methodicalGroups },
+    });
 
-  revalidatePath('/admin/db-status');
-  redirect('/admin/db-status?ok=upsert');
+    revalidatePath('/admin/db-status');
+    redirect('/admin/db-status?ok=upsert');
+  } catch (e: any) {
+    // Prisma P2002 — нарушение уникальности, P2003 — внешние ключи и т. п.
+    const msg = typeof e?.message === 'string' ? e.message : 'Ошибка сохранения';
+    revalidatePath('/admin/db-status');
+    redirect(`/admin/db-status?error=${encodeURIComponent(msg)}`);
+  }
 }
 
 export async function forceResetPassword(formData: FormData): Promise<void> {
+  await requireAdmin();
+
   const id = requireString(formData.get('id'), 'id');
   const newPassword = requireString(formData.get('newPassword'), 'newPassword');
-
   const passwordHash = await bcrypt.hash(newPassword, 10);
 
-  await prisma.user.update({
-    where: { id },
-    data: { passwordHash },
-  });
-
-  revalidatePath('/admin/db-status');
-  redirect('/admin/db-status?ok=reset');
+  try {
+    await prisma.user.update({ where: { id }, data: { passwordHash } });
+    revalidatePath('/admin/db-status');
+    redirect('/admin/db-status?ok=reset');
+  } catch (e: any) {
+    const msg = typeof e?.message === 'string' ? e.message : 'Ошибка сброса пароля';
+    revalidatePath('/admin/db-status');
+    redirect(`/admin/db-status?error=${encodeURIComponent(msg)}`);
+  }
 }
 
 export async function deleteUser(formData: FormData): Promise<void> {
-  const id = requireString(formData.get('id'), 'id');
-  await prisma.user.delete({ where: { id } });
+  await requireAdmin();
 
-  revalidatePath('/admin/db-status');
-  redirect('/admin/db-status?ok=deleted');
+  const id = requireString(formData.get('id'), 'id');
+
+  try {
+    await prisma.user.delete({ where: { id } });
+    revalidatePath('/admin/db-status');
+    redirect('/admin/db-status?ok=deleted');
+  } catch (e: any) {
+    const msg = typeof e?.message === 'string' ? e.message : 'Ошибка удаления';
+    revalidatePath('/admin/db-status');
+    redirect(`/admin/db-status?error=${encodeURIComponent(msg)}`);
+  }
 }
