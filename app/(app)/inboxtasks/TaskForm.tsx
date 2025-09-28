@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useFormStatus } from 'react-dom';
+import './taskform.css';
 
 /* ===== types (как у вас) ===== */
 type SimpleUser  = { id: string; name: string | null; role?: string | null; methodicalGroups?: string | null; subjects?: any };
@@ -54,7 +55,7 @@ export default function TaskForm({
   subjectMembers,
   createAction,                 // server action: Promise<void> с redirect()/revalidatePath()
   allowReviewControls = true,
-  initialCollapsed = false,     // ← добавлено: начальная свёрнутость от сервера
+  initialCollapsed = false,
 }: {
   users: SimpleUser[];
   groups: SimpleGroup[];
@@ -63,7 +64,7 @@ export default function TaskForm({
   subjectMembers: SubjectMember[];
   createAction: (fd: FormData) => Promise<void>;
   allowReviewControls?: boolean;
-  initialCollapsed?: boolean;   // ← добавлено
+  initialCollapsed?: boolean;
 }) {
   const todayStr = useMemo(() => todayYekbYMD(), []);
   const [due, setDue] = useState(todayStr);
@@ -72,22 +73,21 @@ export default function TaskForm({
   const [reviewRequired, setReviewRequired] = useState(false);
 
   // сворачивание/разворачивание всей формы
-  const [collapsedAll, setCollapsedAll] = useState<boolean>(initialCollapsed); // ← изменено: берём из пропса
+  const [collapsedAll, setCollapsedAll] = useState<boolean>(initialCollapsed);
   useEffect(() => {
-    // единая синхронизация в localStorage и cookie
     try {
       if (collapsedAll) localStorage.setItem(COLLAPSE_KEY, '1');
       else localStorage.removeItem(COLLAPSE_KEY);
     } catch {}
     try {
-      const maxAge = 60 * 60 * 24 * 180; // 180 дней
+      const maxAge = 60 * 60 * 24 * 180;
       if (collapsedAll) {
         document.cookie = `inboxtasks_taskform_collapsed=1; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
       } else {
         document.cookie = `inboxtasks_taskform_collapsed=; Path=/; Max-Age=0; SameSite=Lax`;
       }
     } catch {}
-  }, [collapsedAll]); // ← изменено: больше нет отдельного эффекта чтения из localStorage
+  }, [collapsedAll]);
 
   // роли из users
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
@@ -202,7 +202,6 @@ export default function TaskForm({
   const totalPct = Math.min(totalBytes / MAX_BYTES, 1);
   const totalMbStr = (totalBytes / (1024 * 1024)).toFixed(1);
 
-  // синхронизация выбранных файлов с input.files
   const syncTaskInputFiles = useCallback((next: File[]) => {
     setTaskFiles(next);
     const input = taskFileInputRef.current;
@@ -213,9 +212,7 @@ export default function TaskForm({
     if (next.length === 0) { try { input.value = ''; } catch {} }
   }, []);
 
-  // client wrapper для server action — вычищает пустые blob'ы
   const clientCreate = useCallback(async (fd: FormData) => {
-    // удаляем пустые/нулевые файлы, чтобы на бэке не появлялись «пустые» вложения
     const all = fd.getAll('taskFiles');
     if (all.length) {
       const files = all.filter((x): x is File => x instanceof File);
@@ -229,312 +226,183 @@ export default function TaskForm({
   }, [createAction]);
 
   return (
-    <>
-      {/* action оборачиваем clientCreate, чтобы чистить FormData перед отправкой */}
+    <div className="tf-card">
       <form action={clientCreate} className="tf-root">
-        <div className="tf-grid">
-
-          {/* форма */}
-          <section className={`tf-collapsibleAll ${collapsedAll ? 'is-collapsed' : 'is-open'}`} aria-hidden={collapsedAll}>
-            <label className="tf-label">
-              <span className="tf-label__text">Название</span>
-              <input name="title" defaultValue="" required maxLength={256} className="tf-input" />
-            </label>
-
-            <label className="tf-label">
-              <span className="tf-label__text">Описание</span>
-              <textarea name="description" defaultValue="" rows={6} placeholder="Кратко опишите задачу..." className="tf-textarea" />
-            </label>
-
-            <div className="tf-3cols">
-              <label className="tf-label">
-                <span className="tf-label__text">Срок</span>
-                <input type="date" name="date" value={due} min={todayStr} onChange={(e)=>setDue(e.target.value)} required className="tf-input" />
-              </label>
-
-              <label className="tf-label">
-                <span className="tf-label__text">Время опц.</span>
-                <input type="time" value={dueTime} onChange={(e)=>setDueTime(e.target.value)} className="tf-input" />
-              </label>
-
-              <div className="tf-label">
-                <span className="tf-label__text">Приоритет</span>
-                <div className="tf-switchRow" onClick={() => setPriority(p => p === 'high' ? 'normal' : 'high')}>
-                  <div
-                    className={`tf-switch ${isHigh ? 'is-on' : ''}`}
-                    role="switch"
-                    aria-checked={isHigh}
-                    title={isHigh ? 'срочно' : 'обычный'}
-                  >
-                    <span className="tf-switch__thumb" aria-hidden />
-                  </div>
-                  <span className="tf-switchText">{isHigh ? 'срочно' : 'обычный'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* ВАЖНО: здесь БЫЛО <label>, теперь <div>, чтобы label не «размазывал» ховер на первый крестик */}
-            <div className="tf-label">
-              <span id="assign-label" className="tf-label__text">Кому назначить</span>
-              <Chips
-                users={users}
-                roles={roles}
-                groups={groups}
-                subjects={subjects}
-                assignees={assignees}
-                setAssignees={setAssignees}
-                query={query}
-                setQuery={setQuery}
-                found={found}
-                setFound={setFound}
-                openDd={openDd}
-                setOpenDd={setOpenDd}
-                onAdd={addAssignee}
-                onRemove={removeAssignee}
-                runSearch={runSearch}
-                ariaLabelledby="assign-label"
-              />
-              <div className="tf-preview">
-                Предпросмотр: {previewLoading ? 'подсчёт...' : `${previewTotal} исполнител${previewTotal % 10 === 1 && previewTotal % 100 !== 11 ? 'ь' : 'ей'}`}
-              </div>
-            </div>
-
-            <div className="tf-bottomGrid">
-              <div className="tf-files">
-                <span className="tf-label__text">Вложения задачи (до 12 файлов)</span>
-
-                <div className="tf-filechips">
-                  {taskFiles.map((f, idx) => {
-                    const pct = Math.min((f?.size || 0) / MAX_BYTES, 1);
-                    return (
-                      <span key={idx} className="tf-chip">
-                        <span className="tf-chip__label">{f.name}</span>
-                        <span className="tf-chip__meter" style={{ width: `${pct*100}%` }} />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = taskFiles.slice();
-                            next.splice(idx, 1);
-                            syncTaskInputFiles(next);
-                          }}
-                          className="tf-chip__x"
-                          aria-label="Удалить"
-                          title="Убрать файл"
-                        >×</button>
-                      </span>
-                    );
-                  })}
-                </div>
-
-                <input
-                  ref={taskFileInputRef}
-                  type="file"
-                  // когда файлов нет — поле без name, чтобы браузер вовсе не слал part и не создавал пустые blob'ы
-                  name={taskFiles.length ? 'taskFiles' : undefined}
-                  multiple
-                  onChange={(e) => {
-                    const list = Array.from(e.target.files ?? []);
-                    if (!list.length) return;
-                    const next = [...taskFiles, ...list].slice(0, MAX_TASK_FILES);
-                    syncTaskInputFiles(next);
-                  }}
-                  className="tf-file-hidden"
-                />
-                <div className="tf-filesRow">
-                  <button
-                    type="button"
-                    className="tf-btnBrand"
-                    onClick={() => taskFileInputRef.current?.click()}
-                  >
-                    Прикрепить файлы
-                  </button>
-
-                    <div className={`tf-gauge ${totalBytes > MAX_BYTES ? 'is-over' : totalPct >= 0.7 ? 'is-warn' : ''}`} role="progressbar"
-                         aria-valuemin={0} aria-valuemax={50} aria-valuenow={Math.min(Number((totalBytes/(1024*1024)).toFixed(1)), 50)}>
-                      <div className="tf-gauge__fill" style={{ width: `${totalPct*100}%` }} />
-                    </div>
-                    <div className={`tf-gaugeLabel ${totalBytes > MAX_BYTES ? 'is-over' : ''}`}>
-                      {totalMbStr} из 50 МБ
-                    </div>
-                </div>
-
-                <div className="tf-help">Поддерживаются PDF, офисные документы и изображения до 50 МБ каждый.</div>
-                {totalBytes > MAX_BYTES && <div className="tf-overflow">Превышен лимит 50 МБ. Уберите часть вложений.</div>}
-              </div>
-
-              {allowReviewControls && (
-                <div className="tf-label tf-reviewBlock">
-                  <span className="tf-label__text">Требует проверки</span>
-                  <div className="tf-switchRow" onClick={() => setReviewRequired(v => !v)}>
-                    <div
-                      className={`tf-switch ${reviewRequired ? 'is-on' : ''}`}
-                      role="switch"
-                      aria-checked={reviewRequired}
-                      title={reviewRequired ? 'нужна проверка' : 'без проверки'}
-                    >
-                      <span className="tf-switch__thumb" aria-hidden />
-                    </div>
-                    <span className="tf-switchText">{reviewRequired ? 'нужна проверка' : 'без проверки'}</span>
-                  </div>
-                </div>
-              )}
-
-              <aside className="tf-side">
-                <input type="hidden" name="due" value={dueIso} />
-                <input type="hidden" name="priority" value={priority} />
-                <input type="hidden" name="reviewRequired" value={reviewRequired ? '1' : ''} />
-                <AssigneeIdsHidden computeIds={expandAssigneesToUserIds} />
-
-                <div className="tf-actions">
-                  {/* визуал совпадает с «Прикрепить файлы»: одинаковый класс */}
-                  <SubmitButton label="Сохранить задачу" />
-                </div>
-              </aside>
-            </div>
-          </section>
-
-          {/* переключатель сворачивания/разворачивания — остаётся видимым всегда */}
+        <div className="tf-head">
+          <div className="tf-head-main">
+            <h2 className="tf-title">Новая задача</h2>
+            <p className="tf-subtitle">Заполните параметры задачи и выберите исполнителей</p>
+          </div>
           <div className="tf-collapseToggleWrap">
             <button
               type="button"
               className="tf-collapseToggle"
               onClick={() => setCollapsedAll(v => !v)}
               aria-expanded={!collapsedAll}
+              title={collapsedAll ? 'Развернуть' : 'Свернуть'}
             >
               <span className={`tf-arrow ${collapsedAll ? 'up' : 'down'}`} aria-hidden />
               <span className="tf-collapseText">{collapsedAll ? 'Развернуть' : 'Свернуть'}</span>
             </button>
           </div>
         </div>
+
+        <section className={`tf-collapsibleAll ${collapsedAll ? 'is-collapsed' : 'is-open'}`} aria-hidden={collapsedAll}>
+          <label className="tf-label">
+            <span className="tf-label__text">Название</span>
+            <input name="title" defaultValue="" required maxLength={256} className="tf-input" />
+          </label>
+
+          <label className="tf-label">
+            <span className="tf-label__text">Описание</span>
+            <textarea name="description" defaultValue="" rows={6} placeholder="Кратко опишите задачу..." className="tf-textarea" />
+          </label>
+
+          <div className="tf-3cols">
+            <label className="tf-label">
+              <span className="tf-label__text">Срок</span>
+              <input type="date" name="date" value={due} min={todayStr} onChange={(e)=>setDue(e.target.value)} required className="tf-input" />
+            </label>
+
+            <label className="tf-label">
+              <span className="tf-label__text">Время опц.</span>
+              <input type="time" value={dueTime} onChange={(e)=>setDueTime(e.target.value)} className="tf-input" />
+            </label>
+
+            <div className="tf-label">
+              <span className="tf-label__text">Приоритет</span>
+              <div className="tf-switchRow" onClick={() => setPriority(p => p === 'high' ? 'normal' : 'high')}>
+                <div
+                  className={`tf-switch ${isHigh ? 'is-on' : ''}`}
+                  role="switch"
+                  aria-checked={isHigh}
+                  title={isHigh ? 'срочно' : 'обычный'}
+                >
+                  <span className="tf-switch__thumb" aria-hidden />
+                </div>
+                <span className="tf-switchText">{isHigh ? 'срочно' : 'обычный'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="tf-label">
+            <span id="assign-label" className="tf-label__text">Кому назначить</span>
+            <Chips
+              users={users}
+              roles={roles}
+              groups={groups}
+              subjects={subjects}
+              assignees={assignees}
+              setAssignees={setAssignees}
+              query={query}
+              setQuery={setQuery}
+              found={found}
+              setFound={setFound}
+              openDd={openDd}
+              setOpenDd={setOpenDd}
+              onAdd={addAssignee}
+              onRemove={removeAssignee}
+              runSearch={runSearch}
+              ariaLabelledby="assign-label"
+            />
+            <div className="tf-preview">
+              Предпросмотр: {previewLoading ? 'подсчёт...' : `${previewTotal} исполнител${previewTotal % 10 === 1 && previewTotal % 100 !== 11 ? 'ь' : 'ей'}`}
+            </div>
+          </div>
+
+          <div className="tf-bottomGrid">
+            <div className="tf-files">
+              <span className="tf-label__text">Вложения задачи (до 12 файлов)</span>
+
+              <div className="tf-filechips">
+                {taskFiles.map((f, idx) => {
+                  const pct = Math.min((f?.size || 0) / MAX_BYTES, 1);
+                  return (
+                    <span key={idx} className="tf-chip">
+                      <span className="tf-chip__label">{f.name}</span>
+                      <span className="tf-chip__meter" style={{ width: `${pct*100}%` }} />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = taskFiles.slice();
+                          next.splice(idx, 1);
+                          syncTaskInputFiles(next);
+                        }}
+                        className="tf-chip__x"
+                        aria-label="Удалить"
+                        title="Убрать файл"
+                      >×</button>
+                    </span>
+                  );
+                })}
+              </div>
+
+              <input
+                ref={taskFileInputRef}
+                type="file"
+                name={taskFiles.length ? 'taskFiles' : undefined}
+                multiple
+                onChange={(e) => {
+                  const list = Array.from(e.target.files ?? []);
+                  if (!list.length) return;
+                  const next = [...taskFiles, ...list].slice(0, MAX_TASK_FILES);
+                  syncTaskInputFiles(next);
+                }}
+                className="tf-file-hidden"
+              />
+              <div className="tf-filesRow">
+                <button
+                  type="button"
+                  className="tf-btnBrand"
+                  onClick={() => taskFileInputRef.current?.click()}
+                >
+                  Прикрепить файлы
+                </button>
+
+                <div className={`tf-gauge ${totalBytes > MAX_BYTES ? 'is-over' : totalPct >= 0.7 ? 'is-warn' : ''}`} role="progressbar"
+                     aria-valuemin={0} aria-valuemax={50} aria-valuenow={Math.min(Number((totalBytes/(1024*1024)).toFixed(1)), 50)}>
+                  <div className="tf-gauge__fill" style={{ width: `${totalPct*100}%` }} />
+                </div>
+                <div className={`tf-gaugeLabel ${totalBytes > MAX_BYTES ? 'is-over' : ''}`}>
+                  {totalMbStr} из 50 МБ
+                </div>
+              </div>
+
+              <div className="tf-help">Поддерживаются PDF, офисные документы и изображения до 50 МБ каждый.</div>
+              {totalBytes > MAX_BYTES && <div className="tf-overflow">Превышен лимит 50 МБ. Уберите часть вложений.</div>}
+            </div>
+
+            {allowReviewControls && (
+              <div className="tf-label tf-reviewBlock">
+                <span className="tf-label__text">Требует проверки</span>
+                <div className="tf-switchRow" onClick={() => setReviewRequired(v => !v)}>
+                  <div
+                    className={`tf-switch ${reviewRequired ? 'is-on' : ''}`}
+                    role="switch"
+                    aria-checked={reviewRequired}
+                    title={reviewRequired ? 'нужна проверка' : 'без проверки'}
+                  >
+                    <span className="tf-switch__thumb" aria-hidden />
+                  </div>
+                  <span className="tf-switchText">{reviewRequired ? 'нужна проверка' : 'без проверки'}</span>
+                </div>
+              </div>
+            )}
+
+            <aside className="tf-side">
+              <input type="hidden" name="due" value={dueIso} />
+              <input type="hidden" name="priority" value={priority} />
+              <input type="hidden" name="reviewRequired" value={reviewRequired ? '1' : ''} />
+              <AssigneeIdsHidden computeIds={expandAssigneesToUserIds} />
+
+              <div className="tf-actions">
+                <SubmitButton label="Сохранить задачу" />
+              </div>
+            </aside>
+          </div>
+        </section>
       </form>
-
-      <style jsx>{`
-        :root { --brand: ${BRAND}; }
-        .tf-root { width: 100%; box-sizing: border-box; }
-        .tf-grid { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
-
-        .tf-label { display: grid; gap: 6px; margin-bottom: 10px; }
-        .tf-label__text { font-weight: 700; font-size: 13px; color: #111827; }
-
-        .tf-input, .tf-textarea, .tf-select {
-          width: 100%;
-          padding: 8px 10px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          background: #fff;
-          color: #111827;
-          font-size: 14px;
-          outline: none;
-          box-sizing: border-box;
-        }
-        .tf-textarea { min-height: 120px; resize: vertical; }
-        .tf-input:focus, .tf-textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(141,40,40,.12); }
-
-        .tf-3cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        @media (max-width: 920px) { .tf-3cols { grid-template-columns: 1fr; } }
-
-        /* тумблеры + подпись сбоку */
-        .tf-switchRow { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
-        .tf-switch {
-          position: relative; display: inline-flex; align-items: center; justify-content: flex-start;
-          width: 54px; height: 30px; border-radius: 999px; border: 1px solid #e5e7eb; background: #f3f4f6; padding: 3px; transition: all .15s ease;
-        }
-        .tf-switch.is-on, .tf-switch[aria-checked="true"] { border-color: ${BRAND}66; background: ${BRAND}1a; justify-content: flex-end; }
-        .tf-switch__thumb { width: 24px; height: 24px; border-radius: 50%; background: #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,.1); transition: background .15s ease; }
-        .tf-switch.is-on .tf-switch__thumb, .tf-switch[aria-checked="true"] .tf-switch__thumb { background: ${BRAND}; }
-        .tf-switchText { font-weight: 700; font-size: 13px; color: #111827; }
-
-        .tf-preview { margin-top: 8px; font-size: 13px; color: #374151; }
-
-        /* складывание всей формы */
-        .tf-collapsibleAll { overflow: hidden; transition: max-height .24s ease, opacity .18s ease; }
-        .tf-collapsibleAll.is-open { max-height: 4000px; opacity: 1; }
-        .tf-collapsibleAll.is-collapsed { max-height: 0; opacity: .0; }
-
-        /* низ формы: компактная сетка */
-        .tf-bottomGrid { display:grid; gap:12px; grid-template-columns: 1fr 1fr; align-items:start; }
-        @media (max-width: 920px) { .tf-bottomGrid { grid-template-columns: 1fr; } }
-
-        /* файлы */
-        .tf-files { display: grid; gap: 8px; }
-        .tf-filechips { display: flex; flex-wrap: wrap; gap: 6px; }
-
-        .tf-chip {
-          position:relative; display: inline-flex; align-items: center; gap: 6px;
-          border: 1px solid #e5e7eb; border-radius: 999px; padding: 2px 8px; font-size: 12px; background: #fff; overflow:hidden;
-          line-height: 1;
-        }
-        .tf-chip__label { position:relative; z-index:1; }
-        .tf-chip__meter { position:absolute; left:0; top:0; bottom:0; width:0; background: ${BRAND}22; z-index:0; transition: width .15s ease; }
-
-        /* компактные аккуратные крестики — единообразно в рамках формы (18×18) */
-        .tf-chip__x {
-          display:inline-grid; place-items:center;
-          width:18px; height:18px; padding:0;
-          border-radius:999px;
-          border:1px solid #e5e7eb;
-          background:#f9fafb;
-          color:#6b7280;
-          font-weight:900; font-size:12px; line-height:1;
-          cursor:pointer;
-          transition: border-color .12s ease, color .12s ease, background .12s ease, box-shadow .12s ease, transform .06s ease;
-        }
-        .tf-chip__x:hover { border-color: var(--brand); color: var(--brand); background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.06); }
-        .tf-chip__x:active { transform: translateY(1px); }
-
-        .tf-file-hidden { display: none; }
-
-        .tf-filesRow { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-        .tf-help { font-size: 12px; color: #6b7280; }
-        .tf-overflow { font-size:12px; font-weight:700; color:#dc2626; }
-
-        /* суммарная шкала 0..50 МБ */
-        .tf-gauge { position:relative; flex:1 1 220px; height:10px; border-radius:999px; background:#f3f4f6; border:1px solid #e5e7eb; overflow:hidden; }
-        .tf-gauge__fill { position:absolute; left:0; top:0; bottom:0; width:0; background: var(--brand); transition: width .15s ease; }
-        .tf-gauge.is-warn .tf-gauge__fill { background: #eab308; }
-        .tf-gauge.is-over .tf-gauge__fill { background: #dc2626; }
-        .tf-gaugeLabel { min-width:86px; font-size:12px; font-weight:700; color:#374151; }
-        .tf-gaugeLabel.is-over { color:#dc2626; }
-
-        /* брендовые кнопки — единый стиль (общий с «Прикрепить файлы») */
-        .tf-btnBrand{
-  height:40px;
-  padding:0 14px;
-  border-radius:10px;
-  border:1px solid var(--brand);
-  background:var(--brand);
-  color:#fff;
-  font-weight:800;
-  box-shadow:0 1px 0 rgba(0,0,0,.05);
-  cursor:pointer;
-  transition:filter .12s ease, transform .06s ease;
-}
-.tf-btnBrand:hover{ filter:brightness(1.03); }
-.tf-btnBrand:active{ transform:translateY(1px); }
-.tf-btnBrand[disabled]{ opacity:.85; cursor:default; transform:none; }
-        .tf-btnBrand:hover { filter: brightness(1.03); }
-        .tf-btnBrand:active { transform: translateY(1px); }
-        .tf-actions { display: flex; gap: 8px; align-items: stretch; }
-
-        /* переключатель «Свернуть/Развернуть» — всегда виден */
-        .tf-collapseToggleWrap { display:flex; justify-content:flex-end; }
-        .tf-collapseToggle {
-          height:32px; padding:0 10px; border-radius:10px; border:1px solid #e5e7eb; background:#fff;
-          display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:13px; color:#111827;
-          transition: border-color .12s ease, box-shadow .12s ease, transform .06s ease;
-        }
-        .tf-collapseToggle:hover { border-color:${BRAND}66; box-shadow:0 1px 6px rgba(0,0,0,.08); }
-        .tf-collapseToggle:active { transform: translateY(1px); }
-        .tf-arrow { width:10px; height:10px; border-right:2px solid #111827; border-bottom:2px solid #111827; transform: rotate(315deg); transition: transform .15s ease; }
-        .tf-arrow.down { transform: rotate(315deg); } /* вниз */
-        .tf-arrow.up { transform: rotate(135deg); }   /* вверх */
-        .tf-collapseText { line-height:1; }
-
-        /* прочее */
-        .tf-root * { max-width: 100%; }
-        .tf-reviewBlock { align-self:start; }
-      `}</style>
-    </>
+    </div>
   );
 }
 
@@ -548,33 +416,11 @@ function AssigneeIdsHidden({ computeIds }: { computeIds: () => Promise<string[]>
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <>
-      <button type="submit" className="tf-btnBrand" disabled={pending}>
-        {pending ? 'Сохранение...' : label}
-      </button>
-
-      {/* Локальный стиль для этой кнопки: 1в1 как «Прикрепить файлы» */}
-      <style jsx>{`
-        .tf-btnBrand{
-          height:40px;
-          padding:0 14px;
-          border-radius:10px;
-          border:1px solid var(--brand);
-          background:var(--brand);
-          color:#fff;
-          font-weight:800;
-          box-shadow:0 1px 0 rgba(0,0,0,.05);
-          cursor:pointer;
-          transition:filter .12s ease, transform .06s ease;
-        }
-        .tf-btnBrand:hover{ filter:brightness(1.03); }
-        .tf-btnBrand:active{ transform:translateY(1px); }
-        .tf-btnBrand[disabled]{ opacity:.85; cursor:default; transform:none; }
-      `}</style>
-    </>
+    <button type="submit" className="tf-btnBrand" disabled={pending}>
+      {pending ? 'Сохранение...' : label}
+    </button>
   );
 }
-
 
 /* ===== Chips ===== */
 function Chips(props: {
@@ -662,13 +508,14 @@ function Chips(props: {
         createPortal(
           <div
             ref={ddRef}
-            style={{ position:'fixed', left:ddPos.left, top:ddPos.top, width:ddPos.width, zIndex:1000, background:'#fff', border:'1px solid #e5e7eb', borderRadius:10, boxShadow:'0 4px 8px rgba(0,0,0,0.08)', maxHeight:300, overflowY:'auto' }}
+            className="tf-dd"
+            style={{ left:ddPos.left, top:ddPos.top, width:ddPos.width }}
           >
             {found.map((a) => (
               <div
                 key={`${a.type}:${a.id}`}
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onAdd(a); }}
-                style={{ padding:'6px 10px', cursor:'pointer', fontSize:13 }}
+                className="tf-dd__item"
               >
                 {a.name}{a.type==='group' ? ' (группа)' : a.type==='role' ? ' (роль)' : a.type==='subject' ? ' (предмет)' : ''}
               </div>
@@ -676,14 +523,6 @@ function Chips(props: {
           </div>,
           document.body
         )}
-
-      <style jsx>{`
-        .tf-chips {
-          display:flex; gap:6px; flex-wrap:wrap; align-items:center;
-          padding:6px; border:1px solid #e5e7eb; border-radius:10px; min-height:40px; cursor:text;
-        }
-        .tf-chips__input { flex:1 0 180px; min-width:120px; border:none; outline:none; padding:6px 8px; }
-      `}</style>
     </>
   );
 }
