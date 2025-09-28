@@ -10,29 +10,25 @@ import { Suspense } from 'react';
 import TeachersToast from './TeachersToast';
 import { normalizeRole, canViewAdmin, type Role } from '@/lib/roles';
 import { ROLE_LABELS } from '@/lib/roleLabels';
+import s from './page.module.css';
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const ONLINE_WINDOW_MS = 5 * 60 * 1000; // 5 минут
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
-// Форматирование даты рождения для отображения без времени и без смещения
 function formatRuDate(date: Date): string {
-  // «Обнуляем» смещение, чтобы не съезжало на -1 день
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
-
-// Значение для <input type="date"> в формате YYYY-MM-DD без смещения по таймзоне
 function dateToInputYMD(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
-
 const clean = (x?: string | null) => x ?? '—';
 
 export default async function TeachersPage(props: { searchParams?: Search }) {
@@ -48,17 +44,17 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
   const roleNorm = normalizeRole(roleRaw ?? null);
   const canManage = canViewAdmin(roleNorm);
 
-  const s = q.trim();
-  const or: Prisma.UserWhereInput[] = s
+  const sTerm = q.trim();
+  const or: Prisma.UserWhereInput[] = sTerm
     ? [
-        { name:      { contains: s, mode: Prisma.QueryMode.insensitive } },
-        { email:     { contains: s, mode: Prisma.QueryMode.insensitive } },
-        { phone:     { contains: s, mode: Prisma.QueryMode.insensitive } },
-        { classroom: { contains: s, mode: Prisma.QueryMode.insensitive } },
-        { username:  { contains: s, mode: Prisma.QueryMode.insensitive } },
-        { telegram:  { contains: s, mode: Prisma.QueryMode.insensitive } },
-        { about:     { contains: s, mode: Prisma.QueryMode.insensitive } },
-        { role:      { contains: s, mode: Prisma.QueryMode.insensitive } },
+        { name:      { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { email:     { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { phone:     { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { classroom: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { username:  { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { telegram:  { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { about:     { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { role:      { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
       ]
     : [];
   const where: Prisma.UserWhereInput | undefined = or.length ? { OR: or } : undefined;
@@ -75,86 +71,48 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
 
   const now = new Date();
 
-  // Общий «стеклянный» стиль для плиток в раскрывашках
-  const glassTile: React.CSSProperties = {
-    borderRadius: 16,
-    background: 'rgba(255,255,255,0.6)',
-    border: '1px solid rgba(229,231,235,.9)',
-    boxShadow: '0 8px 24px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.6)',
-    backdropFilter: 'blur(8px)',
-  };
-
   return (
-    <section style={{ display: 'grid', gap: 12 }}>
-      <header className="u-glass" style={{ padding: '14px 16px', borderRadius: 16 }}>
-        <h1 style={{ margin: 0, fontWeight: 900, fontSize: 22, color: '#0f172a' }}>пользователи</h1>
-        <p style={{ margin: '6px 0 0', fontSize: 14, color: '#374151' }}>все из базы; поиск по всем полям</p>
+    <section className={s.page}>
+      <header className={s.head + ' ' + s.glass}>
+        <h1 className={s.title}>пользователи</h1>
+        <p className={s.subtitle}>все из базы; поиск по всем полям</p>
       </header>
 
-      <div className="u-glass" style={{ padding: 10, borderRadius: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div className={s.toolbar + ' ' + s.glass}>
         <SearchBox initial={q} />
         {canManage && <AddUserModal action={createUser} />}
       </div>
 
       {(ok || error) && (
-        <div
-          style={{
-            borderRadius: 10, padding: '8px 10px',
-            border: `1px solid ${ok ? '#c8e6c9' : '#fecaca'}`,
-            background: ok ? '#f0fbf1' : '#fff1f2',
-            color: ok ? '#166534' : '#991b1b', fontSize: 14
-          }}
-        >
+        <div className={`${s.note} ${ok ? s.ok : s.err}`}>
           {ok ? `Готово: ${ok}` : `Ошибка: ${error}`}
         </div>
       )}
 
-      <div className="u-glass" style={{ borderRadius: 16, overflow: 'hidden', padding: 6 }}>
-        <div style={{ display: 'grid', gap: 8 }}>
+      <div className={s.listWrap + ' ' + s.glass}>
+        <div className={s.list}>
           {users.map((u, idx) => {
             const ls = u.lastSeen ? new Date(u.lastSeen as any) : null;
-            const online = !!(ls && (now.getTime() - ls.getTime() <= ONLINE_WINDOW_MS));
+            const online = !!(ls && now.getTime() - ls.getTime() <= ONLINE_WINDOW_MS);
 
             return (
-              <details
-                key={u.id}
-                style={{
-                  borderTop: idx ? '1px solid #eef0f2' : 'none',
-                  padding: 6,
-                }}
-              >
-                <summary
-                  style={{
-                    listStyle: 'none',
-                    cursor: 'pointer',
-                    display: 'grid',
-                    gridTemplateColumns: canManage ? '1fr auto' : '1fr',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 700 }}>{u.name}</span>
-                    <span style={{ opacity: .75 }}>
+              <details key={u.id} className={s.item} data-first={idx === 0 ? '1' : undefined}>
+                <summary className={s.summary}>
+                  <div className={s.summaryMain}>
+                    <span className={s.name}>{u.name}</span>
+                    <span className={s.roleText}>
                       {(() => {
                         const r = normalizeRole(u.role ?? null) as Role | null;
                         return r ? (ROLE_LABELS[r] ?? r) : '—';
                       })()}
                     </span>
-                    <span style={{
-                      fontSize: 12,
-                      padding: '2px 8px',
-                      borderRadius: 999,
-                      border: `1px solid ${online ? '#16a34a' : '#9ca3af'}`,
-                      color: online ? '#166534' : '#6b7280',
-                      background: online ? '#dcfce7' : '#f3f4f6'
-                    }}>
+                    <span className={`${s.badge} ${online ? s.badgeOnline : s.badgeOffline}`}>
                       {online ? 'онлайн' : 'офлайн'}
                     </span>
                   </div>
 
                   {canManage && (
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className={s.actions}>
                       <EditUserModal
                         action={updateUser}
                         userId={u.id}
@@ -177,26 +135,26 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                   )}
                 </summary>
 
-                <div style={{ marginTop: 8, paddingLeft: 4, display: 'grid', gap: 8 }}>
-                  <div style={{ ...glassTile, padding: 12 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                <div className={s.details}>
+                  <div className={s.tile + ' ' + s.glassTile}>
+                    <div className={s.grid3}>
                       <Field label="логин" value={clean(u.username)} />
                       <Field label="email" value={clean(u.email)} />
                       <Field label="телефон" value={clean(u.phone)} />
                       <Field label="классное руководство" value={clean(u.classroom)} />
                       <Field label="telegram" value={clean(u.telegram)} />
-                     </div>
+                    </div>
                   </div>
 
-                  <div style={{ ...glassTile, padding: 12 }}>
-                    <div style={{ fontSize: 13, opacity: .6, marginBottom: 6 }}>о себе</div>
-                    <div style={{ color: '#374151' }}>{u.about ? u.about : '—'}</div>
+                  <div className={s.tile + ' ' + s.glassTile}>
+                    <div className={s.fieldLabel}>о себе</div>
+                    <div className={s.about}>{u.about ? u.about : '—'}</div>
                   </div>
                 </div>
               </details>
             );
           })}
-          {!users.length && <div style={{ padding: 20, color: '#6b7280' }}>ничего не найдено</div>}
+          {!users.length && <div className={s.empty}>ничего не найдено</div>}
         </div>
       </div>
 
@@ -209,9 +167,9 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ fontSize: 13 }}>
-      <div style={{ opacity: .6 }}>{label}</div>
-      <div style={{ fontWeight: 600 }}>{value}</div>
+    <div className={s.field}>
+      <div className={s.fieldLabel}>{label}</div>
+      <div className={s.fieldValue}>{value}</div>
     </div>
   );
 }

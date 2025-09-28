@@ -223,7 +223,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
           <label className="disc-label">Текст</label>
           <MentionInput
             name="text"
-            placeholder="через @ можно упомянуть коллегу или @everyone — всех сразу."
+            placeholder="через @ можно упомянуть коллегу или @everyone — всех сразу. Сообщения в ленте ВИДНЫ ВСЕМ!"
             maxLength={8000}
             rows={5}
             className="disc-input disc-textarea"
@@ -233,7 +233,7 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
               <label className="disc-checkbox">
                 <input type="checkbox" name="pinned" value="1" /> Закрепить
               </label>
-            ) : <span className="disc-help">Закреплять могут только управленцы</span>}
+            ) : <span className="disc-help">Закреплять может только администрация</span>}
             <button type="submit" className="disc-btn">Опубликовать</button>
           </div>
         </form>

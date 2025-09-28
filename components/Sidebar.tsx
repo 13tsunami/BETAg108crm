@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useMemo, useState } from 'react';
@@ -18,37 +19,15 @@ function splitFio(full?: string | null) {
   return { last: s.toUpperCase(), rest: '' };
 }
 
-/** Чёткая заполненная шестерёнка (24 viewBox, по умолчанию 18px) */
 function GearIcon({ size = 18 }: { size?: number }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      aria-hidden
-      focusable="false"
-      style={{ display: 'block' }}
-    >
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden focusable="false" style={{ display: 'block' }}>
       <g fill="currentColor">
-        {/* Корпус: кольцо с вырезанным центром (even-odd) */}
-        <path
-          fillRule="evenodd"
-          d="
-            M12 2.5
-            a9.5 9.5 0 1 1 0 19
-            a9.5 9.5 0 1 1 0 -19
-            M12 8
-            a4 4 0 1 0 0 8
-            a4 4 0 1 0 0 -8
-          "
-          clipRule="evenodd"
-        />
-        {/* Зубья — крупные, чтобы не читалось как «солнышко» */}
+        <path fillRule="evenodd" d="M12 2.5a9.5 9.5 0 1 1 0 19a9.5 9.5 0 1 1 0 -19M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0 -8" clipRule="evenodd" />
         <rect x="10.75" y="0.5" width="2.5" height="4.2" rx="1" />
         <rect x="10.75" y="19.3" width="2.5" height="4.2" rx="1" />
         <rect x="19.3" y="10.75" width="4.2" height="2.5" rx="1" />
         <rect x="0.5" y="10.75" width="4.2" height="2.5" rx="1" />
-
         <rect x="17.15" y="2.15" width="2.6" height="4.2" rx="1" transform="rotate(45 18.45 4.25)" />
         <rect x="4.25" y="17.15" width="2.6" height="4.2" rx="1" transform="rotate(45 5.55 19.25)" />
         <rect x="17.15" y="17.15" width="2.6" height="4.2" rx="1" transform="rotate(135 18.45 19.25)" />
@@ -58,9 +37,7 @@ function GearIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function Tile({
-  href, label, active, unread,
-}: { href: string; label: string; active?: boolean; unread?: number }) {
+function Tile({ href, label, active, unread }: { href: string; label: string; active?: boolean; unread?: number }) {
   const showBadge = typeof unread === 'number' && unread > 0 && !active;
   const isSingleLongWord = !/\s/.test(label) && label.length >= 9;
   return (
@@ -77,36 +54,14 @@ function Tile({
           border: 1px solid rgba(229,231,235,.8); overflow: hidden; cursor: pointer;
           transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
         }
-        .glass {
-          background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4));
-          backdrop-filter: saturate(180%) blur(10px); -webkit-backdrop-filter: saturate(180%) blur(10px);
-          box-shadow: 0 4px 12px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);
-        }
-        .tile::before {
-          content: ""; position: absolute; inset: -35% -35% auto -35%; height: 55%;
-          background: radial-gradient(120px 40px at 10% 0%, rgba(255,255,255,.55), rgba(255,255,255,0) 60%),
-                      linear-gradient(90deg, rgba(255,255,255,.35), rgba(255,255,255,0.06));
-          opacity: 0; transform: translateY(-10%); transition: opacity .2s, transform .2s; z-index:1;
-        }
-        .tile:hover {
-          transform: translateY(-1px);
-          border-color: rgba(141,40,40,.35);
-          box-shadow: 0 8px 18px rgba(0,0,0,.08);
-          background:
-            linear-gradient(180deg, rgba(141,40,40,.08), rgba(141,40,40,.03)),
-            linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4));
-        }
-        .tile:hover::before { opacity: 1; transform: translateY(0); }
+        .glass { background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4)); backdrop-filter: saturate(180%) blur(10px); -webkit-backdrop-filter: saturate(180%) blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35); }
+        .tile:hover { transform: translateY(-1px); border-color: rgba(141,40,40,.35); box-shadow: 0 8px 18px rgba(0,0,0,.08); background: linear-gradient(180deg, rgba(141,40,40,.08), rgba(141,40,40,.03)), linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4)); }
         .tile.active { outline: 2px solid rgba(141,40,40,.35); }
         .tile.unread::after { content:""; position:absolute; left:0; top:0; height:3px; width:100%; background:#ef9b28; z-index:2; }
-        .label { position:relative; z-index:3; color:#0f172a; font-weight:700; line-height:1.08;
-                 display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; line-clamp: 2; -webkit-line-clamp: 2; }
+        .label { position:relative; z-index:3; color:#0f172a; font-weight:700; line-height:1.08; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; line-clamp: 2; -webkit-line-clamp: 2; }
         .label--multi { font-size:12px; letter-spacing:.01em; }
         .label--single { font-size:11px; letter-spacing:.01ем; font-stretch:95%; }
-        .badge {
-          position:absolute; right:6px; top:6px; font-size:10.5px; line-height:18px; min-width:22px; text-align:center;
-          padding:0 6px; border-radius:9999px; background:${BRAND}; color:#fff; font-weight:800; box-shadow:0 1px 4px rgba(0,0,0,.12);
-        }
+        .badge { position:absolute; right:6px; top:6px; font-size:10.5px; line-height:18px; min-width:22px; text-align:center; padding:0 6px; border-radius:9999px; background:${BRAND}; color:#fff; font-weight:800; box-shadow:0 1px 4px rgba(0,0,0,.12); }
       `}</style>
     </Link>
   );
@@ -153,14 +108,6 @@ export default function Sidebar({
     else shell.removeAttribute('data-collapsed');
   }, [collapsed]);
 
-  const [unread, setUnread] = useState(unreadChats);
-  useEffect(() => setUnread(unreadChats), [unreadChats]);
-  useEffect(() => {
-    const onBump = () => setUnread(x => x + 1);
-    window.addEventListener('app:unread-bump', onBump as any);
-    return () => window.removeEventListener('app:unread-bump', onBump as any);
-  }, []);
-
   const [tasksUnread, setTasksUnread] = useState(unreadTasks);
   useEffect(() => setTasksUnread(unreadTasks), [unreadTasks]);
   useEffect(() => { if (pathname?.startsWith('/inboxtasks')) setTasksUnread(0); }, [pathname]);
@@ -181,63 +128,20 @@ export default function Sidebar({
   const [reviewsUnreadState, setReviewsUnreadState] = useState(unreadReviews);
   useEffect(() => setReviewsUnreadState(unreadReviews), [unreadReviews]);
   useEffect(() => { if (pathname === '/reviews') setReviewsUnreadState(0); }, [pathname]);
-  useEffect(() => {
-    const onSet = (e: Event) => {
-      const d = (e as CustomEvent).detail;
-      if (typeof d === 'number') setReviewsUnreadState(d);
-    };
-    const onBump = () => setReviewsUnreadState(x => x + 1);
-    window.addEventListener('reviews:unread-set', onSet as any);
-    window.addEventListener('reviews:unread-bump', onBump as any);
-    return () => {
-      window.removeEventListener('reviews:unread-set', onSet as any);
-      window.removeEventListener('reviews:unread-bump', onBump as any);
-    };
-  }, []);
 
   const [discussionsUnreadState, setDiscussionsUnreadState] = useState(unreadDiscussions);
   useEffect(() => setDiscussionsUnreadState(unreadDiscussions), [unreadDiscussions]);
   useEffect(() => { if (pathname?.startsWith('/discussions')) setDiscussionsUnreadState(0); }, [pathname]);
-  useEffect(() => {
-    const onSet = (e: Event) => {
-      const d = (e as CustomEvent).detail;
-      if (typeof d === 'number') setDiscussionsUnreadState(d);
-    };
-    const onBump = () => setDiscussionsUnreadState(x => x + 1);
-    window.addEventListener('discussions:unread-set', onSet as any);
-    window.addEventListener('discussions:unread-bump', onBump as any);
-    return () => {
-      window.removeEventListener('discussions:unread-set', onSet as any);
-      window.removeEventListener('discussions:unread-bump', onBump as any);
-    };
-  }, []);
 
   const [requestsUnreadState, setRequestsUnreadState] = useState(unreadRequests);
   useEffect(() => setRequestsUnreadState(unreadRequests), [unreadRequests]);
   useEffect(() => { if (pathname?.startsWith('/requests')) setRequestsUnreadState(0); }, [pathname]);
-  useEffect(() => {
-    const onSet = (e: Event) => {
-      const d = (e as CustomEvent).detail;
-      if (typeof d === 'number') setRequestsUnreadState(d);
-    };
-    const onBump = () => setRequestsUnreadState(x => x + 1);
-    window.addEventListener('requests:unread-set', onSet as any);
-    window.addEventListener('requests:unread-bump', onBump as any);
-    return () => {
-      window.removeEventListener('requests:unread-set', onSet as any);
-      window.removeEventListener('requests:unread-bump', onBump as any);
-    };
-  }, []);
 
   const ArrowIcon = useMemo(() => (
     collapsed ? (
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
-        <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
     ) : (
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
-        <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
     )
   ), [collapsed]);
 
@@ -245,16 +149,15 @@ export default function Sidebar({
 
   return (
     <aside className={`wrap ${collapsed ? 'collapsed' : ''}`}>
-      <button
-        type="button"
-        className="toggle"
-        aria-label={collapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'}
-        onClick={() => setCollapsed(v => !v)}
-      >
+      <button type="button" className="toggle" aria-label={collapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар'} onClick={() => setCollapsed(v => !v)}>
         {ArrowIcon}
       </button>
 
       <div className="head glass">
+        <Link href="/dashboard" aria-label="На главную" prefetch={false} className="logoWrap">
+          <Image src="/logo-108.png" alt="Гимназия №108" width={72} height={72} className="logo" priority unoptimized />
+        </Link>
+
         <div className="who" title={(data?.user?.name as string) || 'Гость'}>
           <div className="fio">
             <div className="last" style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -283,37 +186,15 @@ export default function Sidebar({
           <>
             <div className="grid">
               <Tile href="/dashboard"   label="Главное"     active={pathname === '/dashboard'} />
-              <Tile
-                href="/discussions"
-                label="Пейджер"
-                active={pathname?.startsWith('/discussions') || false}
-                unread={pathname?.startsWith('/discussions') ? 0 : discussionsUnreadState}
-              />
-               <Tile
-                href="/inboxtasks"
-                label="Задачи"
-                active={pathname?.startsWith('/inboxtasks') || false}
-                unread={pathname?.startsWith('/inboxtasks') ? 0 : tasksUnread}
-              />
+              <Tile href="/discussions"  label="Пейджер"     active={pathname?.startsWith('/discussions') || false} unread={pathname?.startsWith('/discussions') ? 0 : discussionsUnreadState} />
+              <Tile href="/inboxtasks"   label="Задачи"      active={pathname?.startsWith('/inboxtasks') || false} unread={pathname?.startsWith('/inboxtasks') ? 0 : tasksUnread} />
               <Tile href="/inboxtasks/archive" label="Архив задач" active={pathname === '/inboxtasks/archive'} />
-              {canSeeReviewTile && (
-                <Tile
-                  href="/reviews"
-                  label="Проверка задач"
-                  active={pathname === '/reviews'}
-                  unread={pathname === '/reviews' ? 0 : reviewsUnreadState}
-                />
-              )}
-              <Tile href="/teachers"    label="Педагоги"    active={pathname === '/teachers'} />
-              <Tile href="/calendar"    label="Календарь"   active={pathname === '/calendar'} />
-              <Tile href="/schedule"    label="Расписание"  active={pathname === '/schedule'} />
-              <Tile href="/showmyfiles" label="Мои файлы"   active={pathname === '/showmyfiles'} />
-              <Tile
-                href="/requests"
-                label="Заявки"
-                active={pathname?.startsWith('/requests') || false}
-                unread={pathname?.startsWith('/requests') ? 0 : requestsUnreadState}
-              />
+              {canSeeReviewTile && <Tile href="/reviews" label="Проверка задач" active={pathname === '/reviews'} unread={pathname === '/reviews' ? 0 : reviewsUnreadState} />}
+              <Tile href="/teachers"     label="Педагоги"    active={pathname === '/teachers'} />
+              <Tile href="/calendar"     label="Календарь"   active={pathname === '/calendar'} />
+              <Tile href="/schedule"     label="Расписание"  active={pathname === '/schedule'} />
+              <Tile href="/showmyfiles"  label="Мои файлы"   active={pathname === '/showmyfiles'} />
+              <Tile href="/requests"     label="Заявки"      active={pathname?.startsWith('/requests') || false} unread={pathname?.startsWith('/requests') ? 0 : requestsUnreadState} />
             </div>
 
             {hasAdminBlock && (
@@ -332,40 +213,32 @@ export default function Sidebar({
       </nav>
 
       <style jsx>{`
-        .wrap {
-          box-sizing:border-box; width:var(--sbw, 280px); height:100%;
-          display:grid; grid-template-rows:auto 1fr;
-          border-right:1px solid #e5e7eb; background:#fff; overflow:visible; position:relative;
-          transition: width .24s ease;
-        }
+        .wrap { box-sizing:border-box; width:var(--sbw, 280px); height:100%; display:grid; grid-template-rows:auto 1fr; border-right:1px solid #e5e7eb; background:#fff; overflow:visible; position:relative; transition: width .24s ease; }
         .wrap.collapsed { width:56px; }
-        .head { display:flex; align-items:center; min-height:96px; padding:12px; border-bottom:1px solid rgba(229,231,235,.85); position:relative; transition: opacity .2s ease; }
+        .head {
+          display:flex; flex-direction:column; align-items:center; gap:10px;
+          padding:12px; border-bottom:1px solid rgba(229,231,235,.85); position:relative;
+          background:rgba(255,255,255,.55);
+          -webkit-backdrop-filter:saturate(180%) blur(10px); backdrop-filter:saturate(180%) blur(10px);
+        }
         .wrap.collapsed .head, .wrap.collapsed .nav { opacity:0; pointer-events:none; visibility:hidden; }
         .head::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:${BRAND}; opacity:.12; }
-        .glass { background:rgba(255,255,255,.55); backdrop-filter:saturate(180%) blur(10px); -webkit-backdrop-filter:saturate(180%) blur(10px); }
+
+        .logoWrap { display:grid; place-items:center; }
+        .logo { width:72px; height:72px; border-radius:12px; border:1px solid rgba(229,231,235,.85); background:#fff; box-shadow:0 4px 14px rgba(0,0,0,.06); }
+
         .who { min-width:0; width:100%; display:grid; gap:6px; }
-        .fio { line-height:1.08; }
+        .fio { line-height:1.08; text-align:left; }
         .last { font-weight:900; font-size:20px; letter-spacing:.4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .rest { font-weight:700; font-size:15px; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-        .gear {
-          display:inline-grid; place-items:center;
-          width:28px; height:28px; border-radius:8px;
-          border:1px solid rgba(229,231,235,.9);
-          background:#fff; color:#0f172a;
-          line-height:0;
-        }
+        .gear { display:inline-grid; place-items:center; width:28px; height:28px; border-radius:8px; border:1px solid rgba(229,231,235,.9); background:#fff; color:#0f172a; line-height:0; }
         .gear:hover { background:#fafafa; }
 
         .metaRow { display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .rolePill { font-size:12px; padding:2px 8px; border-radius:9999px; border:1px solid rgba(229,231,235,.9); background:rgba(255,255,255,.6); }
 
-        .exit {
-          height:30px; padding:0 12px; border-radius:10px;
-          border:1px solid ${BRAND}; background:${BRAND}; color:#fff; cursor:pointer; font-weight:700;
-          transition: filter .15s ease, transform .08s ease;
-          text-decoration:none !important; display:inline-flex; align-items:center; justify-content:center;
-        }
+        .exit { height:30px; padding:0 12px; border-radius:10px; border:1px solid ${BRAND}; background:${BRAND}; color:#fff; cursor:pointer; font-weight:700; transition: filter .15s ease, transform .08s ease; text-decoration:none !important; display:inline-flex; align-items:center; justify-content:center; }
         .exit:hover { filter: brightness(0.95); }
         .exit:active { transform: translateY(1px); }
 
@@ -376,25 +249,13 @@ export default function Sidebar({
 
         .toggle {
           position:absolute; top:50%; right:-16px; transform:translateY(-50%);
-          width:32px; height:32px; border-radius:9999px;
-          border:1px solid rgba(229,231,235,.9);
+          width:32px; height:32px; border-radius:9999px; border:1px solid rgba(229,231,235,.9);
           background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4));
-          backdrop-filter: saturate(180%) blur(10px);
-          -webkit-backdrop-filter: saturate(180%) blur(10px);
-          box-shadow: 0 8px 24px rgba(0,0,0,.08);
-          color:#0f172a; display:grid; place-items:center;
-          cursor:pointer;
-          transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
-          z-index:1000;
+          backdrop-filter: saturate(180%) blur(10px); -webkit-backdrop-filter: saturate(180%) blur(10px);
+          box-shadow: 0 8px 24px rgba(0,0,0,.08); color:#0f172a; display:grid; place-items:center;
+          cursor:pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease; z-index:1000;
         }
-
-        .toggle:hover {
-          box-shadow: 0 10px 28px rgba(0,0,0,.10);
-          border-color: rgba(141,40,40,.35);
-          background:
-            radial-gradient(60% 60% at 50% 20%, rgba(141,40,40,.10), rgba(141,40,40,0) 70%),
-            linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4));
-        }
+        .toggle:hover { box-shadow: 0 10px 28px rgba(0,0,0,.10); border-color: rgba(141,40,40,.35); background: radial-gradient(60% 60% at 50% 20%, rgba(141,40,40,.10), rgba(141,40,40,0) 70%), linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4)); }
       `}</style>
     </aside>
   );
