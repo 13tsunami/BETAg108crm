@@ -1,176 +1,431 @@
-/* app/(app)/discussions/discussions.css */
-
-/* Страница и сетка */
-.disc-page { display: flex; flex-direction: column; gap: 16px; }
-.disc-top { position: sticky; top: 0; z-index: 1; background: #fff; border-bottom: 1px solid #f3f4f6; padding: 8px 0; }
-.page-title { font-size: 20px; font-weight: 600; margin: 0; color: #111827; }
-
-.grid { display: grid; grid-template-columns: 1fr 340px; gap: 16px; }
-.left { min-width: 0; }
-.right { min-width: 0; }
-
-/* Правый столбец с лёгким отделением */
-.sticky {
-  position: sticky;
-  top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: #fff;
-  border-left: 1px solid #f3f4f6;
-  padding-left: 12px;
+/* Контейнеры */
+.disc-wrap {
+  padding: 20px 16px 28px;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(141,40,40,0.10), transparent 60%),
+    radial-gradient(800px 480px at 10% 110%, rgba(141,40,40,0.08), transparent 60%),
+    linear-gradient(180deg, #fafafa, #f3f4f6);
 }
 
-/* Секции и заголовки */
-.disc-section { display: flex; flex-direction: column; }
-.disc-section > * + * { margin-top: 12px; }   /* Ровный вертикальный ритм */
-.section-title { font-size: 14px; font-weight: 600; color: #111827; }
+.disc-card {
+  max-width: 880px;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.75);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(141,40,40,0.25);
+  box-shadow:
+    0 10px 30px rgba(17,24,39,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  padding: 18px 18px 16px;
+}
 
-/* Посты */
-.post-card {
-  border: 1px solid #e5e7eb;
+.disc-title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: #0f172a;
+}
+
+.disc-subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Форма */
+.disc-form { margin-top: 12px; }
+.disc-label { display: block; font-size: 13px; color: #374151; margin-bottom: 6px; }
+
+.disc-input {
+  width: 100%;
   border-radius: 12px;
-  background: #fff;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  background: rgba(255,255,255,0.9);
+  padding: 10px 12px;
+  outline: none;
+  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  font-size: 14px;
 }
-.post-card > * + * { margin-top: 8px; }
+.disc-input:focus {
+  border-color: #8d2828;
+  box-shadow: 0 0 0 3px rgba(141,40,40,0.15);
+  background: #fff;
+}
+.disc-textarea { min-height: 120px; resize: vertical; }
 
-.post-card.pinned { background: #fff7ed; border-color: #fed7aa; }
+.disc-form-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
 
-.post-meta {
+.disc-checkbox { font-size: 13px; color: #374151; display: inline-flex; gap: 8px; align-items: center; }
+.disc-help { font-size: 12px; color: #6b7280; }
+
+/* Лента */
+.disc-list {
+  max-width: 880px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.disc-post {
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 14px 14px 10px;
+  box-shadow: 0 6px 16px rgba(17,24,39,0.05);
+}
+.disc-post--pinned {
+  border-color: rgba(141,40,40,0.45);
+  box-shadow: 0 10px 24px rgba(141,40,40,0.15);
+  background: linear-gradient(180deg, rgba(141,40,40,0.02), transparent 40%), #fff;
+}
+
+.disc-post-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.disc-post-flags {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.disc-badge {
+  display: inline-block;
+  font-size: 12px;
+  color: #8d2828;
+  background: rgba(141,40,40,0.08);
+  border: 1px solid rgba(141,40,40,0.28);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: lowercase;
+  letter-spacing: .2px;
+}
+
+.disc-time {
   font-size: 12px;
   color: #6b7280;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
 }
-.author { font-weight: 600; color: #374151; }
-.dot { opacity: .6; }
 
-.post-text {
+.disc-post-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disc-inline-form { display: inline; }
+
+/* Текст поста */
+.disc-text {
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: 15px;
+  color: #0f172a;
   line-height: 1.5;
-  max-width: 65ch;      /* Читаемая длина строки */
-  color: #111827;
+  margin-bottom: 8px;
 }
 
-/* Действия под постом */
-.post-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.inline { display: inline-flex; gap: 8px; align-items: center; }
-
-/* Комментарии */
-.disc-comments { display: flex; flex-direction: column; margin-top: 12px; }
-.disc-comments > * + * { margin-top: 12px; }
-
-.comment-card {
-  border: 1px solid #f3f4f6;
-  border-radius: 10px;
-  padding: 10px;
-  background: #fff;
-}
-.c-meta {
-  font-size: 12px; color: #6b7280;
-  display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
-}
-.c-text {
-  white-space: pre-wrap; word-break: break-word;
-  line-height: 1.5; color: #111827; margin-top: 6px;
-  max-width: 65ch;
+/* Футер поста: слева счётчик, справа кнопка */
+.disc-post-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
-/* Формы */
-.disc-form {
-  display: flex; flex-direction: column; gap: 10px;
-  border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background: #fff;
-}
-.row { display: grid; grid-template-columns: 100px 1fr; gap: 10px; align-items: center; }
-.lbl { font-size: 13px; color: #374151; }
-
-.inp {
-  width: 100%;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 8px 10px;
+/* Пустая лента */
+.disc-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 24px 0;
   font-size: 14px;
-  background: #fff;
-  color: #111827;
 }
-.inp::placeholder { color: #9ca3af; }
-.inp:focus { outline: none; border-color: #8d2828; box-shadow: 0 0 0 3px rgba(141,40,40,.08); }
 
-.chk { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: #374151; }
-.actions { display: flex; gap: 8px; }
+/* Пагинация */
+.disc-pager {
+  max-width: 880px;
+  margin: 10px auto 0;
+}
+.disc-pager-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.disc-pager-info {
+  justify-self: center;
+  font-size: 13px;
+  color: #374151;
+}
 
-/* Кнопки — бренд #8d2828, единая высота */
-.btn-primary,
-.btn-outline,
-.btn-danger {
+/* Ссылки и кнопки */
+.disc-link {
+  color: #8d2828;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(141,40,40,0.5);
+}
+.disc-link:hover { border-bottom-color: transparent; }
+
+.disc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid #8d2828;
+  background: #8d2828;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: .2px;
+  cursor: pointer;
+  transition: transform .04s ease, box-shadow .12s ease, opacity .2s ease;
+  box-shadow: 0 6px 14px rgba(141,40,40,0.20);
+}
+.disc-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(141,40,40,0.24); }
+.disc-btn:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(141,40,40,0.20); }
+.disc-btn:disabled { opacity: .65; transform: none; box-shadow: none; cursor: default; }
+
+.disc-btn-lite {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 32px;
   padding: 0 12px;
   border-radius: 10px;
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  user-select: none;
-  text-decoration: none;
-}
-.btn-primary {
-  border: 1px solid #8d2828;
-  background: #8d2828;
-  color: #fff;
-}
-.btn-primary:disabled { opacity: .6; cursor: default; }
-
-.btn-outline {
-  border: 1px solid #8d2828;
+  border: 1px solid #e5e7eb;
   background: #fff;
-  color: #8d2828;
+  color: #111827;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .12s ease, transform .04s ease;
 }
-.btn-outline:hover { background: #fef2f2; }
-.btn-outline.active { background: #8d2828; color: #fff; }
+.disc-btn-lite:hover { background: #f9fafb; transform: translateY(-1px); }
+.disc-btn-lite:active { transform: translateY(0); }
 
-.btn-danger {
-  border: 1px solid #dc2626;
-  background: #dc2626;
-  color: #fff;
-}
-.btn-danger:hover { filter: brightness(0.97); }
-
-.btn-primary:focus-visible,
-.btn-outline:focus-visible,
-.btn-danger:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(17,24,39,.08); /* спокойный focus */
-}
-
-/* Пустые состояния */
-.block-title { font-size: 16px; font-weight: 600; margin: 0; color: #111827; }
-.disc-empty { color: #6b7280; font-size: 14px; }
-
-/* Нечувствительные клик-зоны: иконки кликабельны строго по себе */
-.iconButton {
+.disc-btn-danger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px; height: 28px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(185,28,28,0.5);
+  background: rgba(239,68,68,0.08);
+  color: #991b1b;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .12s ease, transform .04s ease;
+}
+.disc-btn-danger:hover { background: rgba(239,68,68,0.12); transform: translateY(-1px); }
+.disc-btn-danger:active { transform: translateY(0); }
+
+/* Кнопка "Подробнее" */
+.disc-btn-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .12s ease, transform .04s ease;
+}
+.disc-btn-more:hover { background: #f9fafb; transform: translateY(-1px); }
+.disc-btn-more:active { transform: translateY(0); }
+
+/* Хлебные крошки */
+.disc-breadcrumbs { margin-bottom: 10px; }
+
+/* Комментарии */
+.disc-comments { margin-top: 14px; }
+.disc-comments-title {
+  margin: 6px 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.disc-comment-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.disc-comment {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 10px 12px;
+}
+
+.disc-comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.disc-comment-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14px;
+  color: #111827;
+  line-height: 1.5;
+}
+
+/* Счётчик лайков */
+.disc-like-count {
+  min-width: 28px;
+  text-align: center;
+  font-size: 13px;
+  color: #374151;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+/* Автор и время в заголовке */
+.disc-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.disc-author { font-size: 13px; color: #0f172a; font-weight: 700; }
+
+/* Сердечко-лайк */
+.disc-like {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 38px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background .15s ease, transform .04s ease, box-shadow .12s ease, color .15s ease, border-color .15s ease;
+}
+.disc-like:hover { background: #f9fafb; transform: translateY(-1px); }
+.disc-like:active { transform: translateY(0); }
+.disc-like--on {
+  border-color: rgba(141,40,40,0.45);
+  background: rgba(141,40,40,0.08);
+  color: #8d2828;
+}
+.disc-like-ic { display: block; }
+
+/* Подсветка @упоминаний */
+.disc-mention {
+  display: inline-block;
+  padding: 0 4px;
   border-radius: 6px;
+  background: rgba(141,40,40,0.08);
+  color: #8d2828;
+  border: 1px solid rgba(141,40,40,0.22);
+}
+
+/* Подсказки для @упоминаний */
+.disc-mention-box { position: relative; }
+.disc-mention-menu {
+  position: absolute;
+  min-width: 260px;
+  max-width: 520px;
+  transform: translateY(6px);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 32px rgba(17,24,39,0.16);
+  padding: 6px;
+  z-index: 10;
+}
+.disc-mention-item {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
   border: 1px solid transparent;
-  background: transparent;
+  background: #fff;
   cursor: pointer;
 }
-.iconButton:hover { border-color: #e5e7eb; background: #f9fafb; }
-.iconButton:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(17,24,39,.08); }
-
-/* Адаптив: на узких экранах одна колонка */
-@media (max-width: 960px) {
-  .grid { grid-template-columns: 1fr; }
-  .sticky { border-left: 0; padding-left: 0; }
-  .row { grid-template-columns: 1fr; gap: 6px; }
+.disc-mention-item:hover,
+.disc-mention-item.is-active {
+  background: #f9fafb;
+  border-color: #e5e7eb;
 }
+.disc-mention-name { font-size: 14px; color: #0f172a; font-weight: 700; }
+.disc-mention-username { font-size: 13px; color: #6b7280; }
+
+/* Нерабочая ссылкость футера */
+.disc-muted { color: #6b7280; font-size: 13px; }
+
+/* Hover эффект карточки */
+.disc-post:hover { box-shadow: 0 8px 20px rgba(17,24,39,0.09); }
+/* Подсветка постов, где текущий пользователь упомянут */
+.disc-post--mentioned {
+  border: 1px solid rgba(141,40,40,0.65);
+  box-shadow: 0 6px 18px rgba(141,40,40,0.20);
+}
+
+.disc-badge--me {
+  background: #8d2828;
+  color: #fff;
+  border: 1px solid rgba(141,40,40,0.85);
+}
+/* Подсветка постов, где текущий пользователь упомянут */
+.disc-post--mentioned {
+  border: 1px solid rgba(141,40,40,0.65);
+  box-shadow: 0 6px 18px rgba(141,40,40,0.20);
+}
+
+/* Бейджи */
+.disc-badge--me {
+  background: #8d2828;
+  color: #fff;
+  border: 1px solid rgba(141,40,40,0.85);
+}
+.disc-badge--all {
+  background: #111827;
+  color: #fff;
+  border: 1px solid #111827;
+}
+
+/* В тексте: общее упоминание и для всех */
+.disc-mention { padding: 0 2px; background: #f3f4f6; border-radius: 4px; }
+.disc-mention--all { background: #111827; color: #fff; }
+/* лёгкие вкладки */
+.disc-tabs { display:flex; gap:8px; margin:12px 0 8px; }
+.disc-tab {
+  display:inline-block;
+  padding:6px 10px;
+  border:1px solid rgba(141,40,40,0.25);
+  border-radius:10px;
+  background: rgba(255,255,255,0.7);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  font-size:13px;
+  line-height:1;
+  color:#111827;
+}
+.disc-tab--active {
+  border-color: rgba(141,40,40,0.6);
+  box-shadow: 0 4px 12px rgba(141,40,40,0.15);
+}
+.disc-tab:hover { border-color: rgba(141,40,40,0.45); }

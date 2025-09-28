@@ -1,5 +1,6 @@
 // lib/roleLabels.ts
 import type { Role } from './roles';
+import { normalizeRole } from './roles';
 
 export const ROLE_LABELS: Record<Role, string> = {
   user: 'Пользователь',
@@ -17,7 +18,19 @@ export const ROLE_LABELS: Record<Role, string> = {
   education_adviser: 'Советник по воспитанию',
 };
 
-// какие роли реально показывать в UI (например, в формах выбора)
+/**
+ * Человекочитаемая метка для произвольного значения роли.
+ * Если значение не распознано, возвращает fallback.
+ */
+export function roleLabel(value: unknown, fallback = '—'): string {
+  const r = normalizeRole(value);
+  return r ? ROLE_LABELS[r] : fallback;
+}
+
+/**
+ * Порядок показа ролей в UI (селекты, фильтры и т. п.).
+ * Можно менять без влияния на проверки доступа.
+ */
 export const VISIBLE_ROLES: Role[] = [
   'director',
   'deputy_plus',

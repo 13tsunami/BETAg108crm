@@ -12,6 +12,56 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+// Таймзона проекта: Екатеринбург
+const APP_TZ = process.env.NEXT_PUBLIC_APP_TZ || 'Asia/Yekaterinburg';
+
+function asDate(d: Date | string): Date {
+  return typeof d === 'string' ? new Date(d) : d;
+}
+
+function formatDate(d: Date | string | null): string {
+  if (!d) return '—';
+  const dd = asDate(d);
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: APP_TZ,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(dd);
+}
+
+function formatDateDay(d: Date | string): string {
+  const dd = asDate(d);
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: APP_TZ,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(dd);
+}
+
+function formatTime(d: Date | string): string {
+  const dd = asDate(d);
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: APP_TZ,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(dd);
+}
+
+// Сравнение календарного дня в нужной таймзоне
+function sameDayInTz(a: Date, b: Date): boolean {
+  const f = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: APP_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return f.format(a) === f.format(b);
+}
+
 export default async function Page({ params }: PageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect('/');
@@ -24,7 +74,7 @@ export default async function Page({ params }: PageProps) {
     where: { id },
     include: {
       author: { select: { id: true, name: true } },
-      processedBy: { select: { id: true, name: true } },
+      processedBy: { select: { id: true, name: true} },
       messages: {
         include: { author: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'asc' },
@@ -42,58 +92,53 @@ export default async function Page({ params }: PageProps) {
   return (
     <div className="reqChatPage">
       <header className="chatHeader card">
-  <div className="chatHeaderRow">
-    <h1 className="chatTitle">{req.title || 'Заявка'}</h1>
-
-    <div className="chatHeaderRight">
-      <span className={`statusBadge status-${req.status}`}>{statusLabel(req.status)}</span>
-      {canDelete ? <DeleteButton requestId={req.id} /> : null}
-    </div>
-  </div>
-  <div className="chatMeta">
-    Создал: {req.author?.name ?? req.authorId} • {formatDate(req.createdAt)}
-  </div>
-</header>
-
-
-
-          <main className="chatWindow card">
-  {/* Первичное описание — только если есть И это не повтор заголовка */}
-  {req.body && req.body.trim() !== (req.title ?? '').trim() ? (
-    <article className="msg msg-system">
-      <div className="msgBody">{req.body}</div>
-      <time className="msgTime">{formatDate(req.createdAt)}</time>
-    </article>
-  ) : null}
-
-  {req.messages.length === 0 && <div className="emptyMuted">Сообщений пока нет</div>}
-
-  {(() => {
-    let lastDate: Date | null = req.body ? new Date(req.createdAt) : null;
-
-    return req.messages.map((m) => {
-      const mine = m.authorId === meId;
-      const curDate = new Date(m.createdAt);
-      const needDateDivider = !lastDate || lastDate.toDateString() !== curDate.toDateString();
-      lastDate = curDate;
-
-      return (
-        <div key={m.id}>
-          {needDateDivider && (
-            <div className="dateDivider"><span>{formatDateDay(curDate)}</span></div>
-          )}
-          <article className={`msg ${mine ? 'msg-me' : 'msg-peer'}`}>
-            {!mine && <div className="msgHead">{m.author?.name ?? m.authorId}</div>}
-            {m.body ? <div className="msgBody">{m.body}</div> : null}
-            <time className="msgTime">{formatTime(curDate)}</time>
-          </article>
+        <div className="chatHeaderRow">
+          <h1 className="chatTitle">{req.title || 'Заявка'}</h1>
+          <div className="chatHeaderRight">
+            <span className={`statusBadge status-${req.status}`}>{statusLabel(req.status)}</span>
+            {canDelete ? <DeleteButton requestId={req.id} /> : null}
+          </div>
         </div>
-      );
-    });
-  })()}
-</main>
+        <div className="chatMeta">
+          Создал: {req.author?.name ?? req.authorId} • {formatDate(req.createdAt)}
+        </div>
+      </header>
 
+      <main className="chatWindow card">
+        {/* Первичное описание — только если есть и это не повтор заголовка */}
+        {req.body && req.body.trim() !== (req.title ?? '').trim() ? (
+          <article className="msg msg-system">
+            <div className="msgBody">{req.body}</div>
+            <time className="msgTime">{formatDate(req.createdAt)}</time>
+          </article>
+        ) : null}
 
+        {req.messages.length === 0 && <div className="emptyMuted">Сообщений пока нет</div>}
+
+        {(() => {
+          let lastDate: Date | null = req.body ? asDate(req.createdAt) : null;
+
+          return req.messages.map((m) => {
+            const mine = m.authorId === meId;
+            const curDate = asDate(m.createdAt);
+            const needDateDivider = !lastDate || !sameDayInTz(lastDate, curDate);
+            lastDate = curDate;
+
+            return (
+              <div key={m.id}>
+                {needDateDivider && (
+                  <div className="dateDivider"><span>{formatDateDay(curDate)}</span></div>
+                )}
+                <article className={`msg ${mine ? 'msg-me' : 'msg-peer'}`}>
+                  {!mine && <div className="msgHead">{m.author?.name ?? m.authorId}</div>}
+                  {m.body ? <div className="msgBody">{m.body}</div> : null}
+                  <time className="msgTime">{formatTime(curDate)}</time>
+                </article>
+              </div>
+            );
+          });
+        })()}
+      </main>
 
       <footer className="composer card">
         <ReplyForm requestId={req.id} />
@@ -111,29 +156,4 @@ function statusLabel(s: string | null): string {
     case 'rejected': return 'Отклонена';
     default: return s;
   }
-}
-
-function targetLabel(t: string | null): string {
-  if (!t) return '—';
-  if (t === 'deputy_axh') return 'Заместитель по АХЧ';
-  if (t === 'sysadmin') return 'Системный администратор';
-  return t;
-}
-
-function formatDate(d: Date | string | null): string {
-  if (!d) return '—';
-  const dd = typeof d === 'string' ? new Date(d) : d;
-  return dd.toLocaleString('ru-RU', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  });
-}
-
-function formatDateDay(d: Date | string): string {
-  const dd = typeof d === 'string' ? new Date(d) : d;
-  return dd.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatTime(d: Date | string): string {
-  const dd = typeof d === 'string' ? new Date(d) : d;
-  return dd.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 }

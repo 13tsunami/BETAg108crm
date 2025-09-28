@@ -4,23 +4,29 @@ import { prisma } from '@/lib/prisma';
 import { normalizeRole, canProcessRequests, type Role } from '@/lib/roles';
 
 /**
- * Проверки задач.
- * Считаем КОЛИЧЕСТВО исполнителей, у которых есть хотя бы одна открытая отправка,
- * и вы являетесь ревьюером по одному из правил:
+ * Проверки задач (reviews).
+ *
+ * Считаем КОЛИЧЕСТВО TaskAssignee со статусом 'submitted',
+ * у которых есть хотя бы один ОТКРЫТЫЙ сабмишен и вы являетесь ревьюером по одному из правил:
  *  1) submission.reviewedById = вы
  *  2) assignee.reviewedById = вы
- *  3) task.reviewRequired = true И task.createdById = вы  ← покрывает первую отправку
+ *  3) task.reviewRequired = true И task.createdById = вы (первая отправка без явного ревьюера)
+ *
+ * Такой подсчёт совпадает с тем, что реально видит UI на странице проверок.
  */
 export async function getUnreadReviewsCount(userId: string): Promise<number> {
   noStore();
 
   const count = await prisma.taskAssignee.count({
     where: {
-      submissions: { some: { open: true } },
+      status: 'submitted',
       OR: [
-        { reviewedById: userId },
+        // ревьюер задан на самом сабмишене
         { submissions: { some: { open: true, reviewedById: userId } } },
-        { task: { reviewRequired: true, createdById: userId } },
+        // ревьюер задан на исполнителе
+        { reviewedById: userId, submissions: { some: { open: true } } },
+        // автор задачи с требованием ревью — без явного ревьюера
+        { task: { reviewRequired: true, createdById: userId }, submissions: { some: { open: true } } },
       ],
     },
   });
@@ -29,29 +35,59 @@ export async function getUnreadReviewsCount(userId: string): Promise<number> {
 }
 
 /**
- * Объявления: новые посты/комментарии после lastSeen, автор не вы.
+ * Объявления (discussions):
+ * «непрочитанные» — это посты/комментарии ПОСЛЕ lastSeen, автор не вы,
+ * и в тексте есть @username пользователя с корректными Unicode-границами.
+ * Считаем на Node-стороне, без миграций и без PG-регэкспов.
  */
 export async function getUnreadDiscussionsCount(userId: string): Promise<number> {
   noStore();
 
-  const { lastSeen } =
-    (await prisma.user.findUnique({
-      where: { id: userId },
-      select: { lastSeen: true },
-    })) ?? {};
+  const me = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true, lastSeen: true },
+  });
+  if (!me?.username) return 0;
 
-  const since = lastSeen ?? new Date(0);
+  // небольшой сдвиг против гонки heartbeat/lastSeen
+  const sinceBase = me.lastSeen ?? new Date(0);
+  const since = new Date(sinceBase.getTime() - 3000);
 
+  // Лимит, чтобы не тянуть слишком много при очень давнем lastSeen
+  const LIMIT = 2000;
+
+  // Посты — по updatedAt (у вас оно есть), комменты — по createdAt
   const [posts, comments] = await Promise.all([
-    prisma.discussionPost.count({
-      where: { createdAt: { gt: since }, NOT: { authorId: userId } },
+    prisma.discussionPost.findMany({
+      where: { updatedAt: { gt: since }, authorId: { not: userId } },
+      select: { text: true },
+      orderBy: { updatedAt: 'desc' },
+      take: LIMIT,
     }),
-    prisma.discussionComment.count({
-      where: { createdAt: { gt: since }, NOT: { authorId: userId } },
+    prisma.discussionComment.findMany({
+      where: { createdAt: { gt: since }, authorId: { not: userId } },
+      select: { text: true },
+      orderBy: { createdAt: 'desc' },
+      take: LIMIT,
     }),
   ]);
 
-  return posts + comments;
+  // username → экранируем спецсимволы для regex
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const uname = esc(me.username);
+
+  /**
+   * Unicode-границы:
+   *  - перед @ — начало строки или НЕ символ "слова логина"
+   *  - после имени — конец строки или НЕ символ "слова логина"
+   * Слово логина = \p{L} (буквы любых алфавитов) + \p{N} (цифры) + _ . -
+   */
+  const re = new RegExp(`(^|[^\\p{L}\\p{N}_\\.-])@${uname}($|[^\\p{L}\\p{N}_\\.-])`, 'iu');
+
+  const countIn = (arr: Array<{ text: string }>) =>
+    arr.reduce((acc, { text }) => (re.test(text) ? acc + 1 : acc), 0);
+
+  return countIn(posts) + countIn(comments);
 }
 
 /**
@@ -79,18 +115,16 @@ export async function getUnreadRequestsCount(userId: string): Promise<number> {
   const since = user?.lastSeen ?? new Date(0);
   const processor = canProcessRequests(roleNorm);
 
-  // Релевантные цели для «новых» заявок у процессоров.
-  // Управленцы видят все (targets = [] → без фильтра).
+  // Релевантные target для «новых» заявок у процессоров.
   const targets: string[] | null = (() => {
     if (!processor) return null;
     if (roleNorm === 'sysadmin') return ['sysadmin'];
-    if (roleNorm === 'deputy_axh') return ['ahch'];
+    if (roleNorm === 'deputy_axh') return ['deputy_axh'];
     if (roleNorm === 'deputy' || roleNorm === 'deputy_plus' || roleNorm === 'director') return [];
     return [];
   })();
 
   if (processor) {
-    // 1) Все новые по релевантным целям (без учёта lastSeen)
     const newByTarget = await prisma.request.count({
       where: {
         status: 'new',
@@ -98,7 +132,6 @@ export async function getUnreadRequestsCount(userId: string): Promise<number> {
       },
     });
 
-    // 2) Назначенные на меня, активность после lastSeen
     const assignedActive = await prisma.request.count({
       where: {
         processedById: userId,
@@ -107,7 +140,6 @@ export async function getUnreadRequestsCount(userId: string): Promise<number> {
       },
     });
 
-    // 3) Мои авторские, активность после lastSeen, пока не done
     const myActive = await prisma.request.count({
       where: {
         authorId: userId,
@@ -119,7 +151,6 @@ export async function getUnreadRequestsCount(userId: string): Promise<number> {
     return newByTarget + assignedActive + myActive;
   }
 
-  // Не процессор: только свои активные после lastSeen, не 'done'
   const myUnread = await prisma.request.count({
     where: {
       authorId: userId,

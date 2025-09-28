@@ -1,4 +1,5 @@
 // lib/roles.ts
+
 export type Role =
   | 'user'
   | 'staff'          // техперсонал
@@ -112,4 +113,25 @@ export function canProcessRequests(role: Role | null | undefined): boolean {
 
   // управленческий контур
   return r === 'deputy' || r === 'deputy_plus' || r === 'director';
+}
+
+// ====== проверки доступа (дискуссии / стена) ======
+
+/**
+ * Пин постов в «стене»: управленческий контур.
+ * Разрешим deputy, deputy_plus, director.
+ */
+export function canPinDiscussions(role: Role | null | undefined): boolean {
+  const raw = role ?? null;
+  if (!raw) return false;
+  const r = canon(raw);
+  return r === 'deputy' || r === 'deputy_plus' || r === 'director';
+}
+
+/**
+ * Модерация дискуссий (удаление чужих постов/комментариев).
+ * Те же лица, что могут пинить.
+ */
+export function canModerateDiscussions(role: Role | null | undefined): boolean {
+  return canPinDiscussions(role);
 }

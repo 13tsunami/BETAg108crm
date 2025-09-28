@@ -18,6 +18,46 @@ function splitFio(full?: string | null) {
   return { last: s.toUpperCase(), rest: '' };
 }
 
+/** Чёткая заполненная шестерёнка (24 viewBox, по умолчанию 18px) */
+function GearIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      aria-hidden
+      focusable="false"
+      style={{ display: 'block' }}
+    >
+      <g fill="currentColor">
+        {/* Корпус: кольцо с вырезанным центром (even-odd) */}
+        <path
+          fillRule="evenodd"
+          d="
+            M12 2.5
+            a9.5 9.5 0 1 1 0 19
+            a9.5 9.5 0 1 1 0 -19
+            M12 8
+            a4 4 0 1 0 0 8
+            a4 4 0 1 0 0 -8
+          "
+          clipRule="evenodd"
+        />
+        {/* Зубья — крупные, чтобы не читалось как «солнышко» */}
+        <rect x="10.75" y="0.5" width="2.5" height="4.2" rx="1" />
+        <rect x="10.75" y="19.3" width="2.5" height="4.2" rx="1" />
+        <rect x="19.3" y="10.75" width="4.2" height="2.5" rx="1" />
+        <rect x="0.5" y="10.75" width="4.2" height="2.5" rx="1" />
+
+        <rect x="17.15" y="2.15" width="2.6" height="4.2" rx="1" transform="rotate(45 18.45 4.25)" />
+        <rect x="4.25" y="17.15" width="2.6" height="4.2" rx="1" transform="rotate(45 5.55 19.25)" />
+        <rect x="17.15" y="17.15" width="2.6" height="4.2" rx="1" transform="rotate(135 18.45 19.25)" />
+        <rect x="4.25" y="2.15" width="2.6" height="4.2" rx="1" transform="rotate(135 5.55 4.25)" />
+      </g>
+    </svg>
+  );
+}
+
 function Tile({
   href, label, active, unread,
 }: { href: string; label: string; active?: boolean; unread?: number }) {
@@ -75,9 +115,9 @@ function Tile({
 export default function Sidebar({
   unreadChats = 0,
   unreadTasks = 0,
-  unreadReviews = 0,      // нов: можно прокинуть с сервера
-  unreadDiscussions = 0,  // нов: можно прокинуть с сервера
-  unreadRequests = 0,     // нов: можно прокинуть с сервера
+  unreadReviews = 0,
+  unreadDiscussions = 0,
+  unreadRequests = 0,
 }: {
   unreadChats?: number;
   unreadTasks?: number;
@@ -113,7 +153,6 @@ export default function Sidebar({
     else shell.removeAttribute('data-collapsed');
   }, [collapsed]);
 
-  // Чаты (пока не используется в плитках, оставляю как есть)
   const [unread, setUnread] = useState(unreadChats);
   useEffect(() => setUnread(unreadChats), [unreadChats]);
   useEffect(() => {
@@ -122,7 +161,6 @@ export default function Sidebar({
     return () => window.removeEventListener('app:unread-bump', onBump as any);
   }, []);
 
-  // Задачи
   const [tasksUnread, setTasksUnread] = useState(unreadTasks);
   useEffect(() => setTasksUnread(unreadTasks), [unreadTasks]);
   useEffect(() => { if (pathname?.startsWith('/inboxtasks')) setTasksUnread(0); }, [pathname]);
@@ -140,7 +178,6 @@ export default function Sidebar({
     };
   }, []);
 
-  // Проверка задач
   const [reviewsUnreadState, setReviewsUnreadState] = useState(unreadReviews);
   useEffect(() => setReviewsUnreadState(unreadReviews), [unreadReviews]);
   useEffect(() => { if (pathname === '/reviews') setReviewsUnreadState(0); }, [pathname]);
@@ -158,7 +195,6 @@ export default function Sidebar({
     };
   }, []);
 
-  // Объявления
   const [discussionsUnreadState, setDiscussionsUnreadState] = useState(unreadDiscussions);
   useEffect(() => setDiscussionsUnreadState(unreadDiscussions), [unreadDiscussions]);
   useEffect(() => { if (pathname?.startsWith('/discussions')) setDiscussionsUnreadState(0); }, [pathname]);
@@ -176,7 +212,6 @@ export default function Sidebar({
     };
   }, []);
 
-  // Заявки
   const [requestsUnreadState, setRequestsUnreadState] = useState(unreadRequests);
   useEffect(() => setRequestsUnreadState(unreadRequests), [unreadRequests]);
   useEffect(() => { if (pathname?.startsWith('/requests')) setRequestsUnreadState(0); }, [pathname]);
@@ -226,10 +261,7 @@ export default function Sidebar({
               {fio.last}
               {authed && (
                 <Link href="/settings" aria-label="Настройки" className="gear" prefetch={false}>
-                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-                    <circle cx="12" cy="12" r="3.5" stroke="currentColor" fill="none" strokeWidth="2" />
-                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.05.06a2 2 0 1 1-3-.01l-.05-.05a1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87.34l.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.7 1.7 0 0 0-.6 1c0 .38.2.74.6 1.13.22.22.41.47.56.74.15.27.26.56.31.86Z" stroke="currentColor" fill="none" strokeWidth="1.5"/>
-                  </svg>
+                  <GearIcon />
                 </Link>
               )}
             </div>
@@ -253,12 +285,11 @@ export default function Sidebar({
               <Tile href="/dashboard"   label="Главное"     active={pathname === '/dashboard'} />
               <Tile
                 href="/discussions"
-                label="Объявления"
+                label="Пейджер"
                 active={pathname?.startsWith('/discussions') || false}
                 unread={pathname?.startsWith('/discussions') ? 0 : discussionsUnreadState}
               />
-              <Tile href="/teachers"    label="Педагоги"    active={pathname === '/teachers'} />
-              <Tile
+               <Tile
                 href="/inboxtasks"
                 label="Задачи"
                 active={pathname?.startsWith('/inboxtasks') || false}
@@ -273,6 +304,7 @@ export default function Sidebar({
                   unread={pathname === '/reviews' ? 0 : reviewsUnreadState}
                 />
               )}
+              <Tile href="/teachers"    label="Педагоги"    active={pathname === '/teachers'} />
               <Tile href="/calendar"    label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"    label="Расписание"  active={pathname === '/schedule'} />
               <Tile href="/showmyfiles" label="Мои файлы"   active={pathname === '/showmyfiles'} />
@@ -315,9 +347,16 @@ export default function Sidebar({
         .fio { line-height:1.08; }
         .last { font-weight:900; font-size:20px; letter-spacing:.4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .rest { font-weight:700; font-size:15px; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .gear { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:8px;
-                border:1px solid rgba(229,231,235,.9); background:#fff; color:#0f172a; }
+
+        .gear {
+          display:inline-grid; place-items:center;
+          width:28px; height:28px; border-radius:8px;
+          border:1px solid rgba(229,231,235,.9);
+          background:#fff; color:#0f172a;
+          line-height:0;
+        }
         .gear:hover { background:#fafafa; }
+
         .metaRow { display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .rolePill { font-size:12px; padding:2px 8px; border-radius:9999px; border:1px solid rgba(229,231,235,.9); background:rgba(255,255,255,.6); }
 
