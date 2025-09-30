@@ -1,7 +1,7 @@
 // lib/unread.server.ts
 import { unstable_noStore as noStore } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { normalizeRole, canProcessRequests, type Role } from '@/lib/roles';
+import { normalizeRole, type Role } from '@/lib/roles';
 
 /**
  * Проверки задач (reviews).
@@ -10,9 +10,7 @@ import { normalizeRole, canProcessRequests, type Role } from '@/lib/roles';
  * у которых есть хотя бы один ОТКРЫТЫЙ сабмишен и вы являетесь ревьюером по одному из правил:
  *  1) submission.reviewedById = вы
  *  2) assignee.reviewedById = вы
- *  3) task.reviewRequired = true И task.createdById = вы (первая отправка без явного ревьюера)
- *
- * Такой подсчёт совпадает с тем, что реально видит UI на странице проверок.
+ *  3) task.reviewRequired = true и task.createdById = вы (первая отправка без явного ревьюера)
  */
 export async function getUnreadReviewsCount(userId: string): Promise<number> {
   noStore();
@@ -21,11 +19,8 @@ export async function getUnreadReviewsCount(userId: string): Promise<number> {
     where: {
       status: 'submitted',
       OR: [
-        // ревьюер задан на самом сабмишене
         { submissions: { some: { open: true, reviewedById: userId } } },
-        // ревьюер задан на исполнителе
         { reviewedById: userId, submissions: { some: { open: true } } },
-        // автор задачи с требованием ревью — без явного ревьюера
         { task: { reviewRequired: true, createdById: userId }, submissions: { some: { open: true } } },
       ],
     },
@@ -35,10 +30,9 @@ export async function getUnreadReviewsCount(userId: string): Promise<number> {
 }
 
 /**
- * Объявления (discussions):
- * «непрочитанные» — это посты/комментарии ПОСЛЕ lastSeen, автор не вы,
- * и в тексте есть @username пользователя с корректными Unicode-границами.
- * Считаем на Node-стороне, без миграций и без PG-регэкспов.
+ * Объявления (discussions).
+ * «Непрочитанные» — посты/комментарии ПОСЛЕ lastSeen, автор не вы,
+ * и текст содержит @username ИЛИ @everyone с корректными Unicode-границами.
  */
 export async function getUnreadDiscussionsCount(userId: string): Promise<number> {
   noStore();
@@ -53,10 +47,8 @@ export async function getUnreadDiscussionsCount(userId: string): Promise<number>
   const sinceBase = me.lastSeen ?? new Date(0);
   const since = new Date(sinceBase.getTime() - 3000);
 
-  // Лимит, чтобы не тянуть слишком много при очень давнем lastSeen
   const LIMIT = 2000;
 
-  // Посты — по updatedAt (у вас оно есть), комменты — по createdAt
   const [posts, comments] = await Promise.all([
     prisma.discussionPost.findMany({
       where: { updatedAt: { gt: since }, authorId: { not: userId } },
@@ -72,20 +64,22 @@ export async function getUnreadDiscussionsCount(userId: string): Promise<number>
     }),
   ]);
 
-  // username → экранируем спецсимволы для regex
+  // содержимое класса «слово логина»: \p{L}\p{N}_ . -
+  const wordClass = String.raw`\p{L}\p{N}_\.\-`;
+  const boundaryL = `(^|[^${wordClass}])`;
+  const boundaryR = `($|[^${wordClass}])`;
+
+  // экранируем username для regex
   const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const uname = esc(me.username);
 
-  /**
-   * Unicode-границы:
-   *  - перед @ — начало строки или НЕ символ "слова логина"
-   *  - после имени — конец строки или НЕ символ "слова логина"
-   * Слово логина = \p{L} (буквы любых алфавитов) + \p{N} (цифры) + _ . -
-   */
-  const re = new RegExp(`(^|[^\\p{L}\\p{N}_\\.-])@${uname}($|[^\\p{L}\\p{N}_\\.-])`, 'iu');
+  const reUser = new RegExp(`${boundaryL}@${uname}${boundaryR}`, 'iu');
+  const reAll  = new RegExp(`${boundaryL}@everyone${boundaryR}`, 'iu');
+
+  const hit = (t: string) => reUser.test(t) || reAll.test(t);
 
   const countIn = (arr: Array<{ text: string }>) =>
-    arr.reduce((acc, { text }) => (re.test(text) ? acc + 1 : acc), 0);
+    arr.reduce((acc, { text }) => (hit(text) ? acc + 1 : acc), 0);
 
   return countIn(posts) + countIn(comments);
 }
@@ -93,71 +87,67 @@ export async function getUnreadDiscussionsCount(userId: string): Promise<number>
 /**
  * Заявки (Requests).
  *
- * Если пользователь МОЖЕТ обрабатывать заявки (sysadmin, deputy_axh, управленцы):
- *  - все status='new' по релевантным target — ВСЕГДА (без учёта lastSeen);
- *  - ПЛЮС назначенные на пользователя (processedById=вы) в статусах in_progress/rejected
- *    с активностью после lastSeen;
- *  - ПЛЮС авторские заявки (authorId=вы), у которых была активность после lastSeen
- *    и статус не 'done'.
+ * Правила:
+ *  а) У обработчиков ТОЛЬКО двух ролей (sysadmin, deputy_axh) бейдж = текущее число заявок
+ *     со статусом 'new' по их таргету. lastSeen не учитываем.
+ *     Для deputy_axh допускаем оба написания таргета: 'deputy_axh' и 'ahch'.
  *
- * Если пользователь НЕ может обрабатывать:
- *  - только свои заявки с активностью после lastSeen и статусом не 'done'.
+ *  б) У автора бейдж вспыхивает, если ПОСЛЕ lastSeen заявка:
+ *     — перешла в статус 'in_progress' (по updatedAt),
+ *     — ИЛИ появился новый комментарий от обработчика (User.role ∈ {sysadmin, deputy_axh})
+ *       в RequestMessage (по createdAt).
+ *     Считаем уникальные заявки.
  */
 export async function getUnreadRequestsCount(userId: string): Promise<number> {
   noStore();
 
-  const user = await prisma.user.findUnique({
+  const me = await prisma.user.findUnique({
     where: { id: userId },
     select: { role: true, lastSeen: true },
   });
 
-  const roleNorm: Role | null = normalizeRole(user?.role ?? null);
-  const since = user?.lastSeen ?? new Date(0);
-  const processor = canProcessRequests(roleNorm);
+  const roleNorm: Role | null = normalizeRole(me?.role ?? null);
+  const since = me?.lastSeen ?? new Date(0);
 
-  // Релевантные target для «новых» заявок у процессоров.
-  const targets: string[] | null = (() => {
-    if (!processor) return null;
-    if (roleNorm === 'sysadmin') return ['sysadmin'];
-    if (roleNorm === 'deputy_axh') return ['deputy_axh'];
-    if (roleNorm === 'deputy' || roleNorm === 'deputy_plus' || roleNorm === 'director') return [];
-    return [];
-  })();
+  const isSysadmin = roleNorm === 'sysadmin';
+  const isAhch     = roleNorm === 'deputy_axh';
 
-  if (processor) {
+  // а) обработчики
+  if (isSysadmin || isAhch) {
+    const targets = isSysadmin ? ['sysadmin'] : ['deputy_axh', 'ahch'];
     const newByTarget = await prisma.request.count({
       where: {
         status: 'new',
-        ...(targets && targets.length > 0 ? { target: { in: targets } } : {}),
+        target: { in: targets },
       },
     });
-
-    const assignedActive = await prisma.request.count({
-      where: {
-        processedById: userId,
-        status: { in: ['in_progress', 'rejected'] },
-        lastMessageAt: { gt: since },
-      },
-    });
-
-    const myActive = await prisma.request.count({
-      where: {
-        authorId: userId,
-        lastMessageAt: { gt: since },
-        NOT: { status: 'done' },
-      },
-    });
-
-    return newByTarget + assignedActive + myActive;
+    return newByTarget;
   }
 
-  const myUnread = await prisma.request.count({
+  // б) автор заявки
+  const madeInProgress = await prisma.request.findMany({
     where: {
       authorId: userId,
-      lastMessageAt: { gt: since },
-      NOT: { status: 'done' },
+      status: 'in_progress',
+      updatedAt: { gt: since },
     },
+    select: { id: true },
   });
 
-  return myUnread;
+  const processorCommented = await prisma.requestMessage.findMany({
+    where: {
+      createdAt: { gt: since },
+      request: { authorId: userId },
+      author: {
+        role: { in: ['sysadmin', 'deputy_axh'] },
+      },
+    },
+    select: { requestId: true },
+  });
+
+  const ids = new Set<string>();
+  for (const r of madeInProgress) ids.add(r.id);
+  for (const m of processorCommented) ids.add(m.requestId);
+
+  return ids.size;
 }
