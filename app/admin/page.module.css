@@ -1,18 +1,75 @@
-.page { display:grid; gap:12px; }
-.head { padding:14px 16px; border-radius:16px; }
-.title { margin:0; font-weight:900; font-size:22px; color:#0f172a; }
-.subtitle { margin:6px 0 0; font-size:14px; color:#374151; }
-
-.info { padding:12px 14px; border-radius:16px; }
-.infoRow { display:grid; grid-template-columns:140px 1fr; gap:8px; align-items:center; }
-.infoKey { font-weight:800; color:#0f172a; }
-.infoVal { color:#374151; }
-
-.glass{
-  background:linear-gradient(180deg,rgba(255,255,255,.68),rgba(255,255,255,.4));
-  backdrop-filter:saturate(180%) blur(10px);
-  -webkit-backdrop-filter:saturate(180%) blur(10px);
-  border:1px solid rgba(229,231,235,.8);
-  box-shadow:0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);
+/* База (ваши классы) */
+.page { display: grid; gap: 12px; padding: 16px; min-height: 100%;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(141,40,40,.10), transparent 60%),
+    radial-gradient(800px 480px at 10% 110%, rgba(141,40,40,.08), transparent 60%),
+    linear-gradient(180deg, #fafafa, #f3f4f6);
+}
+.head { padding: 14px 16px; border-radius: 16px; }
+.title { margin: 0; font-weight: 900; font-size: 22px; color: #0f172a; letter-spacing: .2px; }
+.subtitle { margin: 6px 0 0; font-size: 14px; color: #374151; }
+.info { padding: 12px 14px; border-radius: 16px; }
+.infoRow { display: grid; grid-template-columns: 160px 1fr; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(141,40,40,.10); }
+.infoRow:last-child { border-bottom: 0; }
+.infoKey { font-weight: 800; color: #0f172a; letter-spacing: .2px; }
+.infoVal { color: #374151; }
+.glass {
+  background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4));
+  backdrop-filter: saturate(180%) blur(10px);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  border: 1px solid rgba(141,40,40,.22);
+  box-shadow: 0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);
+  border-radius: 16px;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
+/* Плитки-инструменты */
+.tiles {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(12, 1fr);
+}
+.tile { grid-column: span 6; padding: 16px; }
+.tile:hover { border-color: rgba(141,40,40,.32); box-shadow: 0 12px 26px rgba(17,24,39,.12), inset 0 1px 0 rgba(255,255,255,.5); transform: translateY(-1px); }
+
+.tileHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.tileTitle { margin: 0; font-size: 18px; font-weight: 800; color: #1f2937; letter-spacing: .2px; }
+.badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; font-size: 12px; font-weight: 800; color: #fff; background: #8d2828; border-radius: 999px; letter-spacing: .3px; }
+.tileDesc { margin: 6px 0 12px; color: #374151; line-height: 1.45; }
+
+/* Кнопки/ссылки */
+.btnPrimary, .btnGhost {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 36px; padding: 0 14px; border-radius: 10px; font-weight: 800; letter-spacing: .2px;
+  text-decoration: none; user-select: none; border: 1px solid transparent; cursor: pointer;
+}
+.btnPrimary { background: #8d2828; color: #fff; border-color: rgba(141,40,40,.9); }
+.btnPrimary:hover { filter: brightness(.96); }
+.btnPrimary:active { transform: translateY(1px); }
+.btnGhost { background: rgba(141,40,40,.06); color: #4b5563; border-color: rgba(141,40,40,.25); }
+.btnGhost:hover { background: rgba(141,40,40,.09); }
+
+/* Форма */
+.formGrid { display: grid; gap: 10px; }
+.formRow { display: grid; grid-template-columns: 140px 1fr; gap: 10px; align-items: center; }
+.formKey { font-weight: 800; color: #0f172a; }
+.input {
+  height: 36px; padding: 6px 10px; border-radius: 10px;
+  border: 1px solid rgba(141,40,40,.25); background: rgba(255,255,255,.9); color: #111827; outline: none; width: 100%;
+}
+.input:focus { border-color: rgba(141,40,40,.55); box-shadow: 0 0 0 3px rgba(141,40,40,.18); }
+.formActions { display: flex; align-items: center; gap: 10px; }
+.hint { color: #6b7280; }
+
+/* Адаптив */
+@media (max-width: 920px) {
+  .tile { grid-column: span 12; }
+}
+@media (max-width: 720px) {
+  .infoRow, .formRow { grid-template-columns: 1fr; gap: 6px; }
+}
+
+/* Умеренная анимация */
+@media (prefers-reduced-motion: reduce) {
+  .glass, .btnPrimary, .btnGhost { transition: none; }
+}

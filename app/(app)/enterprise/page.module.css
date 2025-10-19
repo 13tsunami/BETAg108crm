@@ -1,0 +1,236 @@
+/* app/(app)/enterprise/page.module.css */
+
+/* Базовый фон страницы и отступы */
+.page {
+  --brand: #8d2828;
+  --ink: #0f172a;
+  --muted: #374151;
+
+  min-height: 100%;
+  padding: 16px;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(141,40,40,.10), transparent 60%),
+    radial-gradient(800px 480px at 10% 110%, rgba(141,40,40,.08), transparent 60%),
+    linear-gradient(180deg, #fafafa, #f3f4f6);
+}
+
+/* Стеклянные поверхности */
+.glass {
+  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.46));
+  backdrop-filter: saturate(180%) blur(10px);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  border: 1px solid rgba(141,40,40,.22);
+  border-radius: 16px;
+  box-shadow:
+    0 10px 26px rgba(17,24,39,.10),
+    inset 0 1px 0 rgba(255,255,255,.45);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+/* Шапка раздела */
+.head {
+  max-width: 980px;
+  margin: 0 auto 16px;
+  padding: 16px;
+}
+
+.title {
+  margin: 0;
+  font-weight: 900;
+  font-size: 24px;
+  color: var(--ink);
+  letter-spacing: .2px;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Сетка карточек */
+.grid {
+  max-width: 980px;
+  margin: 8px auto 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+
+/* Карточка документа */
+.card {
+  grid-column: span 6;
+  padding: 16px;
+}
+
+.card:hover {
+  border-color: rgba(141,40,40,.32);
+  box-shadow:
+    0 14px 30px rgba(17,24,39,.12),
+    inset 0 1px 0 rgba(255,255,255,.55);
+  transform: translateY(-1px);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--brand);
+  border-radius: 999px;
+  letter-spacing: .3px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: .2px;
+}
+
+.cardDesc {
+  margin: 8px 0 14px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Действия */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Кнопки */
+.primary,
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  text-decoration: none;
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.primary {
+  background: var(--brand);
+  color: #fff;
+  border-color: rgba(141,40,40,.9);
+}
+.primary:hover { filter: brightness(.96); }
+.primary:active { transform: translateY(1px); }
+
+.ghost {
+  background: rgba(141,40,40,.06);
+  color: #4b5563;
+  border-color: rgba(141,40,40,.25);
+}
+.ghost:hover { background: rgba(141,40,40,.09); }
+
+/* Адаптив */
+@media (max-width: 920px) {
+  .card { grid-column: span 12; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass, .primary, .ghost { transition: none; }
+}
+.manageRow {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.input {
+  height: 36px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(141,40,40,.25);
+  background: rgba(255,255,255,.9);
+  color: #111827;
+  outline: none;
+  width: 100%;
+}
+.input:focus {
+  border-color: rgba(141,40,40,.55);
+  box-shadow: 0 0 0 3px rgba(141,40,40,.18);
+}
+
+.btnSmall,
+.btnSmallDanger {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.btnSmall {
+  background: rgba(141,40,40,.06);
+  color: #4b5563;
+  border-color: rgba(141,40,40,.25);
+}
+.btnSmall:hover { background: rgba(141,40,40,.09); }
+
+.btnSmallDanger {
+  background: #fff1f2;
+  color: #991b1b;
+  border-color: rgba(220,38,38,.25);
+}
+.btnSmallDanger:hover { background: #ffe4e6; }
+.searchRow {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+.searchHint { color: #6b7280; }
+
+.manageRow {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.input {
+  height: 36px; padding: 6px 10px; border-radius: 10px;
+  border: 1px solid rgba(141,40,40,.25); background: rgba(255,255,255,.9); color: #111827; outline: none; width: 100%;
+}
+.input:focus { border-color: rgba(141,40,40,.55); box-shadow: 0 0 0 3px rgba(141,40,40,.18); }
+
+.btnSmall, .btnSmallDanger {
+  height: 36px; padding: 0 12px; border-radius: 10px; font-weight: 800; letter-spacing: .2px; border: 1px solid transparent; cursor: pointer;
+}
+.btnSmall { background: rgba(141,40,40,.06); color: #4b5563; border-color: rgba(141,40,40,.25); }
+.btnSmall:hover { background: rgba(141,40,40,.09); }
+.btnSmallDanger { background: #fff1f2; color: #991b1b; border-color: rgba(220,38,38,.25); }
+.btnSmallDanger:hover { background: #ffe4e6; }
+
+.flagRestricted, .flagOpen {
+  margin-left: auto;
+  height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center;
+}
+.flagRestricted { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.flagOpen { background: rgba(141,40,40,.08); color: #374151; border: 1px solid rgba(141,40,40,.22); }
