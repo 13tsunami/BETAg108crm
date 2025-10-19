@@ -241,3 +241,22 @@
 .badgePpt    { background: #dc2626; } /* красный */
 .badgeImage  { background: #eab308; color: #1f2937; } /* бежево-жёлтый, тёмный текст */
 .badgeOther  { background: #6b7280; } /* серый на всякий */
+.primary,
+.primary:link,
+.primary:visited,
+.primary:hover,
+.primary:active,
+.primary:focus-visible {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff; /* на всякий случай для WebKit */
+}
+
+.ghost,
+.ghost:link,
+.ghost:visited,
+.ghost:hover,
+.ghost:active,
+.ghost:focus-visible {
+  color: #4b5563 !important;
+  -webkit-text-fill-color: #4b5563;
+}

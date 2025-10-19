@@ -1,75 +1,261 @@
-/* База (ваши классы) */
-.page { display: grid; gap: 12px; padding: 16px; min-height: 100%;
+/* Контейнер и фон */
+.page {
+  min-height: 100%;
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(141,40,40,.10), transparent 60%),
-    radial-gradient(800px 480px at 10% 110%, rgba(141,40,40,.08), transparent 60%),
+    radial-gradient(1200px 600px at 80% -10%, rgba(141,40,40,.06), transparent 60%),
+    radial-gradient(800px 480px at 10% 110%, rgba(141,40,40,.04), transparent 60%),
     linear-gradient(180deg, #fafafa, #f3f4f6);
+  padding: 16px;
 }
-.head { padding: 14px 16px; border-radius: 16px; }
-.title { margin: 0; font-weight: 900; font-size: 22px; color: #0f172a; letter-spacing: .2px; }
-.subtitle { margin: 6px 0 0; font-size: 14px; color: #374151; }
-.info { padding: 12px 14px; border-radius: 16px; }
-.infoRow { display: grid; grid-template-columns: 160px 1fr; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(141,40,40,.10); }
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+/* Шапка */
+.head {
+  padding: 16px 18px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.headNav {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.title {
+  margin: 0;
+  font-weight: 900;
+  font-size: 22px;
+  color: #0f172a;
+  letter-spacing: .2px;
+}
+.subtitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+/* Карточка сведений */
+.sectionTitle {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: .2px;
+}
+.info {
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+.infoRow {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(141,40,40,.10);
+}
 .infoRow:last-child { border-bottom: 0; }
-.infoKey { font-weight: 800; color: #0f172a; letter-spacing: .2px; }
+.infoKey {
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: .2px;
+}
 .infoVal { color: #374151; }
+
+/* Стеклянный стиль */
 .glass {
-  background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.4));
-  backdrop-filter: saturate(180%) blur(10px);
-  -webkit-backdrop-filter: saturate(180%) blur(10px);
-  border: 1px solid rgba(141,40,40,.22);
-  box-shadow: 0 6px 16px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.35);
+  background: linear-gradient(180deg, rgba(255,255,255,.74), rgba(255,255,255,.5));
+  backdrop-filter: saturate(180%) blur(8px);
+  -webkit-backdrop-filter: saturate(180%) blur(8px);
+  border: 1px solid rgba(141,40,40,.20);
+  box-shadow: 0 6px 16px rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.45);
   border-radius: 16px;
   transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
-/* Плитки-инструменты */
+/* Плитки */
 .tiles {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(12, 1fr);
 }
-.tile { grid-column: span 6; padding: 16px; }
-.tile:hover { border-color: rgba(141,40,40,.32); box-shadow: 0 12px 26px rgba(17,24,39,.12), inset 0 1px 0 rgba(255,255,255,.5); transform: translateY(-1px); }
-
-.tileHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
-.tileTitle { margin: 0; font-size: 18px; font-weight: 800; color: #1f2937; letter-spacing: .2px; }
-.badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; font-size: 12px; font-weight: 800; color: #fff; background: #8d2828; border-radius: 999px; letter-spacing: .3px; }
-.tileDesc { margin: 6px 0 12px; color: #374151; line-height: 1.45; }
-
-/* Кнопки/ссылки */
-.btnPrimary, .btnGhost {
-  display: inline-flex; align-items: center; justify-content: center;
-  height: 36px; padding: 0 14px; border-radius: 10px; font-weight: 800; letter-spacing: .2px;
-  text-decoration: none; user-select: none; border: 1px solid transparent; cursor: pointer;
+.tile {
+  grid-column: span 6;
+  padding: 16px;
 }
-.btnPrimary { background: #8d2828; color: #fff; border-color: rgba(141,40,40,.9); }
+.tile:hover {
+  border-color: rgba(141,40,40,.32);
+  box-shadow: 0 12px 26px rgba(17,24,39,.10), inset 0 1px 0 rgba(255,255,255,.55);
+  transform: translateY(-1px);
+}
+.tileHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.tileTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: .2px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: #8d2828;
+  border-radius: 999px;
+  letter-spacing: .3px;
+}
+.tileDesc {
+  margin: 6px 0 12px;
+  color: #374151;
+  line-height: 1.5;
+}
+.tileActions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Кнопки и ссылки */
+.btnPrimary, .btnGhost {
+  display: inline-flex;
+  color: #fcfcfc;
+  align-items: center;
+  justify-content: center;
+  height: 40px; /* крупнее для тач-целей */
+  padding: 0 16px;
+  border-radius: 10px;
+  font-weight: 800; color: #fcfcfc;
+  letter-spacing: .2px;
+  text-decoration: none;
+  user-select: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  line-height: 1;
+}
+.btnPrimary {
+  background: #8d2828;
+  color: #ffffff;
+  border-color: rgba(141,40,40,.9);
+}
 .btnPrimary:hover { filter: brightness(.96); }
 .btnPrimary:active { transform: translateY(1px); }
-.btnGhost { background: rgba(141,40,40,.06); color: #4b5563; border-color: rgba(141,40,40,.25); }
+.btnPrimary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(141,40,40,.24);
+}
+
+.btnGhost {
+  background: rgba(141,40,40,.06);
+  color: #374151;
+  border-color: rgba(141,40,40,.22);
+}
 .btnGhost:hover { background: rgba(141,40,40,.09); }
+.btnGhost:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(141,40,40,.18);
+}
+
+/* Акцентная ссылка (исправляет отсутствие класса) */
+.linkAccent {
+  color: #8d2828;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+.linkAccent:hover { text-decoration: underline; }
 
 /* Форма */
-.formGrid { display: grid; gap: 10px; }
-.formRow { display: grid; grid-template-columns: 140px 1fr; gap: 10px; align-items: center; }
-.formKey { font-weight: 800; color: #0f172a; }
-.input {
-  height: 36px; padding: 6px 10px; border-radius: 10px;
-  border: 1px solid rgba(141,40,40,.25); background: rgba(255,255,255,.9); color: #111827; outline: none; width: 100%;
+.formGrid { display: grid; gap: 12px; }
+.formRow {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 12px;
+  align-items: flex-start;
 }
-.input:focus { border-color: rgba(141,40,40,.55); box-shadow: 0 0 0 3px rgba(141,40,40,.18); }
-.formActions { display: flex; align-items: center; gap: 10px; }
+.formKey {
+  font-weight: 800;
+  color: #0f172a;
+  padding-top: 8px;
+}
+.formCol { display: grid; gap: 6px; }
+.formColInline { display: inline-flex; align-items: center; gap: 10px; }
+
+.input {
+  height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(141,40,40,.25);
+  background: rgba(255,255,255,.95);
+  color: #111827;
+  outline: none;
+  width: 100%;
+}
+.input:focus {
+  border-color: rgba(141,40,40,.55);
+  box-shadow: 0 0 0 3px rgba(141,40,40,.18);
+}
+.checkboxLabel { color: #374151; }
+
+.help {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .hint { color: #6b7280; }
 
+.page :global(code) {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+
 /* Адаптив */
+@media (max-width: 1080px) {
+  .container { max-width: 960px; }
+}
 @media (max-width: 920px) {
-  .tile { grid-column: span 12; }
+  .tiles { grid-template-columns: repeat(6, 1fr); }
+  .tile { grid-column: span 6; }
+  .infoRow, .formRow { grid-template-columns: 1fr; gap: 8px; }
+  .formKey { padding-top: 0; }
+  .head { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 720px) {
-  .infoRow, .formRow { grid-template-columns: 1fr; gap: 6px; }
+  .page { padding: 12px; }
 }
 
 /* Умеренная анимация */
 @media (prefers-reduced-motion: reduce) {
   .glass, .btnPrimary, .btnGhost { transition: none; }
+}
+.btnPrimary,
+.btnPrimary:link,
+.btnPrimary:visited,
+.btnPrimary:hover,
+.btnPrimary:active,
+.btnPrimary:focus-visible {
+  color: #fff !important;
 }

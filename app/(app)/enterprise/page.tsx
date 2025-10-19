@@ -1,7 +1,8 @@
+// app/(app)/enterprise/page.tsx
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth.config';
-import { normalizeRole } from '@/lib/roles';
+import { normalizeRole, canPinDiscussions, canViewAdmin } from '@/lib/roles';
 import s from './page.module.css';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -54,15 +55,6 @@ async function readIndex(): Promise<IndexShape> {
   }
 }
 
-function isDeputyOrHigher(role: string | null | undefined): boolean {
-  const r = normalizeRole(role);
-  return r === 'director' || r === 'deputy_plus' || r === 'deputy';
-}
-function isDeputyPlusOrHigher(role: string | null | undefined): boolean {
-  const r = normalizeRole(role);
-  return r === 'director' || r === 'deputy_plus';
-}
-
 export default async function EnterprisePage(
   { searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }
 ) {
@@ -70,8 +62,11 @@ export default async function EnterprisePage(
   if (!session) redirect('/');
 
   const role = normalizeRole((session.user as any)?.role ?? null);
-  const deputyOrHigher = isDeputyOrHigher(role);
-  const deputyPlusOrHigher = isDeputyPlusOrHigher(role);
+
+  // просмотр служебных файлов: deputy и выше (учитывает канонизацию ролей)
+  const deputyOrHigher = canPinDiscussions(role);
+  // управление файлами (переименование/служебность/удаление): admin-контур
+  const deputyPlusOrHigher = canViewAdmin(role);
 
   const sp = await searchParams;
   const qRaw = (Array.isArray(sp.q) ? sp.q[0] : sp.q) || '';
@@ -92,7 +87,7 @@ export default async function EnterprisePage(
     <main className={s.page}>
       <header className={`${s.glass} ${s.head}`}>
         <h1 className={s.title}>Служебные документы и образцы служебных документов</h1>
-        <p className={s.subtitle}>доступ: {role || '—'}</p>
+        <p className={s.subtitle}>доступ разрешён. воспользуйтесь поиском при необходимости.</p>
 
         <form method="GET" className={s.searchRow}>
           <input
