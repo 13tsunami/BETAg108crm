@@ -234,3 +234,10 @@
 }
 .flagRestricted { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 .flagOpen { background: rgba(141,40,40,.08); color: #374151; border: 1px solid rgba(141,40,40,.22); }
+/* Цветовые бейджи по типу */
+.badgeWord   { background: #2563eb; } /* синий */
+.badgeExcel  { background: #16a34a; } /* зелёный */
+.badgePdf    { background: var(--brand); } /* как было (бордовый/красный) */
+.badgePpt    { background: #dc2626; } /* красный */
+.badgeImage  { background: #eab308; color: #1f2937; } /* бежево-жёлтый, тёмный текст */
+.badgeOther  { background: #6b7280; } /* серый на всякий */

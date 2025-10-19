@@ -29,6 +29,21 @@ const DOCS: readonly Doc[] = [
 type IndexItem = { name: string; restricted: boolean; uploadedAt: number };
 type IndexShape = { files: IndexItem[] };
 
+function extBadge(input: string): string {
+  const ext = (input.split('.').pop() || '').toUpperCase();
+  return ext || 'FILE';
+}
+
+function badgeClass(input: string): string {
+  const ext = (input.split('.').pop() || '').toLowerCase();
+  if (ext === 'pdf') return `${s.badge} ${s.badgePdf}`;
+  if (ext === 'doc' || ext === 'docx') return `${s.badge} ${s.badgeWord}`;
+  if (ext === 'xls' || ext === 'xlsx') return `${s.badge} ${s.badgeExcel}`;
+  if (ext === 'ppt' || ext === 'pptx') return `${s.badge} ${s.badgePpt}`;
+  if (ext === 'jpg' || ext === 'jpeg' || ext === 'png') return `${s.badge} ${s.badgeImage}`;
+  return `${s.badge} ${s.badgeOther}`;
+}
+
 async function readIndex(): Promise<IndexShape> {
   try {
     const raw = await fs.readFile(path.join(BASE, INDEX), 'utf8');
@@ -95,22 +110,23 @@ export default async function EnterprisePage(
         </form>
       </header>
 
+      {/* статичные документы */}
       <section className={s.grid}>
         {DOCS.map(d => (
           <article key={d.id} className={`${s.glass} ${s.card}`}>
             <div className={s.cardHead}>
-              <span className={s.badge}>PDF</span>
+              <span className={badgeClass(d.href)}>{extBadge(d.href)}</span>
               <h2 className={s.cardTitle}>{d.title}</h2>
             </div>
             {d.description ? <p className={s.cardDesc}>{d.description}</p> : null}
             <div className={s.actions}>
-              <Link href={d.href} className={s.primary}>Открыть</Link>
               <Link href={d.href} download className={s.ghost}>Скачать</Link>
             </div>
           </article>
         ))}
       </section>
 
+      {/* загруженные документы */}
       <section className={s.grid} style={{ marginTop: 12 }}>
         {files.map(f => {
           const href = `/docs/enterprise/${f.name}`;
@@ -118,7 +134,7 @@ export default async function EnterprisePage(
           return (
             <article key={f.name} className={`${s.glass} ${s.card}`}>
               <div className={s.cardHead}>
-                <span className={s.badge}>PDF</span>
+                <span className={badgeClass(f.name)}>{extBadge(f.name)}</span>
                 <h2 className={s.cardTitle}>{f.name}</h2>
                 {deputyOrHigher && (
                   <span className={isRestricted ? s.flagRestricted : s.flagOpen}>
@@ -141,7 +157,7 @@ export default async function EnterprisePage(
                       name="newName"
                       defaultValue={f.name}
                       className={s.input}
-                      placeholder="новое имя (автоматически добавим .pdf)"
+                      placeholder="новое имя (с расширением)"
                       required
                     />
                     <button type="submit" className={s.btnSmall}>Переименовать</button>

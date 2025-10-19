@@ -15,6 +15,26 @@ const INDEX = 'enterprise.index.json';
 type IndexItem = { name: string; restricted: boolean; uploadedAt: number };
 type IndexShape = { files: IndexItem[] };
 
+const ALLOWED_EXTS = ['pdf','doc','docx','xls','xlsx','ppt','pptx','jpg','jpeg','png'] as const;
+type AllowedExt = typeof ALLOWED_EXTS[number];
+
+function guessContentType(filename: string): { type: string; inline: boolean } {
+  const ext = (filename.split('.').pop() || '').toLowerCase();
+  switch (ext) {
+    case 'pdf':   return { type: 'application/pdf', inline: true };
+    case 'jpg':
+    case 'jpeg':  return { type: 'image/jpeg', inline: true };
+    case 'png':   return { type: 'image/png', inline: true };
+    case 'doc':   return { type: 'application/msword', inline: true };
+    case 'docx':  return { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', inline: true };
+    case 'xls':   return { type: 'application/vnd.ms-excel', inline: true };
+    case 'xlsx':  return { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', inline: true };
+    case 'ppt':   return { type: 'application/vnd.ms-powerpoint', inline: true };
+    case 'pptx':  return { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', inline: true };
+    default:      return { type: 'application/octet-stream', inline: false };
+  }
+}
+
 function isDeputyOrHigher(role: string | null | undefined): boolean {
   const r = normalizeRole(role);
   return r === 'director' || r === 'deputy_plus' || r === 'deputy';
@@ -30,10 +50,7 @@ async function readIndex(): Promise<IndexShape> {
   }
 }
 
-export async function GET(
-  _req: Request,
-  ctx: { params: Promise<{ file: string }> } // Next 15: params — Promise
-) {
+export async function GET(_req: Request, ctx: { params: Promise<{ file: string }> }) {
   const session = await auth();
   if (!session) return new NextResponse('Unauthorized', { status: 401 });
   const role = (session.user as any)?.role ?? null;
@@ -44,7 +61,8 @@ export async function GET(
   if (!requested || requested.includes('..') || requested.includes('/') || requested.includes('\\')) {
     return new NextResponse('Forbidden', { status: 403 });
   }
-  if (!/\.pdf$/i.test(requested)) {
+  const ext = (requested.split('.').pop() || '').toLowerCase();
+  if (!ALLOWED_EXTS.includes(ext as AllowedExt)) {
     return new NextResponse('Unsupported Media Type', { status: 415 });
   }
 
@@ -64,15 +82,17 @@ export async function GET(
     const nodeStream = createReadStream(filePath);
     const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
 
+    const { type, inline } = guessContentType(requested);
     const asciiFallback = requested.replace(/[^\x20-\x7E]/g, '_');
     const filenameStar = encodeURIComponent(requested);
+    const disposition = inline ? 'inline' : 'attachment';
 
     return new NextResponse(webStream, {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
+        'Content-Type': type,
         'Content-Length': String(stat.size),
-        'Content-Disposition': `inline; filename="${asciiFallback}"; filename*=UTF-8''${filenameStar}`,
+        'Content-Disposition': `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${filenameStar}`,
         'Cache-Control': 'public, max-age=300',
       },
     });

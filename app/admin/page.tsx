@@ -1,4 +1,3 @@
-// app/(app)/admin/page.tsx
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth.config';
@@ -41,7 +40,7 @@ export default async function AdminPage() {
         <article className={`${styles.tile} ${styles.glass}`}>
           <div className={styles.tileHead}>
             <h2 className={styles.tileTitle}>Enterprise</h2>
-            <span className={styles.badge}>PDF</span>
+            <span className={styles.badge}>Документы</span>
           </div>
           <p className={styles.tileDesc}>
             Просмотр документов. Раздача по адресу <code>/docs/enterprise/&lt;имя-файла&gt;</code>.
@@ -54,10 +53,12 @@ export default async function AdminPage() {
 
         <article className={`${styles.tile} ${styles.glass}`}>
           <div className={styles.tileHead}>
-            <h2 className={styles.tileTitle}>Загрузка PDF</h2>
+            <h2 className={styles.tileTitle}>Загрузка документов</h2>
+            <span className={styles.badge}>PDF/DOC/XLS/JPG/PNG</span>
           </div>
           <p className={styles.tileDesc}>
-            Файл сохраняется в каталог <code>ENTERPRISE_DIR</code> и доступен как <code>/docs/enterprise/&lt;имя&gt;</code>.
+            Файл сохраняется в базовый каталог хранения и будет доступен как
+            <code> /docs/enterprise/&lt;имя&gt;</code>.
           </p>
 
           <form action={uploadEnterprisePdfAction} className={styles.formGrid}>
@@ -66,26 +67,32 @@ export default async function AdminPage() {
               <input
                 type="text"
                 name="name"
-                placeholder="например: enterprise-card.pdf"
-                required
+                placeholder="например: приказ-01.docx (можно оставить пустым)"
                 className={styles.input}
               />
             </label>
-            <label className={styles.formRow}>
-  <span className={styles.formKey}>служебный</span>
-  <input type="checkbox" name="restricted" value="1" />
-</label>
 
+            <label className={styles.formRow}>
+              <span className={styles.formKey}>служебный</span>
+              <input type="checkbox" name="restricted" value="1" />
+            </label>
 
             <label className={styles.formRow}>
               <span className={styles.formKey}>файл</span>
-              <input type="file" name="file" accept="application/pdf" required className={styles.input}/>
+              <input
+                type="file"
+                name="file"
+                required
+                className={styles.input}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png"
+
+              />
             </label>
 
             <div className={styles.formActions}>
               <button type="submit" className={styles.btnPrimary}>Загрузить</button>
               <span className={styles.hint}>
-                после загрузки: <code>/docs/enterprise/&lt;имя-файла&gt;</code>
+                после загрузки: <code>ваши файлы окажутся в "документация"</code>
               </span>
             </div>
           </form>

@@ -14,6 +14,11 @@ const INDEX = 'enterprise.index.json';
 type IndexItem = { name: string; restricted: boolean; uploadedAt: number };
 type IndexShape = { files: IndexItem[] };
 
+// Разрешённые расширения (в нижнем регистре)
+const ALLOWED_EXTS = ['pdf','doc','docx','xls','xlsx','ppt','pptx','jpg','jpeg','png'] as const;
+type AllowedExt = typeof ALLOWED_EXTS[number];
+const ALLOWED_SET = new Set<string>(ALLOWED_EXTS);
+
 function isDeputyPlusOrHigher(role: string | null | undefined): boolean {
   const r = normalizeRole(role);
   return r === 'director' || r === 'deputy_plus';
@@ -36,22 +41,48 @@ async function writeIndex(data: IndexShape): Promise<void> {
   await fs.rename(tmp, file);
 }
 
-function safeName(name: string): string {
+function getExt(n: string): string {
+  const m = n.match(/\.([A-Za-z0-9]+)$/);
+  return (m ? m[1] : '').toLowerCase();
+}
+
+// Имя существующего файла из формы (hidden). Разрешаем только допустимые расширения и запретим path traversal.
+function safeExistingName(name: string): string {
   const n = (name || '').normalize('NFC');
   if (!n || n.includes('..') || n.includes('/') || n.includes('\\')) {
     throw new Error('Некорректное имя файла');
   }
-  if (!/\.pdf$/i.test(n)) throw new Error('Ожидается .pdf');
+  const ext = getExt(n);
+  if (!ALLOWED_SET.has(ext)) {
+    throw new Error('Недопустимое расширение');
+  }
   return n;
 }
 
-function normalizePdfName(input: string): string {
+// Нормализация нового имени при переименовании.
+// Если новое имя без расширения — оставим старое расширение.
+// Если указано расширение, но оно не из разрешённых — ошибка.
+function normalizeNewName(input: string, oldExt: string): string {
   let s = (input || '').normalize('NFC').trim().replace(/\s+/g, '-');
   s = s.replace(/[^\p{L}\p{N}._()\-.]/gu, '');
-  if (!s) s = 'document';
-  if (!/\.pdf$/i.test(s)) s += '.pdf';
-  if (s.length > 180) s = s.slice(0, 180);
-  return s;
+
+  // Выделим расширение из нового имени, если оно есть
+  let newExt = getExt(s);
+
+  // Если не указали — используем старое
+  if (!newExt) {
+    newExt = oldExt.toLowerCase();
+  }
+
+  if (!ALLOWED_SET.has(newExt)) {
+    throw new Error('Недопустимое расширение');
+  }
+
+  // Уберём любой текущий хвост .ext чтобы не было дублей
+  const base = s.replace(/\.([A-Za-z0-9]+)$/, '') || 'document';
+  const trimmedBase = base.length > 180 ? base.slice(0, 180) : base;
+
+  return `${trimmedBase}.${newExt}`;
 }
 
 export async function deletePdfAction(formData: FormData): Promise<void> {
@@ -59,7 +90,7 @@ export async function deletePdfAction(formData: FormData): Promise<void> {
   const role = (session?.user as any)?.role ?? null;
   if (!isDeputyPlusOrHigher(role)) redirect('/');
 
-  const name = safeName((formData.get('name') as string | null) ?? '');
+  const name = safeExistingName((formData.get('name') as string | null) ?? '');
   try { await fs.unlink(path.join(BASE, name)); } catch { /* ignore */ }
 
   const idx = await readIndex();
@@ -74,8 +105,11 @@ export async function renamePdfAction(formData: FormData): Promise<void> {
   const role = (session?.user as any)?.role ?? null;
   if (!isDeputyPlusOrHigher(role)) redirect('/');
 
-  const oldName = safeName((formData.get('oldName') as string | null) ?? '');
-  const newName = normalizePdfName((formData.get('newName') as string | null) ?? '');
+  const oldName = safeExistingName((formData.get('oldName') as string | null) ?? '');
+  const newNameRaw = (formData.get('newName') as string | null) ?? '';
+
+  const oldExt = getExt(oldName);
+  const newName = normalizeNewName(newNameRaw, oldExt);
 
   const from = path.join(BASE, oldName);
   const to = path.join(BASE, newName);
@@ -100,7 +134,7 @@ export async function toggleRestrictedAction(formData: FormData): Promise<void> 
   const role = (session?.user as any)?.role ?? null;
   if (!isDeputyPlusOrHigher(role)) redirect('/');
 
-  const name = safeName((formData.get('name') as string | null) ?? '');
+  const name = safeExistingName((formData.get('name') as string | null) ?? '');
   const next = (formData.get('next') as string | null) === '1';
 
   const idx = await readIndex();
