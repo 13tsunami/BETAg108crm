@@ -7,8 +7,9 @@ import { promises as fs } from 'node:fs';
 import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import path from 'node:path';
+import { getUploadsBase } from '@/lib/storage';
 
-const BASE = process.env.ENTERPRISE_DIR || '/uploads';
+const BASE = getUploadsBase();
 const INDEX = 'enterprise.index.json';
 
 type IndexItem = { name: string; restricted: boolean; uploadedAt: number };
@@ -31,17 +32,15 @@ async function readIndex(): Promise<IndexShape> {
 
 export async function GET(
   _req: Request,
-  ctx: { params: Promise<{ file: string }> }   // <-- ВАЖНО: Promise в Next 15
+  ctx: { params: Promise<{ file: string }> } // Next 15: params — Promise
 ) {
-  // только для авторизованных
   const session = await auth();
   if (!session) return new NextResponse('Unauthorized', { status: 401 });
   const role = (session.user as any)?.role ?? null;
 
-  const { file } = await ctx.params;          // <-- await
+  const { file } = await ctx.params;
   const requested = (file || '').normalize('NFC');
 
-  // базовая валидация
   if (!requested || requested.includes('..') || requested.includes('/') || requested.includes('\\')) {
     return new NextResponse('Forbidden', { status: 403 });
   }
@@ -49,7 +48,6 @@ export async function GET(
     return new NextResponse('Unsupported Media Type', { status: 415 });
   }
 
-  // проверка «служебности» через индекс
   const idx = await readIndex();
   const meta = idx.files.find(f => f.name === requested);
   const isRestricted = meta?.restricted === true;
