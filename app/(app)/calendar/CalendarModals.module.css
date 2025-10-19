@@ -1,0 +1,252 @@
+/* Локальный контейнер — делает селекторы «чистыми» для CSS Modules */
+.cm {
+  /* переменные — теперь локально на контейнере (доступны всем потомкам) */
+  --brand: #8d2828;
+
+  /* синхронизировано с CalendarBoard */
+  --task-accent: #F59E0B;            /* amber-500 */
+  --note-accent: #34D399;            /* emerald-400 */
+  --task-bg-soft: rgba(245,158,11,.15);
+  --note-bg-soft: rgba(52,211,153,.15);
+
+  --zero-gray: #6b7280;
+
+  /* стеклянный визуал (как на sign-in) */
+  --glass-bg: rgba(255,255,255,0.75);
+  --glass-brd: rgba(141,40,40,0.25);
+  --glass-blur: blur(10px);
+  --glass-shadow: 0 10px 30px rgba(17,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.6);
+
+  --btn-shadow: 0 6px 14px rgba(141,40,40,0.25);
+  --btn-shadow-hover: 0 10px 18px rgba(141,40,40,0.28);
+
+  --tile-w: 180px;
+  --tile-h: 120px;
+}
+
+/* Все правила ниже «чисты», потому что начинаются с локального .cm */
+.cm :global(.cal-modal__backdrop) {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.32);
+  display: grid; place-items: center;
+  z-index: 1000; padding: 12px;
+}
+
+.cm :global(.cal-modal) {
+  width: min(1100px, 96vw);
+  max-width: 96vw;
+  max-height: 92svh;
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid var(--glass-brd);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  padding: 24px 22px 22px;
+}
+
+.cm :global(.cal-modal--day) {
+  height: 84svh;
+  max-height: 84svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (max-width: 520px) {
+  .cm :global(.cal-modal) {
+    width: 100vw; height: 100svh; max-height: 100svh;
+    border-radius: 0; border: none;
+  }
+  .cm :global(.cal-modal--day) {
+    width: 100vw; height: 100svh; max-height: 100svh;
+  }
+}
+
+.cm :global(.cal-modal .cal-modal__header) {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+}
+.cm :global(.cal-modal .cal-modal__title) {
+  display:flex; align-items:center; gap:8px; font-weight:800;
+}
+.cm :global(.cal-modal .cal-close) {
+  border:1px solid var(--glass-brd);
+  background: rgba(255,255,255,0.9);
+  border-radius:8px; width:32px; height:32px; cursor:pointer;
+  transition: box-shadow .12s ease, transform .04s ease;
+}
+.cm :global(.cal-modal .cal-close:hover) { transform: translateY(-1px); box-shadow: var(--btn-shadow-hover); }
+.cm :global(.cal-modal .cal-close:active) { transform: translateY(0); box-shadow: var(--btn-shadow); }
+
+/* бейджи и утилиты */
+.cm :global(.cal-modal .badge) { font-size:10px; border-radius:999px; padding:0 6px; }
+.cm :global(.cal-modal .badge--urgent) { color:#fff; background: var(--brand); }
+
+.cm :global(.cal-modal .wb) { word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; }
+.cm :global(.cal-modal .clamp1) {
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:1;
+  line-clamp: 1;
+  overflow:hidden;
+}
+.cm :global(.cal-modal .clamp2) {
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp: 2;
+  overflow:hidden;
+}
+.cm :global(.cal-modal .muted) { color: var(--zero-gray); font-size:12px; }
+
+/* табы фильтра */
+.cm :global(.cal-modal .day-filter) { display:flex; gap:6px; margin: 4px 0 14px; }
+
+/* кнопки */
+.cm :global(.cal-modal .btn) {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  cursor: pointer;
+  transition: transform .04s ease, box-shadow .12s ease, opacity .2s ease, filter .12s ease, background-color .12s ease, border-color .12s ease;
+}
+.cm :global(.cal-modal .btn--brand) {
+  background: var(--brand);
+  border: 1px solid var(--brand);
+  color: #fff !important;
+  box-shadow: var(--btn-shadow);
+}
+.cm :global(.cal-modal .btn--brand:hover)  { transform: translateY(-1px); box-shadow: var(--btn-shadow-hover); filter: brightness(1.02); }
+.cm :global(.cal-modal .btn--brand:active) { transform: translateY(0);     box-shadow: var(--btn-shadow);        filter: none; }
+
+.cm :global(.cal-modal .btn--ghost)  {
+  border: 1px solid #e5e7eb;
+  background: rgba(255,255,255,0.9);
+  color: #111827;
+}
+.cm :global(.cal-modal .btn--ghost:hover)  { background: #fff; box-shadow: 0 6px 14px rgba(17,24,39,0.08); transform: translateY(-1px); }
+.cm :global(.cal-modal .btn--ghost:active) { transform: translateY(0); box-shadow: 0 6px 14px rgba(17,24,39,0.08); }
+
+.cm :global(.cal-modal .btn--danger) {
+  border: 1px solid #ef4444;
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(239,68,68,0.25);
+}
+.cm :global(.cal-modal .btn--danger:hover)  { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(239,68,68,0.28); }
+.cm :global(.cal-modal .btn--danger:active) { transform: translateY(0); }
+
+/* сетка плиток внутри модалки дня */
+.cm :global(.cal-modal .tiles) {
+  display: grid;
+  grid-auto-flow: row;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-w), 1fr));
+  grid-auto-rows: minmax(var(--tile-h), auto);
+  gap: 8px;
+  padding-right: 4px;
+  overflow: auto;
+  flex: 1;
+  align-content: start;
+}
+.cm :global(.cal-modal .tiles::-webkit-scrollbar) { width: 8px; height: 8px; }
+.cm :global(.cal-modal .tiles::-webkit-scrollbar-thumb) { background: #e5e7eb; border-radius: 8px; }
+.cm :global(.cal-modal .tiles:hover::-webkit-scrollbar-thumb) { background: #d1d5db; }
+
+/* плитки — цвета синхронизированы с CalendarBoard */
+.cm :global(.cal-modal .tile) {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  transition: box-shadow .16s ease, border-color .16s ease, background .16s ease, transform .16s ease;
+  width: 100%;
+  height: var(--tile-h);
+  overflow: hidden;
+}
+.cm :global(.cal-modal .tile--task) {
+  background: var(--task-bg-soft);
+  border-color: var(--task-accent);
+}
+.cm :global(.cal-modal .tile--note)  {
+  background: var(--note-bg-soft);
+  border-color: var(--note-accent);
+}
+.cm :global(.cal-modal .tile--urgent) { box-shadow: inset 3px 0 0 var(--brand); }
+.cm :global(.cal-modal .tile--open) { grid-column: 1 / -1; height: auto; align-self: start; border-radius: 14px; position: relative; z-index: 2; }
+
+/* заголовок плитки и мета */
+.cm :global(.cal-modal .tile__hdr) { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; cursor: pointer; }
+.cm :global(.cal-modal .tile__ttl) { font-size: 13px; font-weight: 800; line-height: 1.2; }
+.cm :global(.cal-modal .tile__chev) { border: 0; background: transparent; font-size: 14px; padding: 0 2px; cursor: pointer; }
+.cm :global(.cal-modal .tile__meta-inline) { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:#374151; }
+
+/* метаданные (единый вид для задач и заметок) */
+.cm :global(.cal-modal .meta-section) {
+  border: 1px solid var(--glass-brd);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,0.9);
+  display: grid;
+  gap: 8px;
+}
+.cm :global(.cal-modal .meta-row)   { display:flex; gap:10px; align-items:flex-start; }
+.cm :global(.cal-modal .meta-label) { width: 110px; flex:none; font-size: 12px; font-weight: 700; color: #111; padding-top: 3px; }
+.cm :global(.cal-modal .meta-val)   { display:flex; flex-wrap:wrap; gap:6px; font-size: 13px; color: #111827; }
+
+/* контентные поля */
+.cm :global(.cal-modal .text-box) {
+  background: rgba(250,250,250,0.9);
+  border:1px solid #f3f4f6;
+  border-radius: 10px;
+  padding: 8px 10px;
+  max-height: 40vh; overflow: auto;
+}
+
+.cm :global(.cal-modal .assignees) { display:flex; flex-wrap:wrap; gap:6px; }
+.cm :global(.cal-modal .chip) { border:1px solid #e5e7eb; background: rgba(255,255,255,0.95); border-radius:999px; padding:2px 8px; font-size:12px; }
+
+/* файлы */
+.cm :global(.cal-modal .files__list) { display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; list-style:none; }
+.cm :global(.cal-modal .file-chip__link) {
+  display:inline-grid; grid-template-columns:auto auto; align-items:center; gap:6px;
+  border:1px solid #e5e7eb; border-radius:999px; padding:4px 10px; text-decoration:none;
+  background: rgba(255,255,255,0.9);
+  transition: box-shadow .12s ease, border-color .12s ease;
+}
+.cm :global(.cal-modal .file-chip__link:hover) { border-color:#cbd5e1; box-shadow: 0 6px 14px rgba(17,24,39,0.08); }
+.cm :global(.cal-modal .file-chip__name) { font-weight:600; }
+.cm :global(.cal-modal .file-chip__meta) { font-size:12px; color:#6b7280; }
+
+/* форма заметки (единый вид) */
+.cm :global(.cal-modal .form-root) { display: grid; gap: 10px; }
+.cm :global(.cal-modal .form-grid-2) { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cm :global(.cal-modal .span-2) { grid-column: 1 / -1; }
+.cm :global(.cal-modal .label) { display: grid; gap: 6px; font-size: 12px; color: #374151; }
+.cm :global(.cal-modal .label__text) { font-weight: 600; color: #111827; }
+.cm :global(.cal-modal .label-inline) { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #374151; }
+.cm :global(.cal-modal .input),
+.cm :global(.cal-modal .textarea) {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.9);
+  color: #111827;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.cm :global(.cal-modal .textarea) { resize: vertical; min-height: 140px; }
+.cm :global(.cal-modal .input:focus),
+.cm :global(.cal-modal .textarea:focus) { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(141,40,40,0.15); background: #fff; }
+.cm :global(.cal-modal .input:disabled) { background:#f3f4f6; color:#6b7280; cursor:not-allowed; }
+.cm :global(.cal-modal .time-row) { display: flex; gap: 10px; align-items: center; }
+.cm :global(.cal-modal .checkbox) { width: 16px; height: 16px; accent-color: var(--brand); }
+.cm :global(.cal-modal .actions) { display:flex; gap:8px; margin-top:4px; }

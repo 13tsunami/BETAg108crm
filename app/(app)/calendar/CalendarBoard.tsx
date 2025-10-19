@@ -19,8 +19,17 @@ const BG_MY = '#FEF3C7';
 const BD_MY = '#F59E0B';
 const URGENT = BRAND;
 
+const ZERO_GRAY = '#9ca3af';
+const NOTE_GREEN = '#34D399';
+const OVERDUE_RED = '#b91c1c';
+
+/* полупрозрачные фоны-плашки (вариант 3) */
+const TASK_BG_SOFT = 'rgba(245, 158, 11, 0.15)';   // amber-500 @ 15%
+const NOTE_BG_SOFT = 'rgba(52, 211, 153, 0.15)';   // emerald-400 @ 15%
+
 const WEEKDAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
 
+/* ===== helpers: даты/время ===== */
 function ymd(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -75,6 +84,48 @@ function isRuHoliday(d: Date) {
   );
 }
 
+/* ===== доменные предикаты (без any) ===== */
+type UnknownRec = Record<string, unknown>;
+
+function hasTruthy(obj: unknown, key: string): boolean {
+  if (!obj || typeof obj !== 'object') return false;
+  return Boolean((obj as UnknownRec)[key]);
+}
+function hasEquals(obj: unknown, key: string, expected: unknown): boolean {
+  if (!obj || typeof obj !== 'object') return false;
+  return (obj as UnknownRec)[key] === expected;
+}
+
+function isArchivedTask(t: TaskLite): boolean {
+  return (
+    hasTruthy(t, 'archived') ||
+    hasTruthy(t, 'archivedAt') ||
+    hasTruthy(t, 'isArchived') ||
+    hasEquals(t, 'status', 'archived')
+  );
+}
+function isArchivedNote(n: NoteLite): boolean {
+  return (
+    hasTruthy(n, 'archived') ||
+    hasTruthy(n, 'archivedAt') ||
+    hasTruthy(n, 'isArchived') ||
+    hasEquals(n, 'status', 'archived')
+  );
+}
+
+/* дедлайн-момент с учётом времени; если дата без времени — конец дня UTC+5 */
+const EKAT_OFFSET = '+05:00';
+const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+function deadlineFrom(val: string | Date): Date {
+  if (val instanceof Date) return val;
+  if (ISO_DATE_ONLY.test(val)) return new Date(`${val}T23:59:59.999${EKAT_OFFSET}`);
+  return new Date(val);
+}
+function nowEkaterinburg(): Date {
+  return new Date();
+}
+
 type UnionItem =
   | { kind: 'task'; t: TaskLite }
   | { kind: 'note'; n: NoteLite };
@@ -122,23 +173,23 @@ export default function CalendarBoard({
   const grouped = useMemo(() => {
     const g = new Map<string, UnionItem[]>();
     for (const t of tasks) {
-      const key = ymd(new Date(t.dueDate));
+      const key = ymd(new Date((t as unknown as { dueDate: string | Date }).dueDate));
       if (!g.has(key)) g.set(key, []);
       g.get(key)!.push({ kind: 'task', t });
     }
     for (const n of initialNotes ?? []) {
-      const key = ymd(new Date(n.at));
+      const key = ymd(new Date((n as unknown as { at: string | Date }).at));
       if (!g.has(key)) g.set(key, []);
       g.get(key)!.push({ kind: 'note', n });
     }
     for (const [k, arr] of g) {
       arr.sort((a, b) => {
-        const wa = a.kind === 'task' ? ((a.t.priority ?? 'normal') === 'high' ? 0 : 1) : 2;
-        const wb = b.kind === 'task' ? ((b.t.priority ?? 'normal') === 'high' ? 0 : 1) : 2;
-        if (wa !== wb) return wa - wb;
-        const ta = a.kind === 'task' ? a.t.title : a.n.title ?? '';
-        const tb = b.kind === 'task' ? b.t.title : b.n.title ?? '';
-        return (ta || '').localeCompare(tb || '', 'ru');
+        const ap = a.kind === 'task' ? ((a.t as unknown as { priority?: string }).priority ?? 'normal') : 'zzz';
+        const bp = b.kind === 'task' ? ((b.t as unknown as { priority?: string }).priority ?? 'normal') : 'zzz';
+        if (ap !== bp) return ap === 'high' ? -1 : 1;
+        const ta = a.kind === 'task' ? (a.t as unknown as { title?: string }).title ?? '' : (a.n as unknown as { title?: string }).title ?? '';
+        const tb = b.kind === 'task' ? (b.t as unknown as { title?: string }).title ?? '' : (b.n as unknown as { title?: string }).title ?? '';
+        return ta.localeCompare(tb, 'ru');
       });
       g.set(k, arr);
     }
@@ -157,75 +208,9 @@ export default function CalendarBoard({
     dayJustOpenedAt.current = Date.now();
     window.dispatchEvent(new CustomEvent('calendar:open-day', { detail: { ymd: ymdStr } }));
   }
-  function openTaskModal(taskId: string) {
-    window.dispatchEvent(new CustomEvent('calendar:open-task', { detail: { taskId } }));
-  }
   function openNoteModal(noteId: string) {
     window.dispatchEvent(new CustomEvent('calendar:open-note', { detail: { noteId } }));
   }
-
-  /* =======================
-     Плитки: только заголовки
-     + безопасные переносы
-     + локальный скролл при переполнении
-  ======================= */
-  const chipBase: React.CSSProperties = {
-    textAlign: 'left',
-    borderRadius: 10,
-    padding: '6px 8px',
-    cursor: 'pointer',
-    minWidth: 0,
-    display: 'grid',
-    gridAutoRows: 'max-content',
-    alignItems: 'start',
-    maxHeight: 86,           // компактная плитка; если заголовок длинный — появится внутренний скролл
-    overflow: 'auto',
-  };
-  const titleBase: React.CSSProperties = {
-    fontSize: 13,
-    fontWeight: 700,
-    // переносы и «любой символ» для узких экранов
-    wordBreak: 'break-word',
-    overflowWrap: 'anywhere',
-    whiteSpace: 'normal',
-    lineHeight: 1.15,
-  };
-
-  const TaskChip: React.FC<{ t: TaskLite }> = ({ t }) => {
-    const urgent = (t.priority ?? 'normal') === 'high';
-    const dayKey = ymd(new Date(t.dueDate));
-    return (
-      <button
-        onClick={(e) => { e.stopPropagation(); openDayModal(dayKey); }}
-        title={t.title}
-        style={{
-          ...chipBase,
-          border: `1px solid ${urgent ? URGENT : BD_MY}`,
-          background: BG_MY,
-        }}
-      >
-        <div style={{ ...titleBase }}>
-          {t.title}
-        </div>
-      </button>
-    );
-  };
-
-  const NoteChip: React.FC<{ n: NoteLite }> = ({ n }) => (
-    <button
-      onClick={(e) => { e.stopPropagation(); openNoteModal(n.id); }}
-      title={n.title ?? 'Заметка'}
-      style={{
-        ...chipBase,
-        border: '1px solid #3b82f6',
-        background: '#dbeafe',
-      }}
-    >
-      <div style={{ ...titleBase, color: '#1e3a8a' }}>
-        {n.title ?? 'Заметка'}
-      </div>
-    </button>
-  );
 
   const headerMonthForCenter = view === 'week'
     ? new Date(cursor)
@@ -274,6 +259,51 @@ export default function CalendarBoard({
           const bdays = birthdaysMap?.[mmddKey] || [];
           const inMonth = day.getMonth() === headerMonthForCenter.getMonth();
 
+          /* ===== вычисления для счётчиков ===== */
+          const now = nowEkaterinburg();
+
+          const tasksOfDay = list
+            .filter((it): it is { kind: 'task'; t: TaskLite } => it.kind === 'task')
+            .map(it => it.t)
+            .filter(t => !isArchivedTask(t));
+
+          const notesOfDay = list
+            .filter((it): it is { kind: 'note'; n: NoteLite } => it.kind === 'note')
+            .map(it => it.n)
+            .filter(n => !isArchivedNote(n));
+
+          const tasksOverdue = tasksOfDay.some(t => deadlineFrom((t as unknown as { dueDate: string | Date }).dueDate).getTime() < now.getTime());
+          const notesOverdue = notesOfDay.some(n => deadlineFrom((n as unknown as { at: string | Date }).at).getTime() < now.getTime());
+
+          const tasksCount = tasksOfDay.length;
+          const notesCount = notesOfDay.length;
+
+          const baseTaskColor = tasksCount === 0 ? ZERO_GRAY : BD_MY;
+          const baseNoteColor = notesCount === 0 ? ZERO_GRAY : NOTE_GREEN;
+
+          /* стили строк-счётчиков с плашками */
+          const lineBox: React.CSSProperties = { display: 'inline-block', borderRadius: 8, padding: '2px 8px' };
+          const taskLineStyle: React.CSSProperties =
+            tasksCount > 0
+              ? {
+                  ...lineBox,
+                  background: TASK_BG_SOFT,
+                  color: tasksOverdue ? OVERDUE_RED : baseTaskColor,
+                  fontSize: 13,
+                  fontWeight: tasksOverdue ? 800 : 700,
+                }
+              : { fontSize: 13, fontWeight: 700, color: ZERO_GRAY };
+          const noteLineStyle: React.CSSProperties =
+            notesCount > 0
+              ? {
+                  ...lineBox,
+                  background: NOTE_BG_SOFT,
+                  color: notesOverdue ? OVERDUE_RED : baseNoteColor,
+                  fontSize: 13,
+                  fontWeight: notesOverdue ? 800 : 700,
+                }
+              : { fontSize: 13, fontWeight: 700, color: ZERO_GRAY };
+
           return (
             <div key={key} className={`day ${isToday ? 'day--today' : ''} ${!inMonth ? 'day--out' : ''}`}>
               {/* header */}
@@ -282,15 +312,9 @@ export default function CalendarBoard({
               </div>
 
               {/* content */}
-              <div className="day__content">
-                {list.length === 0 && (
-                  <div style={{ fontSize: 12, color: '#9ca3af' }}>Нет задач</div>
-                )}
-                {list.map((it, idx) =>
-                  it.kind === 'task'
-                    ? <TaskChip key={`t-${it.t.id}-${idx}`} t={it.t} />
-                    : <NoteChip key={`n-${it.n.id}-${idx}`} n={it.n} />
-                )}
+              <div className="day__content" onClick={() => openDayModal(key)} role="button">
+                <div><span style={taskLineStyle}>Задачи: {tasksCount}</span></div>
+                <div><span style={noteLineStyle}>Заметки: {notesCount}</span></div>
               </div>
 
               {/* footer */}
@@ -346,7 +370,7 @@ export default function CalendarBoard({
     background: #ffffff;
     padding: 8px;
     display: grid;
-    grid-template-rows: auto 1fr auto; /* шапка / контент / футер */
+    grid-template-rows: auto 1fr auto;
     gap: 6px;
     min-height: 120px;
     max-height: 240px;
@@ -369,8 +393,9 @@ export default function CalendarBoard({
     align-content: start;
     align-items: start;
     min-height: 0;
-    overflow: auto;          /* внутренний скролл содержимого дня */
+    overflow: auto;
     padding-right: 2px;
+    cursor: pointer;
   }
   .day__content > * { align-self: start; }
 
