@@ -6,13 +6,14 @@ import s from './page.module.css';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { deletePdfAction, renamePdfAction, toggleRestrictedAction } from './actions';
+import { getUploadsBase } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 type Doc = { id: string; title: string; description?: string; href: string; external?: boolean };
 
-const BASE = process.env.ENTERPRISE_DIR || '/uploads';
+const BASE = getUploadsBase();
 const INDEX = 'enterprise.index.json';
 
 const DOCS: readonly Doc[] = [
@@ -170,7 +171,7 @@ export default async function EnterprisePage(
 
       {files.length === 0 && (
         <div className={`${s.glass} ${s.head}`} style={{ marginTop: 12 }}>
-          <p className={s.subtitle}>Документы не найдены. Загрузите файл в админке или измените запрос поиска.</p>
+          <p className={s.subtitle}>Документы не найдены. Загрузите файлы или измените запрос поиска.</p>
         </div>
       )}
     </main>
