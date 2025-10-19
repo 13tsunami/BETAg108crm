@@ -6,8 +6,9 @@ import { auth } from '@/auth.config';
 import { normalizeRole } from '@/lib/roles';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { getUploadsBase } from '@/lib/storage';
 
-const BASE = process.env.ENTERPRISE_DIR || '/uploads';
+const BASE = getUploadsBase();
 const INDEX = 'enterprise.index.json';
 
 type IndexItem = { name: string; restricted: boolean; uploadedAt: number };
@@ -46,7 +47,8 @@ function safeName(name: string): string {
 
 function normalizePdfName(input: string): string {
   let s = (input || '').normalize('NFC').trim().replace(/\s+/g, '-');
-  s = s.replace(/[^\p{L}\p{N}._()\\-]/gu, '');
+  // разрешены буквы/цифры/._()- и дефис
+  s = s.replace(/[^\p{L}\p{N}._()\-.]/gu, '');
   if (!s) s = 'document';
   if (!/\.pdf$/i.test(s)) s += '.pdf';
   if (s.length > 180) s = s.slice(0, 180);
@@ -82,7 +84,7 @@ export async function renamePdfAction(formData: FormData): Promise<void> {
   try {
     const st = await fs.stat(to);
     if (st.isFile()) throw new Error('Файл с таким именем уже существует');
-  } catch { /* ok */ }
+  } catch { /* not exists — ok */ }
 
   await fs.rename(from, to);
 
