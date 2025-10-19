@@ -35,7 +35,6 @@ async function readIndex(): Promise<IndexShape> {
     const parsed = JSON.parse(raw) as IndexShape;
     return Array.isArray(parsed?.files) ? parsed : { files: [] };
   } catch {
-    // НИКАКОГО fallback из ФС — показываем только то, что загружено через админку
     return { files: [] };
   }
 }
@@ -44,16 +43,20 @@ function isDeputyOrHigher(role: string | null | undefined): boolean {
   const r = normalizeRole(role);
   return r === 'director' || r === 'deputy_plus' || r === 'deputy';
 }
+function isDeputyPlusOrHigher(role: string | null | undefined): boolean {
+  const r = normalizeRole(role);
+  return r === 'director' || r === 'deputy_plus';
+}
 
 export default async function EnterprisePage(
   { searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }
 ) {
-  // доступ только для авторизованных
   const session = await auth();
   if (!session) redirect('/');
 
   const role = normalizeRole((session.user as any)?.role ?? null);
-  const deputyPlus = isDeputyOrHigher(role);
+  const deputyOrHigher = isDeputyOrHigher(role);
+  const deputyPlusOrHigher = isDeputyPlusOrHigher(role);
 
   const sp = await searchParams;
   const qRaw = (Array.isArray(sp.q) ? sp.q[0] : sp.q) || '';
@@ -61,16 +64,13 @@ export default async function EnterprisePage(
 
   const idx = await readIndex();
 
-  // фильтрация по роли (teacher не видит restricted)
   let files = idx.files.slice();
-  if (!deputyPlus) files = files.filter(f => !f.restricted);
+  if (!deputyOrHigher) files = files.filter(f => !f.restricted);
 
   const total = files.length;
 
-  // поиск по имени (Unicode, регистр не важен)
   if (q) files = files.filter(f => f.name.normalize('NFC').toLowerCase().includes(q));
 
-  // новые сверху
   files.sort((a, b) => b.uploadedAt - a.uploadedAt);
 
   return (
@@ -79,7 +79,6 @@ export default async function EnterprisePage(
         <h1 className={s.title}>Служебные документы и образцы служебных документов</h1>
         <p className={s.subtitle}>доступ: {role || '—'}</p>
 
-        {/* Поиск по имени */}
         <form method="GET" className={s.searchRow}>
           <input
             type="text"
@@ -96,7 +95,6 @@ export default async function EnterprisePage(
         </form>
       </header>
 
-      {/* статичные документы */}
       <section className={s.grid}>
         {DOCS.map(d => (
           <article key={d.id} className={`${s.glass} ${s.card}`}>
@@ -113,7 +111,6 @@ export default async function EnterprisePage(
         ))}
       </section>
 
-      {/* загруженные документы */}
       <section className={s.grid} style={{ marginTop: 12 }}>
         {files.map(f => {
           const href = `/docs/enterprise/${f.name}`;
@@ -123,7 +120,7 @@ export default async function EnterprisePage(
               <div className={s.cardHead}>
                 <span className={s.badge}>PDF</span>
                 <h2 className={s.cardTitle}>{f.name}</h2>
-                {deputyPlus && (
+                {deputyOrHigher && (
                   <span className={isRestricted ? s.flagRestricted : s.flagOpen}>
                     {isRestricted ? 'служебный' : 'открытый'}
                   </span>
@@ -135,7 +132,7 @@ export default async function EnterprisePage(
                 <Link href={href} download className={s.ghost}>Скачать</Link>
               </div>
 
-              {deputyPlus && (
+              {deputyPlusOrHigher && (
                 <>
                   <form action={renamePdfAction} className={s.manageRow}>
                     <input type="hidden" name="oldName" value={f.name} />
