@@ -14,9 +14,9 @@ const INDEX = 'enterprise.index.json';
 type IndexItem = { name: string; restricted: boolean; uploadedAt: number };
 type IndexShape = { files: IndexItem[] };
 
-function isDeputyOrHigher(role: string | null | undefined): boolean {
+function isDeputyPlusOrHigher(role: string | null | undefined): boolean {
   const r = normalizeRole(role);
-  return r === 'director' || r === 'deputy_plus' || r === 'deputy';
+  return r === 'director' || r === 'deputy_plus';
 }
 
 async function readIndex(): Promise<IndexShape> {
@@ -47,7 +47,6 @@ function safeName(name: string): string {
 
 function normalizePdfName(input: string): string {
   let s = (input || '').normalize('NFC').trim().replace(/\s+/g, '-');
-  // разрешены буквы/цифры/._()- и дефис
   s = s.replace(/[^\p{L}\p{N}._()\-.]/gu, '');
   if (!s) s = 'document';
   if (!/\.pdf$/i.test(s)) s += '.pdf';
@@ -58,7 +57,7 @@ function normalizePdfName(input: string): string {
 export async function deletePdfAction(formData: FormData): Promise<void> {
   const session = await auth();
   const role = (session?.user as any)?.role ?? null;
-  if (!isDeputyOrHigher(role)) redirect('/');
+  if (!isDeputyPlusOrHigher(role)) redirect('/');
 
   const name = safeName((formData.get('name') as string | null) ?? '');
   try { await fs.unlink(path.join(BASE, name)); } catch { /* ignore */ }
@@ -73,7 +72,7 @@ export async function deletePdfAction(formData: FormData): Promise<void> {
 export async function renamePdfAction(formData: FormData): Promise<void> {
   const session = await auth();
   const role = (session?.user as any)?.role ?? null;
-  if (!isDeputyOrHigher(role)) redirect('/');
+  if (!isDeputyPlusOrHigher(role)) redirect('/');
 
   const oldName = safeName((formData.get('oldName') as string | null) ?? '');
   const newName = normalizePdfName((formData.get('newName') as string | null) ?? '');
@@ -99,7 +98,7 @@ export async function renamePdfAction(formData: FormData): Promise<void> {
 export async function toggleRestrictedAction(formData: FormData): Promise<void> {
   const session = await auth();
   const role = (session?.user as any)?.role ?? null;
-  if (!isDeputyOrHigher(role)) redirect('/');
+  if (!isDeputyPlusOrHigher(role)) redirect('/');
 
   const name = safeName((formData.get('name') as string | null) ?? '');
   const next = (formData.get('next') as string | null) === '1';
