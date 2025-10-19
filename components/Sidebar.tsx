@@ -194,6 +194,7 @@ export default function Sidebar({
               <Tile href="/calendar"     label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"     label="Расписание"  active={pathname === '/schedule'} />
               <Tile href="/showmyfiles"  label="Мои файлы"   active={pathname === '/showmyfiles'} />
+              <Tile href="/enterprise"   label="Документация" active={pathname === '/enterprise'} />
               <Tile href="/requests"     label="Заявки"      active={pathname?.startsWith('/requests') || false} unread={pathname?.startsWith('/requests') ? 0 : requestsUnreadState} />
             </div>
 
