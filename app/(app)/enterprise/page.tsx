@@ -30,6 +30,8 @@ const DOCS: readonly Doc[] = [
 type IndexItem = { name: string; restricted: boolean; uploadedAt: number };
 type IndexShape = { files: IndexItem[] };
 
+const PAGE_STEP = 15;
+
 function extBadge(input: string): string {
   const ext = (input.split('.').pop() || '').toUpperCase();
   return ext || 'FILE';
@@ -55,6 +57,15 @@ async function readIndex(): Promise<IndexShape> {
   }
 }
 
+function buildUrl(params: { q?: string; count?: number; view?: string }) {
+  const usp = new URLSearchParams();
+  if (params.q) usp.set('q', params.q);
+  if (params.count && params.count > 0) usp.set('count', String(params.count));
+  if (params.view) usp.set('view', params.view);
+  const qs = usp.toString();
+  return qs ? `/enterprise?${qs}` : '/enterprise';
+}
+
 export default async function EnterprisePage(
   { searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }
 ) {
@@ -72,6 +83,13 @@ export default async function EnterprisePage(
   const qRaw = (Array.isArray(sp.q) ? sp.q[0] : sp.q) || '';
   const q = qRaw.normalize('NFC').toLowerCase().trim();
 
+  const viewRaw = (Array.isArray(sp.view) ? sp.view[0] : sp.view) || '';
+  const isCompact = viewRaw === 'compact';
+
+  const countRaw = (Array.isArray(sp.count) ? sp.count[0] : sp.count) || '';
+  const parsed = Number.parseInt(countRaw, 10);
+  const count = Number.isFinite(parsed) && parsed > 0 ? parsed : PAGE_STEP;
+
   const idx = await readIndex();
 
   let files = idx.files.slice();
@@ -83,8 +101,13 @@ export default async function EnterprisePage(
 
   files.sort((a, b) => b.uploadedAt - a.uploadedAt);
 
+  const visible = files.slice(0, count);
+  const shown = visible.length;
+  const canShowMore = shown < files.length;
+  const nextUrl = buildUrl({ q: qRaw || undefined, count: shown + PAGE_STEP, view: isCompact ? 'compact' : undefined });
+
   return (
-    <main className={s.page}>
+    <main className={`${s.page} ${isCompact ? s.compact : ''}`}>
       <header className={`${s.glass} ${s.head}`}>
         <h1 className={s.title}>Служебные документы и образцы служебных документов</h1>
         <p className={s.subtitle}>доступ разрешён. воспользуйтесь поиском при необходимости.</p>
@@ -97,10 +120,16 @@ export default async function EnterprisePage(
             placeholder="Поиск по имени файла…"
             className={s.input}
           />
+          <input type="hidden" name="count" value={PAGE_STEP} />
+          {isCompact && <input type="hidden" name="view" value="compact" />}
           <button className={s.primary} type="submit">Найти</button>
-          {q ? <a className={s.ghost} href="/enterprise">Сброс</a> : null}
+          {q || isCompact ? (
+            <a className={s.ghost} href="/enterprise">Сброс</a>
+          ) : null}
           <span className={s.searchHint}>
-            {q ? `Найдено ${files.length} из ${total}` : `Всего: ${total}`}
+            {q
+              ? `Показано ${shown} из ${files.length} (всего в разделе: ${total})`
+              : `Показано ${shown} из ${total}`}
           </span>
         </form>
       </header>
@@ -123,14 +152,21 @@ export default async function EnterprisePage(
 
       {/* загруженные документы */}
       <section className={s.grid} style={{ marginTop: 12 }}>
-        {files.map(f => {
+        {visible.map(f => {
           const href = `/docs/enterprise/${f.name}`;
           const isRestricted = f.restricted === true;
+
+          const displayTitle = f.name
+            .replace(/\.[^.]+$/, '')
+            .replace(/[-_]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
           return (
             <article key={f.name} className={`${s.glass} ${s.card}`}>
               <div className={s.cardHead}>
                 <span className={badgeClass(f.name)}>{extBadge(f.name)}</span>
-                <h2 className={s.cardTitle}>{f.name}</h2>
+                <h2 className={s.cardTitle} title={f.name}>{displayTitle}</h2>
                 {deputyOrHigher && (
                   <span className={isRestricted ? s.flagRestricted : s.flagOpen}>
                     {isRestricted ? 'служебный' : 'открытый'}
@@ -177,7 +213,16 @@ export default async function EnterprisePage(
         })}
       </section>
 
-      {files.length === 0 && (
+      {canShowMore && (
+        <div className={`${s.glass} ${s.moreBar}`}>
+          <a href={nextUrl} className={s.primary}>Показать ещё</a>
+          <div className={s.searchHint} style={{ marginTop: 8 }}>
+            Показано {shown} из {files.length}{q ? ` (всего в разделе: ${total})` : ''}
+          </div>
+        </div>
+      )}
+
+      {visible.length === 0 && (
         <div className={`${s.glass} ${s.head}`} style={{ marginTop: 12 }}>
           <p className={s.subtitle}>Документы не найдены. Загрузите файлы или измените запрос поиска.</p>
         </div>
