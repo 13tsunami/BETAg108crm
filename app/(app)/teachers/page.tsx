@@ -19,17 +19,87 @@ export const revalidate = 0;
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
-function formatRuDate(date: Date): string {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
 function dateToInputYMD(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
+
 const clean = (x?: string | null) => x ?? '—';
+
+/** Точная метка в Екатеринбурге: "21 октября 2025, 14:37" */
+function formatRuDateTimeYekb(dt: Date): string {
+  const date = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Yekaterinburg',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(dt);
+  const time = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Yekaterinburg',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(dt);
+  return `${date}, ${time}`;
+}
+
+/** Короткая фраза для "был(а): …" с учётом локали и Екб */
+function lastSeenPhrase(ls: Date, now: Date): string {
+  const nowY = new Date(
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Yekaterinburg', hour12: false })
+      .format(now)
+      .replace(/,/g, '')
+  );
+  const lsY = new Date(
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Yekaterinburg', hour12: false })
+      .format(ls)
+      .replace(/,/g, '')
+  );
+
+  const diffMs = now.getTime() - ls.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if (diffMs < 60_000) return 'только что';
+  if (diffMin < 60) return `${diffMin} мин назад`;
+
+  const sameDay =
+    nowY.getFullYear() === lsY.getFullYear() &&
+    nowY.getMonth() === lsY.getMonth() &&
+    nowY.getDate() === lsY.getDate();
+
+  if (sameDay) {
+    const t = new Intl.DateTimeFormat('ru-RU', {
+      timeZone: 'Asia/Yekaterinburg',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(ls);
+    return `сегодня в ${t}`;
+  }
+
+  const yest = new Date(now);
+  yest.setDate(yest.getDate() - 1);
+  const yestY = new Date(
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Yekaterinburg', hour12: false })
+      .format(yest)
+      .replace(/,/g, '')
+  );
+  const wasYesterday =
+    yestY.getFullYear() === lsY.getFullYear() &&
+    yestY.getMonth() === lsY.getMonth() &&
+    yestY.getDate() === lsY.getDate();
+
+  if (wasYesterday) {
+    const t = new Intl.DateTimeFormat('ru-RU', {
+      timeZone: 'Asia/Yekaterinburg',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(ls);
+    return `вчера в ${t}`;
+  }
+
+  return formatRuDateTimeYekb(ls);
+}
 
 export default async function TeachersPage(props: { searchParams?: Search }) {
   const sp = (props.searchParams ? await props.searchParams : undefined) ?? {};
@@ -40,21 +110,21 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
   const error = errorRaw && !/^NEXT_REDIRECT/.test(errorRaw) ? errorRaw : undefined;
 
   const session = await auth();
-  const roleRaw = (session?.user as any)?.role as string | undefined;
+  const roleRaw = (session?.user as unknown as { role?: string } | undefined)?.role;
   const roleNorm = normalizeRole(roleRaw ?? null);
   const canManage = canViewAdmin(roleNorm);
 
   const sTerm = q.trim();
   const or: Prisma.UserWhereInput[] = sTerm
     ? [
-        { name:      { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
-        { email:     { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
-        { phone:     { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { name: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { email: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { phone: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
         { classroom: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
-        { username:  { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
-        { telegram:  { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
-        { about:     { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
-        { role:      { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { username: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { telegram: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { about: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
+        { role: { contains: sTerm, mode: Prisma.QueryMode.insensitive } },
       ]
     : [];
   const where: Prisma.UserWhereInput | undefined = or.length ? { OR: or } : undefined;
@@ -63,9 +133,19 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
     where,
     orderBy: { name: 'asc' },
     select: {
-      id: true, name: true, role: true, username: true, email: true, phone: true,
-      classroom: true, telegram: true, about: true, birthday: true,
-      notifyEmail: true, notifyTelegram: true, lastSeen: true,
+      id: true,
+      name: true,
+      role: true,
+      username: true,
+      email: true,
+      phone: true,
+      classroom: true,
+      telegram: true,
+      about: true,
+      birthday: true,
+      notifyEmail: true,
+      notifyTelegram: true,
+      lastSeen: true,
     },
   });
 
@@ -84,16 +164,16 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
       </div>
 
       {(ok || error) && (
-        <div className={`${s.note} ${ok ? s.ok : s.err}`}>
-          {ok ? `Готово: ${ok}` : `Ошибка: ${error}`}
-        </div>
+        <div className={`${s.note} ${ok ? s.ok : s.err}`}>{ok ? `Готово: ${ok}` : `Ошибка: ${error}`}</div>
       )}
 
       <div className={s.listWrap + ' ' + s.glass}>
         <div className={s.list}>
           {users.map((u, idx) => {
-            const ls = u.lastSeen ? new Date(u.lastSeen as any) : null;
+            const ls: Date | null = u.lastSeen ? new Date(u.lastSeen as unknown as string | number | Date) : null;
             const online = !!(ls && now.getTime() - ls.getTime() <= ONLINE_WINDOW_MS);
+            const lsTitle = ls ? formatRuDateTimeYekb(ls) : null;
+            const lsShort = ls ? lastSeenPhrase(ls, now) : null;
 
             return (
               <details key={u.id} className={s.item} data-first={idx === 0 ? '1' : undefined}>
@@ -106,9 +186,17 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                         return r ? (ROLE_LABELS[r] ?? r) : '—';
                       })()}
                     </span>
-                    <span className={`${s.badge} ${online ? s.badgeOnline : s.badgeOffline}`}>
+                    <span
+                      className={`${s.badge} ${online ? s.badgeOnline : s.badgeOffline}`}
+                      title={lsTitle ?? undefined}
+                    >
                       {online ? 'онлайн' : 'офлайн'}
                     </span>
+                    {ls && (
+                      <span className={s.lastSeen}>
+                        {online ? 'сейчас' : `был(а): ${lsShort}`}
+                      </span>
+                    )}
                   </div>
 
                   {canManage && (
@@ -122,8 +210,10 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                           email: u.email ?? '',
                           phone: u.phone ?? '',
                           classroom: u.classroom ?? '',
-                          role: (u as any).role ?? 'teacher',
-                          birthday: u.birthday ? dateToInputYMD(new Date(u.birthday as any)) : '',
+                          role: (u as unknown as { role?: Role | null }).role ?? 'teacher',
+                          birthday: u.birthday
+                            ? dateToInputYMD(new Date(u.birthday as unknown as string | number | Date))
+                            : '',
                           telegram: u.telegram ?? '',
                           about: u.about ?? '',
                           notifyEmail: !!u.notifyEmail,
@@ -146,14 +236,14 @@ export default async function TeachersPage(props: { searchParams?: Search }) {
                     </div>
                   </div>
 
-                  <div className={s.tile + ' ' + s.glassTile}>
-                    <div className={s.fieldLabel}>о себе</div>
-                    <div className={s.about}>{u.about ? u.about : '—'}</div>
-                  </div>
+                <div className={s.tile + ' ' + s.glassTile}>
+                  <div className={s.fieldLabel}>о себе</div>
+                  <div className={s.about}>{u.about ? u.about : '—'}</div>
                 </div>
-              </details>
-            );
-          })}
+              </div>
+            </details>
+          );
+        })}
           {!users.length && <div className={s.empty}>ничего не найдено</div>}
         </div>
       </div>
