@@ -1,0 +1,140 @@
+/* app/(app)/schedule/schedule.module.css */
+
+.themeBrand {
+  --brand: #8d2828;
+  --brand-ink: #ffffff;
+  --brand-ghost-bg: rgba(141, 40, 40, 0.06);
+  --brand-ghost-border: rgba(141, 40, 40, 0.35);
+  --ring: 0 0 0 3px rgba(141, 40, 40, 0.25);
+}
+
+/* --- Карточка с iframe --- */
+.fluidCard {
+  width: 100% !important;
+  max-width: none !important;
+  display: block !important;
+  min-width: 0;
+  flex: 1 1 auto;
+  position: relative;
+}
+
+.scaledHost {
+  position: absolute;
+  inset: 0 auto auto 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.iframeRaw {
+  display: block;
+  width: 1200px;
+  height: 100%;
+  border: 0;
+}
+
+.resizeHandle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  cursor: ns-resize;
+  background: linear-gradient(to top, rgba(0,0,0,0.12), rgba(0,0,0,0));
+  backdrop-filter: blur(2px);
+}
+
+/* --- Кнопки и контролы --- */
+.btnGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;          /* расстояние между кнопками */
+  margin-right: 12px; /* зазор от группы до шкалы */
+}
+
+.brandBtn {
+  appearance: none;
+  border-radius: 9999px;
+  padding: 7px 14px;
+  font-size: 0.875rem;
+  line-height: 1;
+  border: 1px solid transparent;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.brandBtnActive {
+  background: var(--brand);
+  color: var(--brand-ink);
+  border-color: var(--brand);
+}
+.brandBtnActive:hover {
+  filter: brightness(0.95);
+}
+.brandBtnActive:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.brandBtnGhost {
+  background: var(--brand-ghost-bg);
+  color: var(--brand);
+  border-color: var(--brand-ghost-border);
+}
+.brandBtnGhost:hover {
+  background: rgba(141, 40, 40, 0.12);
+  border-color: var(--brand);
+}
+.brandBtnGhost:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.secondaryBtn {
+  appearance: none;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+  line-height: 1;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.8);
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.secondaryBtn:hover {
+  background: rgba(255,255,255,0.95);
+}
+.secondaryBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-color: var(--brand);
+}
+
+.linkBtn {
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: var(--brand);
+  transition: opacity .15s ease, color .15s ease;
+}
+.linkBtn:hover {
+  opacity: 0.85;
+}
+.linkBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.controlLabel {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-right: 4px;
+}
+
+.scaleValue {
+  display: inline-block;
+  width: 2.5rem;
+  text-align: right;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
