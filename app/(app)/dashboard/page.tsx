@@ -1,42 +1,64 @@
 // app/(app)/dashboard/page.tsx
 import { auth } from '@/auth.config';
-import { normalizeRole } from '@/lib/roles';
+import { normalizeRole, roleOrder } from '@/lib/roles';
 import s from './page.module.css';
 
 import Widgets from './widgets';
 import { getAnalytics } from './analytics';
-import type { Analytics } from './types';
+import { getWeeklyReport } from './weekly';
+import type { Analytics, Scope, TabKey, WeeklyReport } from './types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+function canScopeAll(role: string | undefined | null): boolean {
+  const r = normalizeRole(role);
+  if (!r) return false;
+  return roleOrder.indexOf(r) >= roleOrder.indexOf('deputy'); // deputy и выше (+ ярлыки через normalizeRole)
+}
+
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const rangeDays = Number(params?.days ?? 14);
+
+  const tab: TabKey = params.tab === 'weekly' ? 'weekly' : 'live';
+  const rawDays = Number(params.days ?? 14);
+  const days: 1|7|14|30 = ([1,7,14,30] as const).includes(rawDays as any) ? (rawDays as any) : 14;
 
   const session = await auth();
   const meId = (session?.user as any)?.id ?? null;
   const roleSlug = (session?.user as any)?.role as string | undefined;
-  const role = normalizeRole(roleSlug || 'guest');
 
-  const showCreatedDone = role !== 'teacher';
+  const scopeAllowedAll = canScopeAll(roleSlug);
+  const reqScope = (params.scope === 'all' ? 'all' : 'me') as Scope;
+  const scope: Scope = scopeAllowedAll ? reqScope : 'me';
 
   const analytics: Analytics = await getAnalytics({
-    meId,
-    rangeDays: Number.isFinite(rangeDays) && rangeDays > 0 ? rangeDays : 14,
-    tz: 'Asia/Yekaterinburg',
+    meId, rangeDays: days, tz: 'Asia/Yekaterinburg', scope,
+  });
+
+  const weekly: WeeklyReport = await getWeeklyReport({
+    meId, tz: 'Asia/Yekaterinburg', scope,
   });
 
   return (
     <div className={s.dashboardRoot}>
       <header className={s.header}>
         <div className={s.title}>Аналитика</div>
-        <div className={s.subtitle}>Сверните плитку для KPI, нажмите — развернётся график</div>
+        <div className={s.subtitle}>
+          Живая картина и отчёт недели. Сверните плитку для кратких KPI, нажмите — развернётся график.
+        </div>
       </header>
 
-      <Widgets analytics={analytics} showCreatedDone={showCreatedDone} />
+      <Widgets
+        analytics={analytics}
+        weekly={weekly}
+        roleCanScopeAll={scopeAllowedAll}
+        activeTab={tab}
+        scope={scope}
+        days={days}
+      />
     </div>
   );
 }
