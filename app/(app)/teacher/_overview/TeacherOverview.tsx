@@ -613,7 +613,7 @@ export default async function TeacherOverview({
 
       {/* Предметы */}
       <section className={s.block}>
-        <h2 className={s.blockTitle}>Предметы и МО</h2>
+        <h2 className={s.blockTitle}>Предметы</h2>
         <div className={s.tags}>
           {subjects.map(sm => (<span key={sm.subject.id} className={s.badge}>{sm.subject.name}</span>))}
           {subjects.length === 0 ? <div className={s.empty}>Нет привязок к предметам</div> : null}

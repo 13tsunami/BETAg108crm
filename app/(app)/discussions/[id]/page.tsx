@@ -12,6 +12,7 @@ import {
   deleteDiscussionCommentAction,
 } from '../actions';
 import MentionInput from '../MentionInput';
+import LikeModal from '../LikeModal';
 import '../discussions.css';
 
 type Params = Promise<{ id: string }>;
@@ -46,7 +47,7 @@ export default async function Page({ params }: { params: Params }) {
 
   const { id } = await params;
 
-  const [post, comments, likesCount, liked] = await Promise.all([
+  const [post, comments, likesCount, liked, likers] = await Promise.all([
     prisma.discussionPost.findUnique({
       where: { id },
       select: {
@@ -74,6 +75,10 @@ export default async function Page({ params }: { params: Params }) {
       where: { postId_userId: { postId: id, userId: session.user.id } },
       select: { postId: true },
     }),
+    prisma.discussionReaction.findMany({
+      where: { postId: id },
+      select: { user: { select: { username: true, name: true } } },
+    }),
   ]);
 
   if (!post) notFound();
@@ -83,12 +88,16 @@ export default async function Page({ params }: { params: Params }) {
   const canDeletePost = isAuthor || canModerateDiscussions(role);
 
   const created = fmtEkaterinburg(new Date(post.createdAt));
+  const people = likers.map((r) => ({
+    username: r.user?.username ?? null,
+    name: r.user?.name ?? null,
+  }));
 
   return (
     <div className="disc-wrap">
       <div className="disc-card">
         <div className="disc-breadcrumbs">
-          <Link href="/discussions" className="disc-link">← к ленте</Link>
+          <Link href="/discussions" className="disc-comments-btn">← к ленте</Link>
         </div>
 
         <article className={`disc-post${post.pinned ? ' disc-post--pinned' : ''}`}>
@@ -119,9 +128,14 @@ export default async function Page({ params }: { params: Params }) {
                   </svg>
                 </button>
               </form>
-              <span className="disc-like-count" aria-label="Количество отметок нравится">
-                {likesCount}
-              </span>
+
+              <LikeModal
+                people={people}
+                triggerId={`likes-${post.id}`}
+                label={String(likesCount)}
+                small
+              />
+
               {canDeletePost ? (
                 <form action={deleteDiscussionPostAction} className="disc-inline-form">
                   <input type="hidden" name="id" value={post.id} />
@@ -137,7 +151,7 @@ export default async function Page({ params }: { params: Params }) {
           />
         </article>
 
-        <section className="disc-comments">
+        <section id="comments" className="disc-comments">
           <h2 className="disc-comments-title">Комментарии</h2>
 
           <form className="disc-form" action={createDiscussionCommentAction}>
@@ -151,7 +165,7 @@ export default async function Page({ params }: { params: Params }) {
               rows={3}
               className="disc-input disc-textarea"
               required
-              resetKey={comments.length} // ключ: число комментариев; после добавления увеличится — поле очистится
+              resetKey={comments.length}
             />
 
             <div className="disc-form-row">

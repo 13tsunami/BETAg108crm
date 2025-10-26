@@ -1,4 +1,3 @@
-// app/(app)/discussions/page.tsx
 import { unstable_noStore as noStore } from 'next/cache';
 import Link from 'next/link';
 import { auth } from '@/auth.config';
@@ -11,6 +10,7 @@ import {
 } from './actions';
 import MentionInput from './MentionInput';
 import './discussions.css';
+import LikeModal from './LikeModal';
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
@@ -19,10 +19,14 @@ function parseIntSafe(v: string | undefined, def = 1) {
   return Number.isFinite(n) && n > 0 ? n : def;
 }
 function fmtEkaterinburg(d: Date) {
-  return new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Yekaterinburg' }).format(d);
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Yekaterinburg',
+  }).format(d);
 }
 function escapeHtml(s: string) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;/g,').replace(/>/g, '&gt;').replace(/</g, '&lt;');
 }
 function renderWithMentions(raw: string): string {
   const escaped = escapeHtml(raw).replace(/\r\n/g, '\n');
@@ -60,47 +64,41 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
   const mayModerate = canModerateDiscussions(role);
 
   const params = await searchParams;
-  const tab = (Array.isArray(params.t) ? params.t[0] : (params.t as string)) || 'all'; // 'all' | 'm'
+  const tab = (Array.isArray(params.t) ? params.t[0] : (params.t as string)) || 'all';
   const isMentionsTab = tab === 'm';
 
   const page = parseIntSafe(Array.isArray(params.p) ? params.p[0] : (params.p as string));
   const pageSize = 20;
   const skip = (page - 1) * pageSize;
 
-  // username для поиска упоминаний
   const me = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { username: true },
   });
   const username = me?.username || undefined;
 
-  // Иглы для поиска
   const needles: string[] = ['@everyone'];
   if (username) needles.push(`@${username}`);
-  const textOr = needles.map(n => ({ text: { contains: n } }));
+  const textOr = needles.map((n) => ({ text: { contains: n } }));
 
   let items: {
-    id: string; text: string; pinned: boolean; createdAt: Date | string; authorId: string;
+    id: string;
+    text: string;
+    pinned: boolean;
+    createdAt: Date | string;
+    authorId: string;
     author: { name: string | null; username: string | null } | null;
   }[] = [];
   let total = 0;
 
   if (isMentionsTab) {
-    // Посты с упоминаниями (в тексте поста или комментариях)
     const [postsWithAny, commentsWithAny] = await Promise.all([
-      prisma.discussionPost.findMany({
-        where: { OR: textOr },
-        select: { id: true },
-      }),
-      prisma.discussionComment.findMany({
-        where: { OR: textOr },
-        select: { postId: true },
-      }),
+      prisma.discussionPost.findMany({ where: { OR: textOr }, select: { id: true } }),
+      prisma.discussionComment.findMany({ where: { OR: textOr }, select: { postId: true } }),
     ]);
-    const idsMentioned = Array.from(new Set<string>([
-      ...postsWithAny.map(p => p.id),
-      ...commentsWithAny.map(c => c.postId),
-    ]));
+    const idsMentioned = Array.from(
+      new Set<string>([...postsWithAny.map((p) => p.id), ...commentsWithAny.map((c) => c.postId)])
+    );
 
     total = idsMentioned.length;
 
@@ -110,7 +108,11 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       skip,
       take: pageSize,
       select: {
-        id: true, text: true, pinned: true, createdAt: true, authorId: true,
+        id: true,
+        text: true,
+        pinned: true,
+        createdAt: true,
+        authorId: true,
         author: { select: { name: true, username: true } },
       },
     });
@@ -121,7 +123,11 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         take: pageSize,
         orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
         select: {
-          id: true, text: true, pinned: true, createdAt: true, authorId: true,
+          id: true,
+          text: true,
+          pinned: true,
+          createdAt: true,
+          authorId: true,
           author: { select: { name: true, username: true } },
         },
       }),
@@ -131,10 +137,8 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
     total = totalAll;
   }
 
-  // ids текущей выдачи
-  const ids = items.map(p => p.id);
+  const ids = items.map((p) => p.id);
 
-  // Лайки и счётчики комментариев
   const [myLikes, likeGroups, commentGroups] = ids.length
     ? await Promise.all([
         prisma.discussionReaction.findMany({
@@ -154,47 +158,68 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
       ])
     : [[], [], []];
 
-  const likedSet = new Set(myLikes.map(x => x.postId));
-  const likesCount = new Map(likeGroups.map(x => [x.postId, x._count.postId]));
-  const commentsCount = new Map(commentGroups.map(x => [x.postId, x._count.postId]));
+  const likedSet = new Set(myLikes.map((x) => x.postId));
+  const likesCount = new Map(likeGroups.map((x) => [x.postId, x._count.postId]));
+  const commentsCount = new Map(commentGroups.map((x) => [x.postId, x._count.postId]));
 
-  // Наборы для подсветки
+  type LR = {
+    postId: string;
+    user: { name: string | null; username: string | null } | null;
+  };
+
+  const likeRecords: LR[] = ids.length
+    ? await prisma.discussionReaction.findMany({
+        where: { postId: { in: ids } },
+        select: {
+          postId: true,
+          user: { select: { name: true, username: true } },
+        },
+      })
+    : [];
+
+  const likedUsers = new Map<string, { username: string | null; name: string | null }[]>();
+  for (const r of likeRecords) {
+    const usersArr = likedUsers.get(r.postId) ?? [];
+    usersArr.push({ username: r.user?.username ?? null, name: r.user?.name ?? null });
+    likedUsers.set(r.postId, usersArr);
+  }
+
   let mentionedSet = new Set<string>();
   let everyoneSet = new Set<string>();
   if (ids.length) {
-    const [postsWithAnyPage, commentsWithAnyPage, postsWithEveryone, commentsWithEveryone] = await Promise.all([
-      prisma.discussionPost.findMany({
-        where: { id: { in: ids }, OR: textOr },
-        select: { id: true },
-      }),
-      prisma.discussionComment.groupBy({
-        by: ['postId'],
-        where: { postId: { in: ids }, OR: textOr },
-        _count: { postId: true },
-      }),
-      prisma.discussionPost.findMany({
-        where: { id: { in: ids }, text: { contains: '@everyone' } },
-        select: { id: true },
-      }),
-      prisma.discussionComment.groupBy({
-        by: ['postId'],
-        where: { postId: { in: ids }, text: { contains: '@everyone' } },
-        _count: { postId: true },
-      }),
-    ]);
+    const [postsWithAnyPage, commentsWithAnyPage, postsWithEveryone, commentsWithEveryone] =
+      await Promise.all([
+        prisma.discussionPost.findMany({
+          where: { id: { in: ids }, OR: textOr },
+          select: { id: true },
+        }),
+        prisma.discussionComment.groupBy({
+          by: ['postId'],
+          where: { postId: { in: ids }, OR: textOr },
+          _count: { postId: true },
+        }),
+        prisma.discussionPost.findMany({
+          where: { id: { in: ids }, text: { contains: '@everyone' } },
+          select: { id: true },
+        }),
+        prisma.discussionComment.groupBy({
+          by: ['postId'],
+          where: { postId: { in: ids }, text: { contains: '@everyone' } },
+          _count: { postId: true },
+        }),
+      ]);
 
     mentionedSet = new Set<string>([
-      ...postsWithAnyPage.map(p => p.id),
-      ...commentsWithAnyPage.map(g => g.postId),
+      ...postsWithAnyPage.map((p) => p.id),
+      ...commentsWithAnyPage.map((g) => g.postId),
     ]);
     everyoneSet = new Set<string>([
-      ...postsWithEveryone.map(p => p.id),
-      ...commentsWithEveryone.map(g => g.postId),
+      ...postsWithEveryone.map((p) => p.id),
+      ...commentsWithEveryone.map((g) => g.postId),
     ]);
   }
 
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  const tabParam = isMentionsTab ? '&t=m' : '';
 
   return (
     <div className="disc-wrap">
@@ -202,7 +227,6 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
         <h1 className="disc-title">Пейджер</h1>
         <p className="disc-subtitle">Закреплённые посты всегда наверху.</p>
 
-        {/* Лёгкие вкладки */}
         <div className="disc-tabs">
           <Link
             href={`/discussions?p=1`}
@@ -233,7 +257,9 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
               <label className="disc-checkbox">
                 <input type="checkbox" name="pinned" value="1" /> Закрепить
               </label>
-            ) : <span className="disc-help">Закреплять может только администрация</span>}
+            ) : (
+              <span className="disc-help">Закреплять может только администрация</span>
+            )}
             <button type="submit" className="disc-btn">Опубликовать</button>
           </div>
         </form>
@@ -248,8 +274,10 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
           const likeCnt = likesCount.get(p.id) ?? 0;
           const commCnt = commentsCount.get(p.id) ?? 0;
 
-          const mentioned = mentionedSet.has(p.id);     // личное или @everyone
+          const mentioned = mentionedSet.has(p.id);
           const everyoneMentioned = everyoneSet.has(p.id);
+
+          const people = likedUsers.get(p.id) ?? [];
 
           return (
             <article
@@ -260,7 +288,11 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
                 (mentioned ? ' disc-post--mentioned' : '')
               }
             >
-              <Link href={`/discussions/${p.id}`} className="disc-post-cover" aria-label="Открыть пост" />
+              <Link
+                href={`/discussions/${p.id}`}
+                className="disc-post-cover"
+                aria-label="Открыть пост"
+              />
               <header className="disc-post-head">
                 <div className="disc-post-flags">
                   {p.pinned ? <span className="disc-badge">закреплено</span> : null}
@@ -270,7 +302,9 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
                     </span>
                   ) : null}
                   {mentioned && !everyoneMentioned ? (
-                    <span className="disc-badge disc-badge--me" title="Вас упомянули">вас упомянули</span>
+                    <span className="disc-badge disc-badge--me" title="Вас упомянули">
+                      вас упомянули
+                    </span>
                   ) : null}
                   <div className="disc-meta">
                     <span className="disc-author">
@@ -282,23 +316,42 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
                     </time>
                   </div>
                 </div>
+
                 <div className="disc-post-actions">
-                  <form action={toggleReactionAction} className="disc-elevate">
-                    <input type="hidden" name="postId" value={p.id} />
-                    <button
-                      type="submit"
-                      className={`disc-like ${liked ? 'disc-like--on' : ''}`}
-                      aria-label={liked ? 'Убрать отметку "нравится"' : 'Отметить как "нравится"'}
-                      title={liked ? 'Не нравится' : 'Нравится'}
-                    >
-                      <svg className="disc-like-ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                        <path d="M12.001 5.882c1.528-3.22 6.48-3.585 8.32.062 1.147 2.253.526 4.99-1.57 6.62L12 20l-6.75-7.436c-2.096-1.63-2.717-4.367-1.57-6.62 1.84-3.647 6.792-3.282 8.321-.062z" fill="currentColor" />
-                      </svg>
-                    </button>
-                  </form>
-                  <span className="disc-like-count disc-elevate">{likeCnt}</span>
+                  <div className="disc-like-wrap">
+                    <form action={toggleReactionAction}>
+                      <input type="hidden" name="postId" value={p.id} />
+                      <button
+                        type="submit"
+                        className={`disc-like ${liked ? 'disc-like--on' : ''}`}
+                        aria-label={liked ? 'Убрать отметку "нравится"' : 'Отметить как "нравится"'}
+                        title={liked ? 'Не нравится' : 'Нравится'}
+                      >
+                        <svg
+                          className="disc-like-ic"
+                          viewBox="0 0 24 24"
+                          width="20"
+                          height="20"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M12.001 5.882c1.528-3.22 6.48-3.585 8.32.062 1.147 2.253.526 4.99-1.57 6.62L12 20l-6.75-7.436c-2.096-1.63-2.717-4.367-1.57-6.62 1.84-3.647 6.792-3.282 8.321-.062z"
+                            fill="currentColor"
+                          />
+                        </svg>
+                      </button>
+                    </form>
+
+                    <LikeModal
+                      people={people}
+                      triggerId={`likes-${p.id}`}
+                      label={String(likeCnt)}
+                      small
+                    />
+                  </div>
+
                   {canDelete ? (
-                    <form action={deleteDiscussionPostAction} className="disc-inline-form disc-elevate">
+                    <form action={deleteDiscussionPostAction} className="disc-inline-form">
                       <input type="hidden" name="id" value={p.id} />
                       <button type="submit" className="disc-btn-danger">Удалить</button>
                     </form>
@@ -312,14 +365,23 @@ export default async function Page({ searchParams }: { searchParams: Search }) {
               />
 
               <footer className="disc-post-foot">
-                <span className="disc-muted">Комментариев: {commCnt}</span>
-                <Link href={`/discussions/${p.id}`} className="disc-btn-more">Подробнее</Link>
+                <Link
+                  href={`/discussions/${p.id}#comments`}
+                  className="disc-comments-btn"
+                  aria-label={`Открыть комментарии (${commCnt})`}
+                >
+                  Комментариев: {commCnt}
+                </Link>
+                {/* Кнопку "Подробнее" убрал для визуальной чистоты */}
+                <span />
               </footer>
             </article>
           );
         })}
 
-        {items.length === 0 ? <div className="disc-empty">Пока ничего нет. Будьте первыми.</div> : null}
+        {items.length === 0 ? (
+          <div className="disc-empty">Пока ничего нет. Будьте первыми.</div>
+        ) : null}
       </div>
 
       <nav className="disc-pager">
@@ -335,9 +397,23 @@ function Pager({ page, pages, tab }: { page: number; pages: number; tab: 'all' |
   const next = page < pages ? page + 1 : null;
   return (
     <div className="disc-pager-row">
-      {prev ? <Link className="disc-btn-lite" href={`/discussions?p=${prev}${qs}`}>Назад</Link> : <span />}
-      <span className="disc-pager-info">{page} из {pages}</span>
-      {next ? <Link className="disc-btn-lite" href={`/discussions?p=${next}${qs}`}>Вперёд</Link> : <span />}
+      {prev ? (
+        <Link className="disc-btn-lite" href={`/discussions?p=${prev}${qs}`}>
+          Назад
+        </Link>
+      ) : (
+        <span />
+      )}
+      <span className="disc-pager-info">
+        {page} из {pages}
+      </span>
+      {next ? (
+        <Link className="disc-btn-lite" href={`/discussions?p=${next}${qs}`}>
+          Вперёд
+        </Link>
+      ) : (
+        <span />
+      )}
     </div>
   );
 }
