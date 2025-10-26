@@ -1,0 +1,83 @@
+/* app/(app)/u/[username]/profile-actions.module.css */
+
+.actions {
+  --brand: #8d2828;
+  --brand-border: rgba(141, 40, 40, 0.25);
+  --brand-focus: rgba(141, 40, 40, 0.15);
+  --text: #111827;
+
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+}
+
+.button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  height: 40px;
+  padding: 0 14px;
+
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .2px;
+  text-decoration: none;
+
+  border-radius: 12px;
+  border: 1px solid var(--brand-border);
+  cursor: pointer;
+  user-select: none;
+  transition: transform .08s ease, filter .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+/* Основная бордовая */
+.primary {
+  color: #fff;
+  background: var(--brand);
+  box-shadow: 0 10px 30px rgba(17,24,39,.10), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.primary:hover { filter: brightness(.98); }
+.primary:active { transform: translateY(1px); }
+.primary:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-focus); }
+/* белый текст на бордовой кнопке, несмотря на глобальные стили ссылок */
+.primary,
+.primary:link,
+.primary:visited,
+.primary:hover,
+.primary:focus-visible {
+  color: #fff;
+}
+
+/* Призрачная (светлая) */
+.ghost {
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.5));
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.ghost:hover { box-shadow: 0 6px 16px rgba(17,24,39,.08); }
+.ghost:active { transform: translateY(1px); }
+.ghost:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-focus); }
+
+/* Ссылка-кнопка */
+.linkish {
+  height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--brand);
+  border-bottom: 1px solid transparent;
+  border-radius: 4px;
+}
+.linkish:hover { border-bottom-color: var(--brand); }
+.linkish:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-focus); }
+
+/* Мобильная плотность */
+@media (max-width: 640px) {
+  .button { height: 36px; border-radius: 10px; padding: 0 12px; font-size: 13px; }
+}

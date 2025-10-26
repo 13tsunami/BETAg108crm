@@ -17,6 +17,10 @@
   --glass-blur-soft: 6px;
   --card-shadow: 0 10px 30px rgba(17, 24, 39, 0.10);
   --card-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  /* оффсеты для липких элементов, чтобы не было перекрытий в проде */
+  --tabs-offset: 12px;   /* отступ плашки табов от верхнего края правой колонки */
+  --tabs-height: 40px;   /* визуальная высота плашки табов */
 }
 
 /* Колонки */
@@ -32,7 +36,15 @@
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
   box-shadow: var(--card-shadow), var(--card-inset);
+
+  /* чтобы вертикальные зазоры управлялись предсказуемо и не было «прилипания» */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
+
+/* если первый блок внутри правой колонки — карточка формы, оставим запас вниз на старых разметках */
+.rightCol > .card:first-child { margin-bottom: 12px; }
 
 /* Карточки / общие */
 .card {
@@ -44,7 +56,16 @@
 }
 
 /* Табы */
-.tabsWrap { position: sticky; top: 0; z-index: 1; margin-bottom: 8px; background: transparent; }
+.tabsWrap {
+  position: sticky;
+  top: var(--tabs-offset);           /* было 0 — теперь плашка не «упирается» в рамку */
+  z-index: 3;                        /* выше липких хедеров задач */
+  margin-bottom: 8px;
+  background: var(--glass-bg);       /* чтобы тень/фон формы не просвечивали сквозь табы */
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: 12px;
+}
 .tabs { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .tabs::-webkit-scrollbar { display: none; }
 
@@ -218,8 +239,8 @@ input:focus, select:focus, textarea:focus {
 .rightCol .taskCard[open] .taskHeader {
   padding: 10px 12px;
   position: sticky;
-  top: 0;
-  z-index: 1;
+  top: calc(var(--tabs-offset) + var(--tabs-height)); /* было 0 — теперь не перекрывает табы */
+  z-index: 2;                                         /* ниже плашки табов */
   background: #fff;
 }
 .rightCol .taskCard[open] .taskTitle b { font-size: 17px; }
@@ -406,6 +427,7 @@ body { line-height: 1.5; color: var(--text); }
   .card, .taskCard, .rightCol { border-radius: 14px; }
   .taskBody { padding: 0 10px 10px 10px; }
 }
+
 /* Секции без заголовка (кнопка "Выполнить", "Мой статус") — без рамки и фона */
 .taskSection:not(:has(h3, h4)) {
   border: none;

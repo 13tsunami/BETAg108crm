@@ -91,6 +91,12 @@ export default function Sidebar({
   const hasAdminBlock = canViewAdmin(roleNorm);
   const fio = splitFio((data?.user?.name as string) || null);
 
+  // URL личной страницы педагога для текущего пользователя
+  const myTeacherUrl = useMemo(() => {
+    const id = (data?.user as any)?.id as string | undefined;
+    return id ? `/teacher/${id}` : null;
+  }, [data?.user]);
+
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -161,7 +167,13 @@ export default function Sidebar({
         <div className="who" title={(data?.user?.name as string) || 'Гость'}>
           <div className="fio">
             <div className="last" style={{ display:'flex', alignItems:'center', gap:8 }}>
-              {fio.last}
+              {myTeacherUrl ? (
+                <Link href={myTeacherUrl} prefetch={false} className="lastLink" aria-label="Личная страница педагога">
+                  {fio.last}
+                </Link>
+              ) : (
+                fio.last
+              )}
               {authed && (
                 <Link href="/settings" aria-label="Настройки" className="gear" prefetch={false}>
                   <GearIcon />
@@ -193,7 +205,6 @@ export default function Sidebar({
               <Tile href="/teachers"     label="Педагоги"    active={pathname === '/teachers'} />
               <Tile href="/calendar"     label="Календарь"   active={pathname === '/calendar'} />
               <Tile href="/schedule"     label="Расписание"  active={pathname === '/schedule'} />
-              <Tile href="/showmyfiles"  label="Мои файлы"   active={pathname === '/showmyfiles'} />
               <Tile href="/enterprise"   label="Документация" active={pathname === '/enterprise'} />
               <Tile href="/requests"     label="Заявки"      active={pathname?.startsWith('/requests') || false} unread={pathname?.startsWith('/requests') ? 0 : requestsUnreadState} />
             </div>
@@ -205,7 +216,6 @@ export default function Sidebar({
                   <Tile href="/admin"           label="Админ-панель" active={pathname === '/admin'} />
                   <Tile href="/admin/db-status" label="Статус БД"    active={pathname === '/admin/db-status'} />
                   <Tile href="/groups"          label="Кафедры"      active={pathname === '/groups'} />
-                  <Tile href="/admin/cleanup"   label="Очистка базы" active={pathname === '/admin/cleanup'} />
                 </div>
               </>
             )}
@@ -231,6 +241,8 @@ export default function Sidebar({
         .who { min-width:0; width:100%; display:grid; gap:6px; }
         .fio { line-height:1.08; text-align:left; }
         .last { font-weight:900; font-size:20px; letter-spacing:.4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .lastLink { color: inherit; text-decoration: none; }
+        .lastLink:hover { text-decoration: underline; text-underline-offset: 3px; }
         .rest { font-weight:700; font-size:15px; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
         .gear { display:inline-grid; place-items:center; width:28px; height:28px; border-radius:8px; border:1px solid rgba(229,231,235,.9); background:#fff; color:#0f172a; line-height:0; }
