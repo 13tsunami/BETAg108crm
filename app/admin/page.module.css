@@ -1,12 +1,31 @@
-/* Контейнер и фон */
+/* app/(app)/<your-page>/page.module.css */
+/* Liquid Glass · iOS-26 (light-only). Полная замена в существующих классах. */
+
+/* ===== Контейнер и фон ===== */
 .page {
+  /* Локальные токены */
+  --brand: #8d2828;
+  --ink: #0f172a;
+  --muted: #374151;
+
+  /* Стекло */
+  --lg-blur: 12px;
+  --glass-bg: rgba(255,255,255,.62);
+  --glass-soft: rgba(255,255,255,.78);
+  --glass-stroke: color-mix(in oklab, var(--brand) 34%, #e5e7eb 66%);
+  --glass-shadow: 0 12px 32px rgba(17,24,39,.12);
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,.65), inset 0 -1px 0 rgba(0,0,0,.04);
+  --ring: color-mix(in oklab, var(--brand) 24%, transparent);
+
   min-height: 100%;
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(141,40,40,.06), transparent 60%),
-    radial-gradient(800px 480px at 10% 110%, rgba(141,40,40,.04), transparent 60%),
-    linear-gradient(180deg, #fafafa, #f3f4f6);
   padding: 16px;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--brand) 10%, transparent), transparent 60%),
+    radial-gradient(800px 480px at 10% 110%, color-mix(in oklab, var(--brand) 8%, transparent), transparent 60%),
+    linear-gradient(180deg, #fafafa, #f3f4f6);
+  color: var(--ink);
 }
+
 .container {
   max-width: 1120px;
   margin: 0 auto;
@@ -14,7 +33,37 @@
   gap: 16px;
 }
 
-/* Шапка */
+/* ===== Универсальное стекло (применяем классом .glass на нужных блоках) ===== */
+.glass {
+  position: relative;
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--glass-soft), var(--glass-bg));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(1.12);
+  backdrop-filter: blur(var(--lg-blur)) saturate(1.12);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+  overflow: clip;
+}
+.glass::before,
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.glass::before { /* микрошум */
+  background:
+    radial-gradient(1px 1px at 12% 18%, rgba(0,0,0,.015) 0 99%, transparent 100%),
+    radial-gradient(1px 1px at 72% 82%, rgba(0,0,0,.015) 0 99%, transparent 100%);
+  mix-blend-mode: multiply;
+}
+.glass::after { /* блик */
+  background: linear-gradient(to bottom, rgba(255,255,255,.42), rgba(255,255,255,.18) 34%, transparent 60%);
+  mask: linear-gradient(to bottom, #000 0 60%, transparent 75%);
+}
+
+/* ===== Шапка ===== */
 .head {
   padding: 16px 18px;
   border-radius: 16px;
@@ -23,25 +72,16 @@
   justify-content: space-between;
   gap: 12px;
 }
-.headNav {
-  display: inline-flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.head.glass:hover {
+  border-color: color-mix(in oklab, var(--brand) 36%, #ffffff);
+  box-shadow: 0 14px 34px rgba(17,24,39,.14), var(--glass-inset);
+  transform: translateY(-1px);
 }
-.title {
-  margin: 0;
-  font-weight: 900;
-  font-size: 22px;
-  color: #0f172a;
-  letter-spacing: .2px;
-}
-.subtitle {
-  margin: 6px 0 0;
-  font-size: 14px;
-  color: #374151;
-}
+.headNav { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.title { margin: 0; font-weight: 900; font-size: 22px; color: var(--ink); letter-spacing: .2px; }
+.subtitle { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
 
-/* Карточка сведений */
+/* ===== Карточка сведений ===== */
 .sectionTitle {
   margin: 0 0 8px;
   font-size: 16px;
@@ -53,34 +93,24 @@
   padding: 14px 16px;
   border-radius: 16px;
 }
+.info.glass:hover {
+  border-color: color-mix(in oklab, var(--brand) 28%, #ffffff);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(17,24,39,.12), var(--glass-inset);
+}
 .infoRow {
   display: grid;
   grid-template-columns: 180px 1fr;
   gap: 12px;
   align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(141,40,40,.10);
+  border-bottom: 1px solid color-mix(in oklab, var(--brand) 16%, #e5e7eb);
 }
 .infoRow:last-child { border-bottom: 0; }
-.infoKey {
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: .2px;
-}
+.infoKey { font-weight: 800; color: var(--ink); letter-spacing: .2px; }
 .infoVal { color: #374151; }
 
-/* Стеклянный стиль */
-.glass {
-  background: linear-gradient(180deg, rgba(255,255,255,.74), rgba(255,255,255,.5));
-  backdrop-filter: saturate(180%) blur(8px);
-  -webkit-backdrop-filter: saturate(180%) blur(8px);
-  border: 1px solid rgba(141,40,40,.20);
-  box-shadow: 0 6px 16px rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.45);
-  border-radius: 16px;
-  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
-}
-
-/* Плитки */
+/* ===== Плитки ===== */
 .tiles {
   display: grid;
   gap: 16px;
@@ -89,10 +119,11 @@
 .tile {
   grid-column: span 6;
   padding: 16px;
+  border-radius: 16px;
 }
-.tile:hover {
-  border-color: rgba(141,40,40,.32);
-  box-shadow: 0 12px 26px rgba(17,24,39,.10), inset 0 1px 0 rgba(255,255,255,.55);
+.tile.glass:hover {
+  border-color: color-mix(in oklab, var(--brand) 36%, #ffffff);
+  box-shadow: 0 12px 28px rgba(17,24,39,.12), inset 0 1px 0 rgba(255,255,255,.55);
   transform: translateY(-1px);
 }
 .tileHead {
@@ -102,81 +133,65 @@
   gap: 12px;
   margin-bottom: 6px;
 }
-.tileTitle {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: #1f2937;
-  letter-spacing: .2px;
-}
+.tileTitle { margin: 0; font-size: 18px; font-weight: 800; color: #1f2937; letter-spacing: .2px; }
 .badge {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  font-size: 12px;
-  font-weight: 800;
-  color: #fff;
-  background: #8d2828;
-  border-radius: 999px;
-  letter-spacing: .3px;
+  display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+  font-size: 12px; font-weight: 800; color: #fff; border-radius: 999px; letter-spacing: .3px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 10%, var(--brand)) 0%,
+      color-mix(in oklab, #000000 10%, var(--brand)) 100%);
+  border: 1px solid color-mix(in oklab, var(--brand) 55%, #ffffff);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 2px 6px rgba(141,40,40,.18);
 }
-.tileDesc {
-  margin: 6px 0 12px;
-  color: #374151;
-  line-height: 1.5;
-}
+.tileDesc { margin: 6px 0 12px; color: #374151; line-height: 1.5; }
 .tileActions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-/* Кнопки и ссылки */
+/* ===== Кнопки и ссылки ===== */
 .btnPrimary, .btnGhost {
-  display: inline-flex;
-  color: #fcfcfc;
-  align-items: center;
-  justify-content: center;
-  height: 40px; /* крупнее для тач-целей */
-  padding: 0 16px;
-  border-radius: 10px;
-  font-weight: 800; color: #fcfcfc;
-  letter-spacing: .2px;
-  text-decoration: none;
-  user-select: none;
-  border: 1px solid transparent;
-  cursor: pointer;
-  line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 40px; padding: 0 16px; border-radius: 12px;
+  font-weight: 800; letter-spacing: .2px; text-decoration: none; user-select: none;
+  border: 1px solid transparent; cursor: pointer; line-height: 1;
 }
+
+/* Бордовый глянец */
 .btnPrimary {
-  background: #8d2828;
-  color: #ffffff;
-  border-color: rgba(141,40,40,.9);
+  color: #fff;
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 10%, var(--brand)) 0%,
+      color-mix(in oklab, #000000 12%, var(--brand)) 100%);
+  border-color: color-mix(in oklab, var(--brand) 70%, #ffffff);
+  box-shadow: 0 10px 20px rgba(141,40,40,.24), inset 0 1px 0 rgba(255,255,255,.6);
 }
-.btnPrimary:hover { filter: brightness(.96); }
-.btnPrimary:active { transform: translateY(1px); }
+.btnPrimary:hover { filter: brightness(.97); transform: translateY(-1px); }
+.btnPrimary:active { transform: translateY(0); }
 .btnPrimary:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(141,40,40,.24);
+  outline: none; box-shadow: 0 0 0 4px var(--ring), inset 0 1px 0 rgba(255,255,255,.7);
 }
 
+/* Стеклянный ghost */
 .btnGhost {
-  background: rgba(141,40,40,.06);
   color: #374151;
-  border-color: rgba(141,40,40,.22);
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.76));
+  border-color: var(--glass-stroke);
+  -webkit-backdrop-filter: blur(8px) saturate(1.06);
+  backdrop-filter: blur(8px) saturate(1.06);
+  box-shadow: var(--glass-inset);
 }
-.btnGhost:hover { background: rgba(141,40,40,.09); }
-.btnGhost:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(141,40,40,.18);
+.btnGhost:hover {
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--brand) 3%, #ffffff),
+    color-mix(in oklab, var(--brand) 1%, #ffffff));
 }
+.btnGhost:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--ring), var(--glass-inset); }
 
-/* Акцентная ссылка (исправляет отсутствие класса) */
-.linkAccent {
-  color: #8d2828;
-  font-weight: 700;
-  text-underline-offset: 3px;
-}
+/* Акцентная ссылка */
+.linkAccent { color: var(--brand); font-weight: 700; text-underline-offset: 3px; }
 .linkAccent:hover { text-decoration: underline; }
 
-/* Форма */
+/* ===== Форма ===== */
 .formGrid { display: grid; gap: 12px; }
 .formRow {
   display: grid;
@@ -184,46 +199,34 @@
   gap: 12px;
   align-items: flex-start;
 }
-.formKey {
-  font-weight: 800;
-  color: #0f172a;
-  padding-top: 8px;
-}
+.formKey { font-weight: 800; color: var(--ink); padding-top: 8px; }
 .formCol { display: grid; gap: 6px; }
 .formColInline { display: inline-flex; align-items: center; gap: 10px; }
 
+/* Поля */
 .input {
-  height: 40px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(141,40,40,.25);
-  background: rgba(255,255,255,.95);
-  color: #111827;
-  outline: none;
-  width: 100%;
+  height: 40px; padding: 8px 12px; border-radius: 12px;
+  border: 1px solid var(--glass-stroke);
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.86));
+  color: #111827; outline: none; width: 100%;
+  -webkit-backdrop-filter: blur(8px) saturate(1.06);
+  backdrop-filter: blur(8px) saturate(1.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+  transition: border-color .14s ease, box-shadow .16s ease, background .16s ease;
 }
 .input:focus {
-  border-color: rgba(141,40,40,.55);
-  box-shadow: 0 0 0 3px rgba(141,40,40,.18);
+  border-color: color-mix(in oklab, var(--brand) 55%, #ffffff);
+  box-shadow: 0 0 0 4px var(--ring), inset 0 1px 0 rgba(255,255,255,.82);
 }
 .checkboxLabel { color: #374151; }
 
-.help {
-  color: #6b7280;
-  font-size: 12px;
-  line-height: 1.35;
-}
+.help { color: #6b7280; font-size: 12px; line-height: 1.35; }
 
-.formActions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+.formActions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .hint { color: #6b7280; }
 
 .page :global(code) {
-  background: #f3f4f6;
+  background: linear-gradient(180deg, #f6f7f9, #f3f4f6);
   border: 1px solid #e5e7eb;
   padding: 1px 6px;
   border-radius: 6px;
@@ -231,8 +234,7 @@
   font-size: 12px;
 }
 
-
-/* Адаптив */
+/* ===== Адаптив ===== */
 @media (max-width: 1080px) {
   .container { max-width: 960px; }
 }
@@ -247,10 +249,12 @@
   .page { padding: 12px; }
 }
 
-/* Умеренная анимация */
+/* ===== Умеренная анимация ===== */
 @media (prefers-reduced-motion: reduce) {
   .glass, .btnPrimary, .btnGhost { transition: none; }
 }
+
+/* Гарантия белого текста у .btnPrimary при глобальных сбросах ссылок */
 .btnPrimary,
 .btnPrimary:link,
 .btnPrimary:visited,

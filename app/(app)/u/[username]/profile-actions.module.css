@@ -1,10 +1,20 @@
 /* app/(app)/u/[username]/profile-actions.module.css */
+/* Liquid Glass · iOS-26 (light-only). Полная замена с сохранением имён классов. */
 
 .actions {
+  /* Палитра + стеклянные токены синхронизированы с sign-in */
   --brand: #8d2828;
   --brand-border: rgba(141, 40, 40, 0.25);
-  --brand-focus: rgba(141, 40, 40, 0.15);
-  --text: #111827;
+  --brand-focus: rgba(141, 40, 40, 0.18);
+  --text: #0f172a;
+
+  /* Liquid Glass */
+  --glass-blur: 10px;
+  --glass-bg: rgba(255,255,255,.72);
+  --glass-bg-2: rgba(255,255,255,.50);
+  --glass-stroke: color-mix(in oklab, var(--brand) 22%, #e5e7eb);
+  --glass-shadow: 0 10px 26px rgba(17,24,39,.10);
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,.45);
 
   display: flex;
   gap: 14px;
@@ -13,6 +23,7 @@
   margin: 12px 0 4px;
 }
 
+/* Базовая кнопка */
 .button {
   appearance: none;
   display: inline-flex;
@@ -32,39 +43,74 @@
   border: 1px solid var(--brand-border);
   cursor: pointer;
   user-select: none;
-  transition: transform .08s ease, filter .15s ease, box-shadow .15s ease, background .15s ease;
+
+  transition:
+    transform .08s ease,
+    filter .15s ease,
+    box-shadow .15s ease,
+    background .15s ease,
+    border-color .15s ease,
+    color .15s ease;
 }
 
-/* Основная бордовая */
+/* Иконки внутри кнопок (если есть) */
+.button :where(svg, img) {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+}
+
+/* ===== Варианты ===== */
+
+/* Основная бордовая (заливка) */
 .primary {
   color: #fff;
   background: var(--brand);
-  box-shadow: 0 10px 30px rgba(17,24,39,.10), inset 0 1px 0 rgba(255,255,255,.35);
+  border-color: color-mix(in oklab, var(--brand) 86%, #000 14%);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 rgba(255,255,255,.35);
 }
-.primary:hover { filter: brightness(.98); }
+.primary:hover {
+  filter: brightness(.98);
+  box-shadow:
+    0 12px 28px rgba(17,24,39,.12),
+    inset 0 1px 0 rgba(255,255,255,.4);
+}
 .primary:active { transform: translateY(1px); }
-.primary:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-focus); }
-/* белый текст на бордовой кнопке, несмотря на глобальные стили ссылок */
+.primary:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-focus), inset 0 1px 0 rgba(255,255,255,.35); }
+
+/* Жёстко фиксируем белый текст на любых глобальных стилях ссылок */
 .primary,
 .primary:link,
 .primary:visited,
 .primary:hover,
+.primary:active,
 .primary:focus-visible {
-  color: #fff;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
 }
 
-/* Призрачная (светлая) */
+/* Призрачная стеклянная */
 .ghost {
   color: var(--text);
-  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.5));
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, var(--glass-bg), var(--glass-bg-2));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.06);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.06);
+  border-color: var(--glass-stroke);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
 }
-.ghost:hover { box-shadow: 0 6px 16px rgba(17,24,39,.08); }
+.ghost:hover {
+  box-shadow: 0 12px 26px rgba(17,24,39,.12), var(--glass-inset);
+  background: linear-gradient(180deg,
+    color-mix(in oklab, white 86%, var(--glass-bg)) ,
+    color-mix(in oklab, white 70%, var(--glass-bg-2)));
+  border-color: color-mix(in oklab, var(--brand) 30%, #e5e7eb);
+}
 .ghost:active { transform: translateY(1px); }
-.ghost:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-focus); }
+.ghost:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-focus), var(--glass-inset); }
 
-/* Ссылка-кнопка */
+/* Ссылка-кнопка (плоская) */
 .linkish {
   height: auto;
   padding: 0;
@@ -77,7 +123,24 @@
 .linkish:hover { border-bottom-color: var(--brand); }
 .linkish:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--brand-focus); }
 
-/* Мобильная плотность */
+/* ===== Состояния доступности ===== */
+.button[disabled],
+.button:disabled,
+.button[aria-disabled="true"] {
+  opacity: .6;
+  cursor: default;
+  pointer-events: none;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+/* ===== Мобильная плотность ===== */
 @media (max-width: 640px) {
   .button { height: 36px; border-radius: 10px; padding: 0 12px; font-size: 13px; }
+}
+
+/* ===== Умеренная анимация ===== */
+@media (prefers-reduced-motion: reduce) {
+  .button { transition: none; }
 }

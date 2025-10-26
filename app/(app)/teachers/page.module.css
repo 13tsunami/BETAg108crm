@@ -1,50 +1,61 @@
-/* Контейнер и токены — всё локально через .page, без :root */
+/* app/(app)/teachers/page.module.css */
+/* Liquid Glass · iOS-26 (light-only). Локальные токены через .page */
+
+/* Контейнер и токены */
 .page {
   display: grid;
   gap: 12px;
 
-  /* Токены бренда и стекла */
+  /* Токены бренда и типографики */
   --brand: #8d2828;
   --ink: #0f172a;
   --muted: #374151;
 
+  /* Производные */
+  --brand-10: color-mix(in oklab, var(--brand) 10%, #ffffff);
+  --brand-stroke: color-mix(in oklab, var(--brand) 52%, #ffffff);
+  --ring: color-mix(in oklab, var(--brand) 26%, transparent);
+
+  /* Стекло */
   --glass-bg: rgba(255,255,255,0.62);
-  --glass-stroke: color-mix(in oklab, var(--brand) 14%, #e5e7eb 86%);
+  --glass-soft: rgba(255,255,255,0.78);
+  --glass-stroke: color-mix(in oklab, var(--brand-stroke) 36%, #e5e7eb 64%);
   --glass-shadow: 0 12px 40px rgba(17,24,39,0.12);
   --glass-inset: inset 0 1px 0 rgba(255,255,255,0.65),
                  inset 0 -0.5px 0 rgba(0,0,0,0.06);
   --glass-radius: 16px;
   --backdrop-blur: 12px;
 
-  /* Фон страницы: «жидкие» пятна + мягкий градиент */
+  /* Фон страницы */
   background:
     radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--brand) 14%, transparent) 0%, transparent 60%),
     radial-gradient(900px 520px at 10% 110%, color-mix(in oklab, var(--brand) 10%, transparent) 0%, transparent 60%),
     linear-gradient(180deg, #fafafa, #f3f4f6);
+  color: var(--ink);
+  padding: 14px 16px;
 }
 
 /* Общая «жидкая» стеклянная карточка */
 .glass {
   position: relative;
+  isolation: isolate;
   border-radius: var(--glass-radius);
-  background: linear-gradient(180deg, rgba(255,255,255,0.78), var(--glass-bg));
-  -webkit-backdrop-filter: blur(var(--backdrop-blur));
-  backdrop-filter: blur(var(--backdrop-blur));
+  background: linear-gradient(180deg, var(--glass-soft), var(--glass-bg));
+  -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(1.15);
+  backdrop-filter: blur(var(--backdrop-blur)) saturate(1.15);
   border: 1px solid var(--glass-stroke);
   box-shadow: var(--glass-shadow), var(--glass-inset);
   overflow: clip;
 }
-
-/* Микрошум и боковая засветка для стекла */
 .glass::before,
 .glass::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 0;
 }
 .glass::before {
-  /* шум через крошечный градиент без изображений */
   background:
     radial-gradient(1px 1px at 10% 20%, rgba(0,0,0,0.015) 0 99%, transparent 100%),
     radial-gradient(1px 1px at 70% 80%, rgba(0,0,0,0.015) 0 99%, transparent 100%);
@@ -52,46 +63,39 @@
   opacity: .8;
 }
 .glass::after {
-  /* бликовая полоса сверху для «геля» */
   background:
-    linear-gradient( to bottom,
+    linear-gradient(to bottom,
       rgba(255,255,255,0.45),
       rgba(255,255,255,0.20) 30%,
-      transparent 60% );
+      transparent 60%);
   mask: linear-gradient(to bottom, black, black 60%, transparent 75%);
 }
+.glass > * { position: relative; z-index: 1; }
 
 /* Шапка */
 .head { padding: 14px 16px; }
 .title { margin: 0; font-weight: 900; font-size: 22px; color: var(--ink); }
 .subtitle { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
 
-/* Тулбар */
+/* Тулбар/фильтры */
 .toolbar {
   padding: 10px;
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
 
-/* Нотификации */
-.note {
-  border-radius: 10px; padding: 8px 10px; font-size: 14px;
-  border: 1px solid #e5e7eb;
-  background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.65));
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-}
-.ok  { border-color: #c8e6c9; background: linear-gradient(180deg, #f3fcf4, #e8f9ea); color: #166534; }
-.err { border-color: #fecaca; background: linear-gradient(180deg, #fff6f7, #ffe9eb); color: #991b1b; }
-
 /* Список */
 .listWrap { border-radius: 16px; overflow: hidden; padding: 6px; }
-.list { display: grid; gap: 8px; }
+.list { display: grid; gap: 8px; color: #0f172a; }
 .item { padding: 6px; border-top: 1px solid #eef0f2; }
 .item[data-first="1"] { border-top: none; }
 
 /* Заголовок элемента */
 .summary {
-  list-style: none; cursor: pointer;
-  display: grid; align-items: center; gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  align-items: center;
+  gap: 8px;
   grid-template-columns: 1fr auto;
 }
 .summary::-webkit-details-marker { display: none; }
@@ -105,11 +109,15 @@
 .name { font-weight: 700; }
 .roleText { opacity: .75; }
 
-/* Бейдж статуса: капсула с глянцем */
+/* Бейдж статуса */
 .badge {
   position: relative;
-  font-size: 12px; padding: 2px 10px; border-radius: 999px;
-  border: 1px solid #9ca3af; color: #6b7280; background: #f3f4f6;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid #9ca3af;
+  color: #6b7280;
+  background: #f3f4f6;
   margin-left: 2px;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.9),
@@ -117,19 +125,14 @@
 }
 .badge::after {
   content: "";
-  position: absolute; inset: 0;
-  border-radius: inherit;
-  background: linear-gradient( to bottom, rgba(255,255,255,.35), transparent 60%);
+  position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(to bottom, rgba(255,255,255,.35), transparent 60%);
   pointer-events: none;
 }
-.badgeOnline {
-  border-color: #16a34a; color: #166534; background: #dcfce7;
-}
-.badgeOffline {
-  border-color: #c9ced6; color: #6b7280; background: #f3f4f6;
-}
+.badgeOnline { border-color: #16a34a; color: #166534; background: #dcfce7; }
+.badgeOffline { border-color: #c9ced6; color: #6b7280; background: #f3f4f6; }
 
-/* Тихая подпись «был(а) …» — рядом с бейджем */
+/* «был(а) …» */
 .lastSeen {
   margin-left: 6px;
   opacity: .8;
@@ -138,21 +141,15 @@
   white-space: nowrap;
 }
 
-/* Индикатор «жизни» для онлайн: мини-точка с мягким пульсом */
+/* Пульс для online */
 .badgeOnline::before {
   content: "";
-  width: 6px; height: 6px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: #22c55e;
-  display: inline-block;
-  line-height: 1;             /* стабильная высота строки */
-  vertical-align: middle;     /* центр относительно текста */
-  transform: translateY(-0.5px); /* слегка приподнять точку */
+  width: 6px; height: 6px; margin-right: 6px; border-radius: 50%;
+  background: #22c55e; display: inline-block; line-height: 1; vertical-align: middle;
+  transform: translateY(-0.5px);
   box-shadow: 0 0 0 0 rgba(34,197,94,0.55);
   animation: pulse 2.2s ease-out infinite;
 }
-
 @keyframes pulse {
   0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.55); }
   60%  { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
@@ -162,7 +159,7 @@
 /* Детали */
 .details { margin-top: 8px; padding-left: 4px; display: grid; gap: 8px; }
 
-/* Стеклянный тайл — более «жидкий» */
+/* Стеклянный тайл */
 .glassTile {
   position: relative;
   border-radius: 16px;
@@ -176,29 +173,35 @@
 .glassTile::before {
   content: "";
   position: absolute; inset: 0;
-  background: linear-gradient( to bottom, rgba(255,255,255,.5), rgba(255,255,255,.08) 50%, transparent 75%);
+  background: linear-gradient(to bottom, rgba(255,255,255,.5), rgba(255,255,255,.08) 50%, transparent 75%);
   pointer-events: none;
 }
 
 .tile { padding: 12px; }
 
+/* Сетка полей */
 .grid3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
-
 .field { font-size: 13px; }
 .fieldLabel { opacity: .6; }
-/* безопасные переносы для длинных email/логинов/телефонов */
 .fieldValue {
   font-weight: 600; color: #111827;
   overflow-wrap: anywhere;
 }
 
 .about { color: #374151; }
-
 .empty { padding: 20px; color: #6b7280; }
+
+/* Доступность */
+.page :where(a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--ring);
+  border-color: var(--brand-stroke);
+  border-radius: 12px;
+}
 
 /* Мобильные адаптации */
 @media (max-width: 700px) {
@@ -208,31 +211,3 @@
 @media (max-width: 480px) {
   .grid3 { grid-template-columns: 1fr; }
 }
-
-/* стеклянная карточка — добавили изоляцию и слои */
-.glass {
-  position: relative;
-  isolation: isolate;           /* новый стек для слоёв */
-  border-radius: var(--glass-radius);
-  background: linear-gradient(180deg, rgba(255,255,255,0.78), var(--glass-bg));
-  -webkit-backdrop-filter: blur(var(--backdrop-blur));
-  backdrop-filter: blur(var(--backdrop-blur));
-  border: 1px solid var(--glass-stroke);
-  box-shadow: var(--glass-shadow), var(--glass-inset);
-  overflow: clip;
-}
-.glass::before,
-.glass::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;                   /* псевдо-элементы ниже контента */
-}
-.glass > * {
-  position: relative;
-  z-index: 1;                   /* весь контент над «бликом» */
-}
-
-/* список — единый базовый цвет текста */
-.list { display: grid; gap: 8px; color: #0f172a; }

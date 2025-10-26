@@ -1,30 +1,60 @@
 /* app/(app)/enterprise/page.module.css */
+/* Liquid Glass · iOS-26 (light-only) */
 
 /* Базовый фон страницы и отступы */
 .page {
+  /* Токены */
   --brand: #8d2828;
+  --brand-ink: #ffffff;
+  --brand-10: color-mix(in oklab, var(--brand) 10%, #ffffff);
+  --brand-18: color-mix(in oklab, var(--brand) 18%, #ffffff);
+  --brand-stroke: color-mix(in oklab, var(--brand) 52%, #ffffff);
+  --ring: color-mix(in oklab, var(--brand) 26%, transparent);
+
   --ink: #0f172a;
   --muted: #374151;
+  --muted-2: #4b5563;
+  --stroke: color-mix(in oklab, #0f172a 10%, #ffffff);
+
+  --lg-blur: 18px;
+  --glass-tint: color-mix(in oklab, #ffffff 76%, var(--brand-10));
+  --glass-tint-soft: color-mix(in oklab, #ffffff 84%, var(--brand-10));
+  --glass-bg: color-mix(in oklab, var(--glass-tint) 100%, transparent);
+  --glass-soft: color-mix(in oklab, var(--glass-tint-soft) 100%, transparent);
+  --glass-stroke: color-mix(in oklab, var(--brand-stroke) 56%, #ffffff 44%);
+
+  --shadow-lg: 0 18px 48px rgba(15,23,42,.16);
+  --shadow-md: 0 12px 30px rgba(15,23,42,.12);
+  --inset: inset 0 1px 0 rgba(255,255,255,.66), inset 0 -1px 0 rgba(0,0,0,.04);
 
   min-height: 100%;
   padding: 16px;
+
+  /* Жидкий фон с мягкими бордовыми каустиками */
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(141,40,40,.10), transparent 60%),
-    radial-gradient(800px 480px at 10% 110%, rgba(141,40,40,.08), transparent 60%),
+    radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--brand) 10%, transparent), transparent 60%),
+    radial-gradient(800px 480px at 10% 110%, color-mix(in oklab, var(--brand) 8%, transparent), transparent 60%),
     linear-gradient(180deg, #fafafa, #f3f4f6);
+  color: var(--ink);
 }
 
 /* Стеклянные поверхности */
 .glass {
-  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.46));
-  backdrop-filter: saturate(180%) blur(10px);
-  -webkit-backdrop-filter: saturate(180%) blur(10px);
-  border: 1px solid rgba(141,40,40,.22);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--glass-bg) 90%, transparent),
+      color-mix(in oklab, var(--glass-bg) 72%, transparent));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(1.35);
+  backdrop-filter: blur(var(--lg-blur)) saturate(1.35);
+  border: 1px solid var(--glass-stroke);
   border-radius: 16px;
-  box-shadow:
-    0 10px 26px rgba(17,24,39,.10),
-    inset 0 1px 0 rgba(255,255,255,.45);
-  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+  box-shadow: var(--shadow-md), var(--inset);
+  transition: border-color .16s ease, box-shadow .16s ease, transform .08s ease, background .16s ease;
+}
+.glass:hover {
+  border-color: color-mix(in oklab, var(--glass-stroke) 80%, var(--brand-stroke));
+  box-shadow: 0 20px 40px rgba(15,23,42,.14), var(--inset);
+  transform: translateY(-1px);
 }
 
 /* Шапка раздела */
@@ -33,7 +63,6 @@
   margin: 0 auto 16px;
   padding: 16px;
 }
-
 .title {
   margin: 0;
   font-weight: 900;
@@ -41,7 +70,6 @@
   color: var(--ink);
   letter-spacing: .2px;
 }
-
 .subtitle {
   margin: 6px 0 0;
   font-size: 14px;
@@ -61,13 +89,19 @@
 .card {
   grid-column: span 6;
   padding: 16px;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--glass-soft) 94%, transparent),
+      color-mix(in oklab, var(--glass-soft) 84%, transparent));
+  -webkit-backdrop-filter: blur(calc(var(--lg-blur)*.66)) saturate(1.25);
+  backdrop-filter: blur(calc(var(--lg-blur)*.66)) saturate(1.25);
+  box-shadow: var(--shadow-md), var(--inset);
 }
-
 .card:hover {
-  border-color: rgba(141,40,40,.32);
-  box-shadow:
-    0 14px 30px rgba(17,24,39,.12),
-    inset 0 1px 0 rgba(255,255,255,.55);
+  border-color: color-mix(in oklab, var(--brand-stroke) 68%, var(--glass-stroke));
+  box-shadow: 0 22px 44px rgba(17,24,39,.14), var(--inset);
   transform: translateY(-1px);
 }
 
@@ -76,8 +110,8 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 6px;
+  overflow: hidden; /* однострочный режим можно включать классом .compact, см. ниже */
 }
-
 .badge {
   display: inline-flex;
   align-items: center;
@@ -90,20 +124,30 @@
   background: var(--brand);
   border-radius: 999px;
   letter-spacing: .3px;
+  box-shadow: 0 8px 16px rgba(141,40,40,.22), inset 0 1px 0 rgba(255,255,255,.55);
 }
-
 .cardTitle {
   margin: 0;
   font-size: 18px;
   font-weight: 800;
   color: #1f2937;
   letter-spacing: .2px;
-}
 
+  /* переносы для длинных имён */
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .cardDesc {
   margin: 8px 0 14px;
   color: var(--muted);
   line-height: 1.45;
+  word-break: break-word;
 }
 
 /* Действия */
@@ -121,126 +165,32 @@
   justify-content: center;
   height: 36px;
   padding: 0 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-weight: 800;
   letter-spacing: .2px;
   text-decoration: none;
   user-select: none;
-  border: 1px solid transparent;
+  border: 1px solid var(--glass-stroke);
+  transition: transform .08s ease, box-shadow .16s ease, background .16s ease, border-color .14s ease;
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  backdrop-filter: blur(10px) saturate(1.2);
 }
 
+/* Primary — бордовое стекло */
 .primary {
-  background: var(--brand);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 10%, var(--brand)) 0%,
+      color-mix(in oklab, #000000 12%, var(--brand)) 100%);
   color: #fff;
-  border-color: rgba(141,40,40,.9);
+  border-color: var(--brand-stroke);
+  box-shadow: 0 12px 24px rgba(141,40,40,.28), inset 0 1px 0 rgba(255,255,255,.60);
 }
-.primary:hover { filter: brightness(.96); }
-.primary:active { transform: translateY(1px); }
-
-.ghost {
-  background: rgba(141,40,40,.06);
-  color: #4b5563;
-  border-color: rgba(141,40,40,.25);
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(141,40,40,.34), inset 0 1px 0 rgba(255,255,255,.66);
 }
-.ghost:hover { background: rgba(141,40,40,.09); }
-
-/* Адаптив */
-@media (max-width: 920px) {
-  .card { grid-column: span 12; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .glass, .primary, .ghost { transition: none; }
-}
-.manageRow {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-}
-
-.input {
-  height: 36px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(141,40,40,.25);
-  background: rgba(255,255,255,.9);
-  color: #111827;
-  outline: none;
-  width: 100%;
-}
-.input:focus {
-  border-color: rgba(141,40,40,.55);
-  box-shadow: 0 0 0 3px rgba(141,40,40,.18);
-}
-
-.btnSmall,
-.btnSmallDanger {
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 10px;
-  font-weight: 800;
-  letter-spacing: .2px;
-  border: 1px solid transparent;
-  cursor: pointer;
-}
-
-.btnSmall {
-  background: rgba(141,40,40,.06);
-  color: #4b5563;
-  border-color: rgba(141,40,40,.25);
-}
-.btnSmall:hover { background: rgba(141,40,40,.09); }
-
-.btnSmallDanger {
-  background: #fff1f2;
-  color: #991b1b;
-  border-color: rgba(220,38,38,.25);
-}
-.btnSmallDanger:hover { background: #ffe4e6; }
-.searchRow {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap: 8px;
-  align-items: center;
-}
-.searchHint { color: #6b7280; }
-
-.manageRow {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-}
-
-.input {
-  height: 36px; padding: 6px 10px; border-radius: 10px;
-  border: 1px solid rgba(141,40,40,.25); background: rgba(255,255,255,.9); color: #111827; outline: none; width: 100%;
-}
-.input:focus { border-color: rgba(141,40,40,.55); box-shadow: 0 0 0 3px rgba(141,40,40,.18); }
-
-.btnSmall, .btnSmallDanger {
-  height: 36px; padding: 0 12px; border-radius: 10px; font-weight: 800; letter-spacing: .2px; border: 1px solid transparent; cursor: pointer;
-}
-.btnSmall { background: rgba(141,40,40,.06); color: #4b5563; border-color: rgba(141,40,40,.25); }
-.btnSmall:hover { background: rgba(141,40,40,.09); }
-.btnSmallDanger { background: #fff1f2; color: #991b1b; border-color: rgba(220,38,38,.25); }
-.btnSmallDanger:hover { background: #ffe4e6; }
-
-.flagRestricted, .flagOpen {
-  margin-left: auto;
-  height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center;
-}
-.flagRestricted { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-.flagOpen { background: rgba(141,40,40,.08); color: #374151; border: 1px solid rgba(141,40,40,.22); }
-/* Цветовые бейджи по типу */
-.badgeWord   { background: #2563eb; } /* синий */
-.badgeExcel  { background: #16a34a; } /* зелёный */
-.badgePdf    { background: var(--brand); } /* как было (бордовый/красный) */
-.badgePpt    { background: #dc2626; } /* красный */
-.badgeImage  { background: #eab308; color: #1f2937; } /* бежево-жёлтый, тёмный текст */
-.badgeOther  { background: #6b7280; } /* серый на всякий */
+.primary:active { transform: translateY(0); }
 .primary,
 .primary:link,
 .primary:visited,
@@ -248,34 +198,170 @@
 .primary:active,
 .primary:focus-visible {
   color: #fff !important;
-  -webkit-text-fill-color: #fff; /* на всякий случай для WebKit */
+  -webkit-text-fill-color: #fff;
 }
 
+/* Ghost — светлое стекло */
+.ghost {
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 94%, transparent),
+      color-mix(in oklab, #ffffff 86%, transparent));
+  color: var(--muted-2);
+  box-shadow: 0 10px 18px rgba(17,24,39,.10), inset 0 1px 0 rgba(255,255,255,.60);
+}
+.ghost:hover {
+  transform: translateY(-1px);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 98%, transparent),
+      color-mix(in oklab, #ffffff 90%, transparent));
+}
 .ghost,
 .ghost:link,
 .ghost:visited,
 .ghost:hover,
 .ghost:active,
 .ghost:focus-visible {
-  color: #4b5563 !important;
-  -webkit-text-fill-color: #4b5563;
+  color: var(--muted-2) !important;
+  -webkit-text-fill-color: var(--muted-2);
 }
+
+/* Адаптив */
+@media (max-width: 920px) {
+  .card { grid-column: span 12; }
+}
+
+/* Инпуты и утилиты управления */
+.manageRow {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+.searchRow {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+.searchHint { color: #6b7280; font-size: 12px; line-height: 1.2; }
+
+.input {
+  height: 36px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-stroke);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 92%, transparent),
+      color-mix(in oklab, #ffffff 84%, transparent));
+  color: #111827;
+  outline: none;
+  width: 100%;
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  backdrop-filter: blur(10px) saturate(1.15);
+  box-shadow: 0 1px 0 rgba(255,255,255,.60) inset, 0 10px 18px rgba(15,23,42,.06);
+  transition: box-shadow .16s ease, border-color .14s ease, background .16s ease;
+}
+.input:focus {
+  border-color: var(--brand-stroke);
+  box-shadow: 0 0 0 4px var(--ring), 0 1px 0 rgba(255,255,255,.60) inset;
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, transparent),
+      color-mix(in oklab, #ffffff 88%, transparent));
+}
+
+/* Малые кнопки */
+.btnSmall,
+.btnSmallDanger {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  border: 1px solid var(--glass-stroke);
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .16s ease, background .16s ease, border-color .14s ease;
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+  backdrop-filter: blur(8px) saturate(1.15);
+}
+
+/* Нейтральная малая */
+.btnSmall {
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 94%, transparent),
+      color-mix(in oklab, #ffffff 86%, transparent));
+  color: var(--muted-2);
+  box-shadow: 0 8px 16px rgba(17,24,39,.10), inset 0 1px 0 rgba(255,255,255,.60);
+  border-color: var(--glass-stroke);
+}
+.btnSmall:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(17,24,39,.12), inset 0 1px 0 rgba(255,255,255,.66);
+}
+
+/* Опасная малая */
+.btnSmallDanger {
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #fff1f2 94%, #ffffff 6%),
+      color-mix(in oklab, #ffe4e6 92%, #ffffff 8%));
+  color: #991b1b;
+  border-color: color-mix(in oklab, #dc2626 45%, var(--glass-stroke));
+  box-shadow: 0 8px 16px rgba(220,38,38,.14), inset 0 1px 0 rgba(255,255,255,.60);
+}
+.btnSmallDanger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(220,38,38,.18), inset 0 1px 0 rgba(255,255,255,.66);
+}
+
+/* Флаги доступа */
+.flagRestricted, .flagOpen {
+  margin-left: auto;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--glass-stroke);
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  backdrop-filter: blur(8px) saturate(1.1);
+}
+.flagRestricted {
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #fee2e2 92%, #ffffff 8%),
+      color-mix(in oklab, #fecaca 92%, #ffffff 8%));
+  color: #991b1b;
+}
+.flagOpen {
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--brand) 6%, #ffffff 94%),
+      color-mix(in oklab, var(--brand) 4%, #ffffff 92%));
+  color: #374151;
+}
+
+/* Цветовые бейджи по типу */
+.badgeWord   { background: #2563eb; }
+.badgeExcel  { background: #16a34a; }
+.badgePdf    { background: var(--brand); }
+.badgePpt    { background: #dc2626; }
+.badgeImage  { background: #eab308; color: #1f2937; }
+.badgeOther  { background: #6b7280; }
+
 /* Центрированная панель для "Показать ещё" */
 .moreBar {
   max-width: 980px;
   margin: 12px auto 0;
   padding: 12px 16px;
   text-align: center;
-}
-
-/* Однострочная шапка карточки с усечением заголовка */
-.cardHead {
-  overflow: hidden;
-}
-.cardTitle {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Небольшой зазор между actions и manageRow, когда оба присутствуют */
@@ -288,38 +374,23 @@
 .btnSmallDanger:focus-visible,
 .input:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(141,40,40,.18);
-  border-color: rgba(141,40,40,.55);
+  box-shadow: 0 0 0 4px var(--ring), 0 1px 0 rgba(255,255,255,.60) inset;
+  border-color: var(--brand-stroke);
 }
 
-/* Компактный режим: карточка в одну строку с минимальной высотой */
-.compact .card {
-  padding: 10px 12px;
-}
-.compact .cardHead {
-  gap: 8px;
-  margin-bottom: 0;
-}
-.compact .badge {
-  height: 20px;
-  padding: 0 8px;
-  font-size: 11px;
-}
-.compact .cardTitle {
-  font-size: 16px;
-  font-weight: 700;
-}
-.compact .actions {
-  margin-top: 6px;
-  gap: 8px;
-}
+/* Компактный режим */
+.compact .card { padding: 10px 12px; }
+.compact .cardHead { gap: 8px; margin-bottom: 0; }
+.compact .badge { height: 20px; padding: 0 8px; font-size: 11px; }
+.compact .cardTitle { font-size: 16px; font-weight: 700; }
+.compact .actions { margin-top: 6px; gap: 8px; }
 .compact .btnSmall,
 .compact .btnSmallDanger,
 .compact .primary,
 .compact .ghost {
   height: 30px;
   padding: 0 10px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 700;
 }
 .compact .flagRestricted,
@@ -328,43 +399,12 @@
   padding: 0 8px;
   font-size: 11px;
 }
+.compact .grid { gap: 12px; }
 
-/* Плотнее сетка в компактном режиме */
-.compact .grid {
-  gap: 12px;
-}
-
-/* На узких экранах карточки и так на всю ширину, дополним компактное сжатие */
+/* Узкие экраны */
 @media (max-width: 920px) {
   .compact .card { padding: 10px; }
 }
 
-/* Мелкая типографика для подсказок и счётчиков */
-.searchHint {
-  font-size: 12px;
-  line-height: 1.2;
-  color: #6b7280;
-}
-
 /* Уточнение ховера для .ghost в целях контраста */
-.ghost:hover { background: rgba(141,40,40,.12); }
-
-/* Защита от случайных длинных имён файлов */
-.cardTitle, .cardDesc { word-break: break-word; }
-/* Полный перенос длинных имён файлов в заголовке карточки */
-.cardHead {
-  align-items: flex-start;   /* чтобы многострочный заголовок не «давил» бейдж */
-  flex-wrap: wrap;           /* разрешаем перенос внутри шапки */
-}
-
-.cardTitle {
-  white-space: normal;       /* снимаем nowrap */
-  overflow: visible;         /* снимаем усечение */
-  text-overflow: clip;       /* снимаем троеточие */
-  overflow-wrap: anywhere;   /* можно переносить где угодно, если нет разделителей */
-  word-break: break-word;    /* совместимость со старыми движками */
-  hyphens: auto;             /* мягкая расстановка переносов (если уместно) */
-  flex: 1 1 auto;            /* заголовок занимает доступную ширину и может сжиматься */
-  min-width: 0;              /* критично для корректного сжатия в flex-контейнере */
-  line-height: 1.25;
-}
+.ghost:hover { background: linear-gradient(180deg, color-mix(in oklab, #ffffff 98%, transparent), color-mix(in oklab, #ffffff 90%, transparent)); }

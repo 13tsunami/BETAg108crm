@@ -1,74 +1,121 @@
 /* app/admin/db-status/page.module.css */
+/* Liquid Glass · iOS-26 (light-only). Полная замена с сохранением классов разметки. */
 
 .page {
-  /* Палитра синхронизирована с (auth)/sign-in */
+  /* Палитра и стекло в унисон с (auth)/sign-in и остальным UI */
   --brand: #8d2828;
   --brand-border: rgba(141, 40, 40, 0.25);
-  --brand-focus: rgba(141, 40, 40, 0.15);
+  --brand-focus: rgba(141, 40, 40, 0.18);
 
   --text: #0f172a;
   --muted: #374151;
   --border: #e5e7eb;
 
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-blur: 10px;
-  --glass-shadow: 0 10px 30px rgba(17,24,39,0.10);
-  --glass-inset: inset 0 1px 0 rgba(255,255,255,0.6);
+  /* Liquid Glass */
+  --glass-blur: 12px;
+  --glass-soft: rgba(255,255,255,.78);
+  --glass-bg: rgba(255,255,255,.62);
+  --glass-stroke: color-mix(in oklab, var(--brand) 26%, #e5e7eb);
+  --glass-shadow: 0 12px 32px rgba(17,24,39,.12);
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,.65), inset 0 -1px 0 rgba(0,0,0,.04);
+  --ring: color-mix(in oklab, var(--brand) 24%, transparent);
 
   display: grid;
   gap: 12px;
+  color: var(--text);
 }
 
-/* Шапка блока */
+/* ===== Универсальная стеклянная поверхность ===== */
+.glass {
+  position: relative;
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--glass-soft), var(--glass-bg));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.06);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.06);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+  overflow: clip;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+}
+.glass::before,
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.glass::before { /* микрошум */
+  background:
+    radial-gradient(1px 1px at 12% 18%, rgba(0,0,0,.015) 0 99%, transparent 100%),
+    radial-gradient(1px 1px at 72% 82%, rgba(0,0,0,.015) 0 99%, transparent 100%);
+  mix-blend-mode: multiply;
+}
+.glass::after { /* блик */
+  background: linear-gradient(to bottom, rgba(255,255,255,.42), rgba(255,255,255,.18) 34%, transparent 60%);
+  mask: linear-gradient(to bottom, #000 0 60%, transparent 75%);
+}
+.glass:hover {
+  border-color: color-mix(in oklab, var(--brand) 36%, #ffffff);
+  box-shadow: 0 14px 34px rgba(17,24,39,.14), var(--glass-inset);
+  transform: translateY(-1px);
+}
+
+/* ===== Шапка блока ===== */
 .head {
   padding: 14px 16px;
   border-radius: 16px;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--brand-border);
-  box-shadow: var(--glass-shadow), var(--glass-inset);
 }
-.title { margin: 0; font-weight: 900; font-size: 22px; color: var(--text); }
+.title { margin: 0; font-weight: 900; font-size: 22px; color: var(--text); letter-spacing: .2px; }
 .subtitle { margin: 6px 0 0; font-size: 14px; color: #6b7280; }
 
-/* Нотификации (успех/ошибка) — в фирменной гамме */
+/* ===== Нотификации (успех/ошибка) ===== */
 .note {
   padding: 10px 12px;
   border-radius: 12px;
   font-size: 14px;
-  background: rgba(255,255,255,0.75);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.75));
+  -webkit-backdrop-filter: blur(8px) saturate(1.02);
+  backdrop-filter: blur(8px) saturate(1.02);
+  box-shadow: 0 8px 20px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.6);
+  border: 1px solid var(--glass-stroke);
 }
-.ok  { border: 1px solid #c8e6c9; background: rgba(240,251,241,0.8); color: #166534; }
-.err { border: 1px solid #fecaca; background: rgba(255,241,242,0.8); color: #991b1b; }
+.ok  { border-color: #c8e6c9; background: linear-gradient(180deg, #f3fcf4, #e8f9ea); color: #166534; }
+.err { border-color: #fecaca; background: linear-gradient(180deg, #fff6f7, #ffe9eb); color: #991b1b; }
 
-/* Панели-обёртки */
+/* ===== Панели-обёртки ===== */
 .panel {
   padding: 12px 14px;
   border-radius: 16px;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--brand-border);
+}
+
+/* Дополнительный модификатор для панелей в стиле стекла (не пустой) */
+.panel.glass {
+  background: linear-gradient(180deg, var(--glass-soft), var(--glass-bg));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.06);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.06);
+  border: 1px solid var(--glass-stroke);
   box-shadow: var(--glass-shadow), var(--glass-inset);
 }
 
-.h2 { margin: 0 0 10px; font-size: 16px; font-weight: 800; color: var(--text); }
+.h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: .2px;
+}
 
-/* Таблица */
+/* ===== Таблица ===== */
 .tableWrap {
   padding: 8px;
   border-radius: 14px;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
-  background: rgba(255,255,255,0.55);
+  background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.6));
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(229,231,235,0.7);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+  border: 1px solid rgba(229,231,235,.8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
 }
 
 .table {
@@ -77,8 +124,8 @@
   border-spacing: 0;
   font-size: 14px;
   min-width: 720px;
+  color: #111827;
 }
-
 .table thead th {
   text-align: left;
   font-weight: 800;
@@ -86,17 +133,20 @@
   padding: 8px;
   border-bottom: 1px solid rgba(229,231,235,.9);
   white-space: nowrap;
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7));
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  backdrop-filter: blur(6px);
 }
-
 .table tbody td {
   padding: 8px;
   border-bottom: 1px solid rgba(229,231,235,.6);
-  color: #111827;
   vertical-align: top;
 }
 .table tbody tr:last-child td { border-bottom: 0; }
 
-/* Действия в строке */
+/* ===== Действия в строке ===== */
 .actions {
   display: flex;
   align-items: center;
@@ -104,52 +154,80 @@
   flex-wrap: wrap;
 }
 
-/* Поля ввода (используются в форме сброса пароля) */
+/* ===== Поля ввода (форма сброса пароля и т.п.) ===== */
 .input {
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.9);
+  border: 1px solid var(--glass-stroke);
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.86));
   border-radius: 12px;
   padding: 8px 10px;
   font-size: 14px;
   color: var(--text);
   outline: none;
-  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 .input:focus {
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-focus);
+  border-color: color-mix(in oklab, var(--brand) 55%, #ffffff);
+  box-shadow: 0 0 0 4px var(--brand-focus), inset 0 1px 0 rgba(255,255,255,.82);
   background: #fff;
 }
 
-/* Кнопки — как на sign-in */
+/* ===== Кнопки (как на sign-in, с глянцем) ===== */
 .btn {
   height: 34px;
   border-radius: 12px;
   padding: 0 12px;
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid var(--glass-stroke);
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.76));
   color: var(--text);
   cursor: pointer;
-  transition: transform .04s ease, box-shadow .12s ease, opacity .2s ease, filter .12s ease;
   text-decoration: none;
-  box-shadow: 0 6px 14px rgba(17,24,39,0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
+  transition: transform .08s ease, box-shadow .15s ease, opacity .2s ease, filter .12s ease, border-color .15s ease;
+  box-shadow: var(--glass-inset);
 }
-.btn:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(17,24,39,0.12); }
-.btn:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(17,24,39,0.08); }
-.btn:disabled { opacity: .65; transform: none; box-shadow: none; cursor: default; }
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(17,24,39,.12), var(--glass-inset);
+  border-color: color-mix(in oklab, var(--brand) 22%, #e5e7eb);
+}
+.btn:active { transform: translateY(0); }
 
 .primary {
-  background: var(--brand);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 10%, var(--brand)) 0%,
+      color-mix(in oklab, #000000 12%, var(--brand)) 100%);
   color: #fff;
-  border-color: var(--brand);
-  box-shadow: 0 6px 14px rgba(141,40,40,0.25);
+  border-color: color-mix(in oklab, var(--brand) 70%, #ffffff);
+  box-shadow: 0 6px 14px rgba(141,40,40,.25), inset 0 1px 0 rgba(255,255,255,.6);
 }
-.primary:hover { box-shadow: 0 10px 18px rgba(141,40,40,0.28); }
-.primary:active { box-shadow: 0 6px 14px rgba(141,40,40,0.25); }
+.primary:hover { box-shadow: 0 10px 20px rgba(141,40,40,.28), inset 0 1px 0 rgba(255,255,255,.65); }
+.primary:active { box-shadow: 0 6px 14px rgba(141,40,40,.25), inset 0 1px 0 rgba(255,255,255,.6); }
 
-.ghost { background: rgba(255,255,255,0.75); }
+.ghost {
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.76));
+  border-color: var(--glass-stroke);
+  color: var(--text);
+}
 
-/* Ссылки-имена пользователей */
+/* Гарантия белого текста у .primary при глобальных сбросах ссылок */
+.primary,
+.primary:link,
+.primary:visited,
+.primary:hover,
+.primary:active,
+.primary:focus-visible {
+  color: #fff !important;
+}
+
+/* ===== Ссылки-имена пользователей ===== */
 .linkName {
   color: var(--brand);
   text-decoration: none;
@@ -160,14 +238,14 @@
 .linkName:focus-visible {
   border-bottom-color: var(--brand);
   outline: none;
-  box-shadow: 0 0 0 3px var(--brand-focus);
-  border-radius: 4px;
+  box-shadow: 0 0 0 4px var(--brand-focus);
+  border-radius: 6px;
 }
 
-/* Форма сброса пароля */
-.resetForm { display: flex; gap: 8px; }
+/* ===== Форма сброса пароля ===== */
+.resetForm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-/* Совместимость со старой разметкой (если .form где-то осталась) */
+/* ===== Совместимость со старой разметкой (.form) ===== */
 .form {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -175,7 +253,7 @@
   align-items: center;
 }
 
-/* Адаптив */
+/* ===== Адаптив ===== */
 @media (max-width: 1100px) {
   .form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -184,4 +262,9 @@
 }
 @media (max-width: 520px) {
   .form { grid-template-columns: 1fr; }
+}
+
+/* ===== Предпочтения пользователя ===== */
+@media (prefers-reduced-motion: reduce) {
+  .glass, .btn, .primary, .ghost { transition: none; }
 }

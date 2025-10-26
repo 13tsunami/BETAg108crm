@@ -117,50 +117,46 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         },
       },
     },
-    orderBy: [{ updatedAt: 'desc' as const }, { createdAt: 'desc' as const }],
+    orderBy: [{ updatedAt: 'desc' as const }, { createdAt: 'asc' as const }], // стабильнее для архива при равных updatedAt
     take,
   });
 
   return (
-    <main className="archive" style={{ padding: 16 }}>
-      <header
-        style={{
-          marginBottom: 12,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'end',
-          gap: 8,
-          flexWrap: 'wrap',
-        }}
-      >
+    <main className="archive">
+      <header className="head glass">
         <div>
-          <h1 style={{ margin: 0, fontSize: 22 }}>Архив задач</h1>
-          <div style={{ fontSize: 13, color: '#6b7280' }}>
-            Доступ только для чтения: описание, вложения, история сдач.
-          </div>
+          <h1 className="pageTitle">Архив задач</h1>
+          <div className="pageSubtitle">Доступ только для чтения: описание, вложения, история сдач.</div>
         </div>
 
-        <nav className="tabs">
-          <a href={`/inboxtasks/archive?tab=mine`} className={`tab ${effectiveTab === 'mine' ? 'tab--active' : ''}`}>
+        <nav className="tabs" role="tablist" aria-label="Фильтр архива">
+          <a
+            href={`/inboxtasks/archive?tab=mine`}
+            className={`tab ${effectiveTab === 'mine' ? 'tabActive' : ''}`}
+            role="tab"
+            aria-selected={effectiveTab === 'mine'}
+          >
             Назначенные мне
           </a>
 
           {maySeeByMe ? (
             <a
               href={`/inboxtasks/archive?tab=byme`}
-              className={`tab ${effectiveTab === 'byme' ? 'tab--active' : ''}`}
+              className={`tab ${effectiveTab === 'byme' ? 'tabActive' : ''}`}
+              role="tab"
+              aria-selected={effectiveTab === 'byme'}
             >
               Назначенные мной
             </a>
           ) : (
-            <span className="tab tab--disabled" aria-disabled="true">
+            <span className="tab tabDisabled" aria-disabled="true" role="tab">
               Назначенные мной
             </span>
           )}
         </nav>
       </header>
 
-      <form method="get" className="filters">
+      <form method="get" className="filters glass">
         <input type="hidden" name="tab" value={effectiveTab} />
         <input name="q" defaultValue={q} placeholder="Поиск по названию и описанию" className="input inputSearch" />
         <select name="priority" defaultValue={pr ?? ''} className="input">
@@ -183,13 +179,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           <option value="30">30</option>
           <option value="50">50</option>
         </select>
-        <button className="btn">Показать</button>
+        <button className="btnPrimary">Показать</button>
       </form>
 
       {tasks.length === 0 ? (
-        <div style={{ fontSize: 14, color: '#6b7280' }}>Ничего не найдено.</div>
+        <div className="empty">Ничего не найдено.</div>
       ) : (
-        <section style={{ display: 'grid', gap: 10 }}>
+        <section className="list">
           {tasks.map((t) => {
             const total = t.assignees.length;
             const done = t.assignees.filter((a) => a.status === 'done').length;
@@ -199,9 +195,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               .sort((a, b) => +new Date(b as Date) - +new Date(a as Date))[0];
 
             return (
-              <article key={t.id} className="card">
+              <article key={t.id} className="card glass">
                 <header className="cardHead">
-                  <div>
+                  <div className="titleBox">
                     <a href={`/inboxtasks/archive/${t.id}`} className="titleLink">
                       {t.title}
                     </a>
@@ -244,64 +240,244 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       )}
 
       <style>{`
-        .archive { --brand:#8d2828; }
-        .brand { color: var(--brand); }
+        /* Liquid Glass · iOS-26 tokens */
+        .archive {
+          --brand: #8d2828;
+          --brand-ink: #ffffff;
+          --brand-10: color-mix(in oklab, var(--brand) 10%, #ffffff);
+          --brand-stroke: color-mix(in oklab, var(--brand) 52%, #ffffff);
+          --ring: color-mix(in oklab, var(--brand) 26%, transparent);
 
+          --text: #0f172a;
+          --muted: #6b7280;
+          --muted-2: #374151;
+
+          --lg-blur: 18px;
+          --glass-tint: color-mix(in oklab, #ffffff 76%, var(--brand-10));
+          --glass-tint-soft: color-mix(in oklab, #ffffff 84%, var(--brand-10));
+          --glass-bg: color-mix(in oklab, var(--glass-tint) 100%, transparent);
+          --glass-soft: color-mix(in oklab, var(--glass-tint-soft) 100%, transparent);
+          --glass-stroke: color-mix(in oklab, var(--brand-stroke) 56%, #ffffff 44%);
+
+          --shadow-lg: 0 18px 48px rgba(15,23,42,.16);
+          --shadow-md: 0 12px 30px rgba(15,23,42,.12);
+          --shadow-sm: 0 8px 18px rgba(15,23,42,.10);
+          --inset: inset 0 1px 0 rgba(255,255,255,.66), inset 0 -1px 0 rgba(0,0,0,.04);
+
+          min-height: 100%;
+          padding: 16px;
+
+          background:
+            radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--brand) 22%, transparent), transparent 60%),
+            radial-gradient(800px 480px at 10% 110%, color-mix(in oklab, var(--brand) 18%, transparent), transparent 60%),
+            linear-gradient(180deg, #fafafa, #f3f4f6);
+          color: var(--text);
+        }
+
+        .glass {
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, var(--glass-soft) 94%, transparent),
+              color-mix(in oklab, var(--glass-soft) 86%, transparent));
+          -webkit-backdrop-filter: blur(calc(var(--lg-blur)*.66)) saturate(1.25);
+          backdrop-filter: blur(calc(var(--lg-blur)*.66)) saturate(1.25);
+          border: 1px solid var(--glass-stroke);
+          border-radius: 16px;
+          box-shadow: var(--shadow-md), var(--inset);
+        }
+
+        /* Head */
+        .head {
+          margin: 0 0 12px;
+          padding: 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: end;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .pageTitle { margin: 0; font-size: 22px; font-weight: 900; letter-spacing: .2px; color: var(--text); }
+        .pageSubtitle { font-size: 13px; color: var(--muted); }
+
+        /* Tabs */
         .tabs { display: flex; gap: 8px; }
         .tab {
-          border: 1px solid #e5e7eb; border-radius: 999px; padding: 6px 12px; font-size: 13px; text-decoration: none; color:#111827; background:#fff; display:inline-flex; align-items:center;
+          display: inline-flex; align-items: center; gap: 8px;
+          height: 34px; padding: 0 12px; border-radius: 999px;
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, #ffffff 94%, transparent),
+              color-mix(in oklab, #ffffff 86%, transparent));
+          -webkit-backdrop-filter: blur(10px) saturate(1.2);
+          backdrop-filter: blur(10px) saturate(1.2);
+          border: 1px solid var(--glass-stroke);
+          color: var(--text); font-size: 13px; text-decoration: none;
+          transition: transform .06s ease, box-shadow .16s ease, border-color .14s ease, background .16s ease;
+          box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.60);
         }
-        .tab--active { border-color: var(--brand); }
-        .tab--disabled { opacity: .5; pointer-events: none; }
+        .tab:hover {
+          transform: translateY(-1px);
+          border-color: var(--brand-stroke);
+          box-shadow: 0 12px 20px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.66);
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, var(--brand) 4%, #ffffff),
+              color-mix(in oklab, var(--brand) 2%, #ffffff));
+        }
+        .tabActive {
+          border-color: var(--brand-stroke);
+          outline: 3px solid color-mix(in oklab, var(--brand) 20%, transparent);
+          outline-offset: -3px;
+          color: var(--text);
+        }
+        .tabDisabled { opacity: .55; pointer-events: none; }
 
+        /* Filters */
         .filters {
-          display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:10px;
+          display: flex; flex-wrap: wrap; align-items: center;
+          gap: 8px; margin-bottom: 12px; padding: 10px;
+          border-radius: 16px;
         }
         .filters .input,
-        .filters .btn {
-          width:auto !important;
-          display:inline-block;
+        .filters .btnPrimary {
+          width: auto !important;
+          display: inline-block;
           flex: 0 0 auto;
         }
         .input {
-          height: 32px; padding: 0 10px; border:1px solid #e5e7eb; border-radius: 8px; background:#fff; font-size:13px;
+          height: 34px; padding: 0 10px; border-radius: 12px;
+          border: 1px solid var(--glass-stroke);
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, #ffffff 92%, transparent),
+              color-mix(in oklab, #ffffff 84%, transparent));
+          color: var(--text); font-size: 13px; outline: none;
+          -webkit-backdrop-filter: blur(10px) saturate(1.15);
+          backdrop-filter: blur(10px) saturate(1.15);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.60), var(--shadow-sm);
+          transition: box-shadow .16s ease, border-color .14s ease, background .16s ease;
+        }
+        .input:focus {
+          border-color: var(--brand-stroke);
+          box-shadow: 0 0 0 4px var(--ring), inset 0 1px 0 rgba(255,255,255,.66);
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, #ffffff 96%, transparent),
+              color-mix(in oklab, #ffffff 88%, transparent));
         }
         .inputSearch { width: clamp(240px, 36vw, 420px) !important; }
-        .chk { display:flex; gap:6px; align-items:center; font-size:13px; color:#111827; }
-        .btn {
-          height: 32px; padding: 0 12px; border-radius: 10px; border: 1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:13px;
+        .chk { display:flex; gap:6px; align-items:center; font-size:13px; color:var(--text); }
+
+        .btnPrimary {
+          height: 34px; padding: 0 14px; border-radius: 12px;
+          border: 1px solid var(--brand-stroke);
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, #ffffff 10%, var(--brand)) 0%,
+              color-mix(in oklab, #000000 12%, var(--brand)) 100%);
+          color: #fff; cursor: pointer; font-size: 13px; font-weight: 800;
+          -webkit-backdrop-filter: blur(12px) saturate(1.25);
+          backdrop-filter: blur(12px) saturate(1.25);
+          box-shadow: 0 12px 22px rgba(141,40,40,.26), inset 0 1px 0 rgba(255,255,255,.60);
+          transition: transform .06s ease, box-shadow .16s ease, filter .14s ease, border-color .14s ease, background .16s ease;
         }
+        .btnPrimary:hover { transform: translateY(-1px); box-shadow: 0 14px 26px rgba(141,40,40,.30), inset 0 1px 0 rgba(255,255,255,.66); }
+        .btnPrimary:active { transform: translateY(0); }
+
+        /* List */
+        .list { display: grid; gap: 10px; }
+
+        /* Cards */
+        .card {
+          border-radius: 16px;
+          padding: 12px;
+          transition: transform .06s ease, box-shadow .16s ease, border-color .14s ease, background .16s ease;
+        }
+        .card:hover {
+          transform: translateY(-1px);
+          border-color: var(--brand-stroke);
+          box-shadow: 0 16px 30px rgba(17,24,39,.14), var(--inset);
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, var(--brand) 4%, #ffffff),
+              color-mix(in oklab, var(--brand) 2%, #ffffff));
+        }
+        .cardHead { display:flex; justify-content:space-between; align-items:flex-start; gap: 10px; }
+        .titleBox { min-width: 0; }
+        .titleLink { font-size: 18px; font-weight: 800; color: var(--text); text-decoration:none; word-break: break-word; }
+        .titleLink:hover { text-decoration: underline; text-underline-offset: 3px; }
+        .meta { font-size: 12px; color: var(--muted-2); margin-top: 2px; }
+        .brand { color: var(--brand); font-weight: 700; }
+
         .btnBrand {
-          height: 32px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--brand); background: var(--brand); color: #fff; cursor: pointer; font-size: 13px; text-decoration:none; display:inline-flex; align-items:center;
+          height: 32px; padding: 0 12px; border-radius: 12px;
+          border: 1px solid var(--brand-stroke);
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, #ffffff 10%, var(--brand)) 0%,
+              color-mix(in oklab, #000000 12%, var(--brand)) 100%);
+          color: #fff; cursor: pointer; font-size: 13px; font-weight: 800; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+          -webkit-backdrop-filter: blur(12px) saturate(1.25);
+          backdrop-filter: blur(12px) saturate(1.25);
+          box-shadow: 0 12px 22px rgba(141,40,40,.26), inset 0 1px 0 rgba(255,255,255,.60);
+          transition: transform .06s ease, box-shadow .16s ease, filter .14s ease;
         }
-        /* фикс цвета и жирности для прод-сборки: перебиваем глобальный a{color:inherit} */
+        .btnBrand:hover { transform: translateY(-1px); box-shadow: 0 14px 26px rgba(141,40,40,.30), inset 0 1px 0 rgba(255,255,255,.66); }
+        .btnBrand:active { transform: translateY(0); }
+        /* фикс цвета и жирности для прод-сборки */
         .archive a.btnBrand,
         .archive a.btnBrand:visited,
         .archive a.btnBrand:hover,
         .archive a.btnBrand:active,
-        .archive a.btnBrand:focus {
-          color: #fff !important;
-          font-weight: 600;
-          text-decoration: none;
-        }
+        .archive a.btnBrand:focus { color: #fff !important; font-weight: 800; text-decoration: none; }
 
-        .card {
-          border: 2px solid var(--brand); border-radius: 12px; background:#fff; padding: 10px; display: grid; gap: 10px;
+        .desc {
+          border: 1px solid var(--glass-stroke); border-radius: 12px; padding: 8px;
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, #ffffff 96%, transparent),
+              color-mix(in oklab, #ffffff 90%, transparent));
+          -webkit-backdrop-filter: blur(10px) saturate(1.15);
+          backdrop-filter: blur(10px) saturate(1.15);
+          white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.60);
         }
-        .cardHead { display:flex; justify-content:space-between; align-items:flex-start; gap: 10px; }
-        .titleLink { font-size: 18px; font-weight: 600; color:#111827; text-decoration:none; }
-        .titleLink:hover { text-decoration: underline; }
-        .meta { font-size: 12px; color:#374151; margin-top: 2px; }
-
-        .desc { border:1px solid #e5e7eb; border-radius:12px; padding: 8px; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; }
 
         .chips { display:flex; gap: 8px; flex-wrap: wrap; }
-        .chip { border:1px solid #e5e7eb; border-radius:999px; padding: 2px 8px; font-size:12px; background:#fff; }
-        .chipDone { background:#ecfdf5; border-color:#d1fae5; }
+        .chip {
+          border:1px solid var(--glass-stroke); border-radius:999px; padding: 2px 8px; font-size:12px;
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, #ffffff 96%, transparent),
+              color-mix(in oklab, #ffffff 90%, transparent));
+          -webkit-backdrop-filter: blur(8px) saturate(1.1);
+          backdrop-filter: blur(8px) saturate(1.1);
+        }
+        .chipDone {
+          background:
+            linear-gradient(180deg,
+              color-mix(in oklab, #ecfdf5 92%, #ffffff 8%),
+              color-mix(in oklab, #d1fae5 92%, #ffffff 8%));
+          border-color: color-mix(in oklab, #10b981 42%, var(--glass-stroke));
+        }
+
+        .empty { font-size: 14px; color: var(--muted); }
 
         @media (max-width: 720px) {
+          .head { align-items: stretch; }
           .cardHead { flex-direction: column; align-items: stretch; }
           .btnBrand { align-self: flex-start; }
+        }
+
+        /* focus-visible for accessibility */
+        .tab:focus-visible,
+        .input:focus-visible,
+        .btnPrimary:focus-visible,
+        .btnBrand:focus-visible,
+        .card:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 4px var(--ring), inset 0 1px 0 rgba(255,255,255,.66);
+          border-color: var(--brand-stroke);
         }
       `}</style>
     </main>

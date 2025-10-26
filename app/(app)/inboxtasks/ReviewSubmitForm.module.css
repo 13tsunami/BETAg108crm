@@ -1,69 +1,108 @@
 /* app/(app)/inboxtasks/ReviewSubmitForm.module.css */
+/* Liquid Glass · iOS-26 (light-only) */
 
 .btnBrand {
-  /* Визуальный язык, как на sign-in/admin */
+  /* Локальные токены для модуля */
   --brand: #8d2828;
-  --brand-hover: #a53030;
-  --brand-focus: rgba(141, 40, 40, 0.15);
+  --brand-ink: #ffffff;
+  --brand-hover: color-mix(in oklab, var(--brand) 88%, #ffffff);
+  --brand-stroke: color-mix(in oklab, var(--brand) 52%, #ffffff);
+  --ring: color-mix(in oklab, var(--brand) 26%, transparent);
 
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 12px;
-  border: 1px solid var(--brand);
-  background: var(--brand);
-  color: #fff;
-  cursor: pointer;
+  --lg-blur: 14px;
+
+  /* Размеры */
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 14px;
+
+  /* Каркас */
+  border: 1px solid var(--brand-stroke);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, #ffffff 8%, var(--brand)) 0%,
+      color-mix(in oklab, #000000 12%, var(--brand)) 100%
+    );
+  color: #051b14; /* читаемо на зелёном/бордовом стекле; всё равно перекрываем ниже */
+  color: var(--brand-ink);
+
+  /* Жидкое стекло */
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--lg-blur)) saturate(1.25);
+
+  /* Типографика/поведение */
   font-size: 13px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  cursor: pointer;
+  user-select: none;
 
-  box-shadow: 0 6px 14px rgba(141, 40, 40, 0.25);
+  /* Объём и интеракции */
+  box-shadow:
+    0 12px 24px rgba(141, 40, 40, .28),
+    inset 0 1px 0 rgba(255,255,255,.60);
   transition:
-    transform .04s ease,
-    box-shadow .12s ease,
-    opacity .2s ease,
-    filter .12s ease,
-    background-color .12s ease,
-    border-color .12s ease,
-    color .12s ease;
+    transform .06s ease,
+    box-shadow .16s ease,
+    opacity .18s ease,
+    filter .14s ease,
+    background .16s ease,
+    border-color .14s ease,
+    color .14s ease;
 }
 
+/* Hover — чуть выше и светлее верхний слой */
 .btnBrand:hover {
-  background: var(--brand-hover);
-  border-color: var(--brand-hover);
   transform: translateY(-1px);
-  box-shadow: 0 10px 18px rgba(141, 40, 40, 0.28);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, #ffffff 14%, var(--brand)) 0%,
+      color-mix(in oklab, #000000 10%, var(--brand)) 100%
+    );
+  border-color: var(--brand-hover);
+  box-shadow:
+    0 16px 28px rgba(141, 40, 40, .34),
+    inset 0 1px 0 rgba(255,255,255,.66);
 }
 
+/* Active — возвращаемся на место, тень короче */
 .btnBrand:active {
   transform: translateY(0);
-  box-shadow: 0 6px 14px rgba(141, 40, 40, 0.25);
+  box-shadow:
+    0 10px 20px rgba(141, 40, 40, .24),
+    inset 0 1px 0 rgba(255,255,255,.60);
 }
 
+/* Focus — iOS-кольцо без outline */
 .btnBrand:focus-visible {
   outline: none;
   box-shadow:
-    0 0 0 3px var(--brand-focus),
-    0 6px 14px rgba(141, 40, 40, 0.25);
+    0 0 0 4px var(--ring),
+    0 12px 24px rgba(141, 40, 40, .28),
+    inset 0 1px 0 rgba(255,255,255,.60);
 }
 
+/* Disabled — стекло «замерзает» */
 .btnBrand:disabled {
   opacity: .65;
   cursor: default;
   transform: none;
+  filter: grayscale(.1);
   box-shadow: none;
 }
 
 /* Мобильная эргономика */
 @media (max-width: 960px) {
   .btnBrand {
-    height: 40px;
-    padding: 0 16px;
+    height: 42px;
+    padding: 0 18px;
     font-size: 15px;
-    border-radius: 12px;
+    border-radius: 14px;
   }
 }
 
