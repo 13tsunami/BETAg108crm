@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "engines": {
-  "node": ">=18.17.0 <=20.17.0"
+    "node": "20.17.0"
   },
   "scripts": {
     "snapshot": "node tools/snapshot.js",
@@ -26,8 +26,6 @@
     "@prisma/client": "^6.14.0",
     "@types/bcryptjs": "2.4.6",
     "bcryptjs": "3.0.2",
-    "dayjs": "^1.11.18",
-    "exceljs": "^4.4.0",
     "next": "^15.4.6",
     "next-auth": "4.24.11",
     "react": "^18.3.1",
