@@ -13,6 +13,10 @@ jobs:
   deploy:
     runs-on: self-hosted
 
+    env:
+      DOCKER_CLIENT_TIMEOUT: "300"
+      COMPOSE_HTTP_TIMEOUT: "300"
+
     steps:
       - name: Show runner info
         run: |
@@ -20,11 +24,22 @@ jobs:
           docker --version
           docker compose version
 
-      - name: Login to GHCR
+      - name: Login to GHCR (with retries)
         env:
           CR_PAT: ${{ secrets.GHCR_PAT }}
         run: |
-          echo "$CR_PAT" | docker login ghcr.io -u 13tsunami --password-stdin
+          set -e
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i to login to GHCR..."
+            if echo "$CR_PAT" | docker login ghcr.io -u 13tsunami --password-stdin; then
+              echo "Login Succeeded"
+              exit 0
+            fi
+            echo "Login failed, sleeping 10s..."
+            sleep 10
+          done
+          echo "GHCR login failed after retries"
+          exit 1
 
       - name: Pull images and start stack
         run: |
