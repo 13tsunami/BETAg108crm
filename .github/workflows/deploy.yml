@@ -5,25 +5,42 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+# чтобы параллельные пуши в main не накладывались
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Build and deploy
+      - name: Show runner info
         run: |
-          mkdir -p ~/g108crm
+          uname -a
+          docker --version
+          docker compose version
 
+      # ЛОГИН в GHCR: токен возьми из Secrets репозитория (Settings → Secrets → Actions)
+      # Создай секрет GHCR_PAT со значением токена (временным, который сейчас используешь).
+      - name: Login to GHCR
+        env:
+          CR_PAT: ${{ secrets.GHCR_PAT }}
+        run: |
+          echo "$CR_PAT" | docker login ghcr.io -u 13tsunami --password-stdin
+
+      # Переходим в каталог с docker-compose.yml на сервере
+      - name: Pull images and start stack
+        run: |
+          set -e
           cd ~/g108crm
 
-          if [ -d .git ]; then
-            git fetch origin main
-            git reset --hard origin/main
-          else
-            git clone --depth=1 -b main https://github.com/${{ github.repository }} .
-          fi
+          # НИКАКИХ build — только pull готовых образов
+          docker compose pull
 
-          docker compose up -d  --build --remove-orphans
+          # На всякий случай чисто перезапускаем рантайм-контейнеры
+          docker compose rm -f migrate web || true
+
+          docker compose up -d
+
+          docker compose ps
