@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write        # нужно, чтобы публиковать образ в GHCR
+      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,13 +27,26 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push app image (runner)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
+          target: runner
           push: true
           platforms: linux/amd64
           tags: ghcr.io/${{ github.repository_owner }}/betag108crm:main
+          build-args: |
+            BUILD_REV=${{ github.sha }}
+
+      - name: Build and push migrate image (deps)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: deps
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/${{ github.repository_owner }}/betag108crm:migrate
           build-args: |
             BUILD_REV=${{ github.sha }}
