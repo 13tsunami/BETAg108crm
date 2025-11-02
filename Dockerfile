@@ -1,4 +1,10 @@
-FROM node:24-alpine AS base
+# ЛТС-ветка Node 22 на musl
+FROM node:22-alpine AS base
+
+# Увеличенные таймауты и ретраи для npm — меньше сбоев сети на CI/проде
+ENV npm_config_fetch_retries=5 \
+    npm_config_fetch_retry_maxtimeout=120000 \
+    npm_config_network_timeout=600000
 
 FROM base AS deps
 WORKDIR /app
@@ -19,7 +25,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
+# оставляю как у вас
 CMD tail -f /dev/null
+
 FROM base AS runner
 WORKDIR /app
 
@@ -30,8 +38,7 @@ RUN addgroup -S nodejs \
 
 COPY --from=builder /app/public ./public
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
+# Output traces для Next.js standalone
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -40,7 +47,5 @@ ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
 
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
 USER nextjs
 CMD ["node", "server.js"]
