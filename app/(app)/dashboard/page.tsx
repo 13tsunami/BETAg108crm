@@ -45,9 +45,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   return (
     <div className={s.dashboardRoot}>
       <header className={s.header}>
-        <div className={s.title}>Аналитика</div>
+        <div className={s.title}>АНАЛИТИКА</div>
         <div className={s.subtitle}>
-          Живая картина и отчёт недели. Сверните плитку для кратких KPI, нажмите — развернётся график.
+          Динамическая аналитика и отчёт недели.
         </div>
       </header>
 
