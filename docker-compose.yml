@@ -1,45 +1,34 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:alpine
     restart: unless-stopped
     env_file: .env
+    environment:
+      PGDATA: /var/lib/postgresql
     ports:
       - "5432:5432"
     volumes:
-      - ./.docker/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
-      - ./.docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
-      - ./.docker/postgres/certs/cert.pem:/var/lib/postgresql/cert.pem:ro
-      - ./.docker/postgres/certs/key.pem:/var/lib/postgresql/key.pem:ro
-      - pgdata:/var/lib/postgresql/data
-    command:
-      - postgres
-      - -c
-      - config_file=/etc/postgresql/postgresql.conf
-      - -c
-      - hba_file=/etc/postgresql/pg_hba.conf
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
+
   migrate:
-    build:
-      context: .
-      target: deps
+    image: ghcr.io/13tsunami/betag108crm:migrate
+    pull_policy: always
     depends_on:
       db:
         condition: service_healthy
     env_file: .env
     command: >
-      sh -c "npx prisma generate &&
-             npx prisma migrate deploy"
+      sh -lc "npx prisma migrate deploy"
     restart: "no"
 
   web:
-    build:
-      context: .
+    image: ghcr.io/13tsunami/betag108crm:main
+    pull_policy: always
     env_file: .env
     environment:
       NODE_ENV: production
