@@ -1,6 +1,7 @@
-// app/(app)/inboxtasks/actions.ts
+﻿// app/(app)/inboxtasks/actions.ts
 'use server';
 
+import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth.config';
@@ -12,6 +13,36 @@ import crypto from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 
 type Priority = 'normal' | 'high';
+
+async function redirectBackWith(
+  params: Record<string, string | number | undefined>,
+  fallback: string = '/inboxtasks?modal=search-by-me'
+) {
+  const h = await headers();
+  const ref = h.get('referer') || fallback;
+  let base = fallback;
+
+  try {
+    const u = new URL(ref, 'http://local'); // base для парсинга даже без протокола
+    const q = new URLSearchParams(u.search);
+
+    // Не трогаем чужие фильтры — только перезаписываем служебные
+    for (const k of ['error', 'notice', 'purged']) q.delete(k);
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined) continue;
+      q.set(k, String(v));
+    }
+
+    // Всегда удерживаем модалку открытой
+    if (!q.has('modal')) q.set('modal', 'search-by-me');
+
+    base = u.pathname + (q.toString() ? `?${q.toString()}` : '');
+  } catch {
+    // fallback уже содержит modal=search-by-me
+  }
+
+  redirect(base);
+}
 
 function asNonEmptyString(v: unknown, field: string, max = 256): string {
   const s = String(v ?? '').trim();
@@ -55,11 +86,6 @@ async function nextTaskNumber() {
   return (last?.number ?? 0) + 1;
 }
 
-/** Каталог хранения файлов:
- *  1) FILES_DIR, если задан,
- *  2) иначе UPLOADS_DIR,
- *  3) иначе /uploads.
- */
 const FILES_DIR = process.env.FILES_DIR ?? process.env.UPLOADS_DIR ?? '/uploads';
 const MAX_MB = Number(process.env.MAX_UPLOAD_MB || '50');
 const MAX_BYTES = MAX_MB * 1024 * 1024;
@@ -84,8 +110,8 @@ async function saveOneFile(tx: Prisma.TransactionClient, taskId: string, file: F
 
     const att = await tx.attachment.create({
       data: {
-        name,                               // внутреннее имя (для /api/files/:name)
-        originalName: file.name || null,    // имя, как загружал пользователь
+        name,
+        originalName: file.name || null,
         size: buf.length,
         mime: file.type || 'application/octet-stream',
       },
@@ -96,7 +122,6 @@ async function saveOneFile(tx: Prisma.TransactionClient, taskId: string, file: F
     });
   } catch (err) {
     console.error('[upload] failed to save file', { err });
-    // мягкий режим: не валим экшен целиком
   }
 }
 
@@ -108,15 +133,14 @@ export async function createTaskAction(fd: FormData): Promise<void> {
     if (!meId || !canCreateTasks(role)) return;
 
     const title = asNonEmptyString(fd.get('title'), 'Название');
-    const description = asOptionalString(fd.get('description')) ?? ''; // в схеме description: String (не null)
-    const dueDate = parseISODate(fd.get('due')); // hidden name="due" из формы TaskForm
+    const description = asOptionalString(fd.get('description')) ?? ''; // description: String (не null)
+    const dueDate = parseISODate(fd.get('due'));
     const priority = asPriority(fd.get('priority'));
     const reviewRequired = String(fd.get('reviewRequired') ?? '') === '1';
 
     const userIds = parseAssigneeIds(fd.get('assigneeUserIdsJson'));
     if (userIds.length === 0) throw new Error('Нужно выбрать хотя бы одного исполнителя');
 
-    // Пытаемся подготовить каталог под файлы, но не рвём сохранение задачи при ошибке
     let uploadsReady = true;
     try {
       await ensureFilesDir();
@@ -150,19 +174,14 @@ export async function createTaskAction(fd: FormData): Promise<void> {
         select: { id: true },
       });
 
-      // Файлы задачи: name="taskFiles"
       if (uploadsReady) {
         const files = fd.getAll('taskFiles') as unknown as File[];
-        if (files && files.length) {
-          for (const f of files) {
-            await saveOneFile(tx, task.id, f);
-          }
-        }
+        for (const f of files) await saveOneFile(tx, task.id, f);
       }
     });
 
     revalidatePath('/inboxtasks');
-    redirect('/inboxtasks'); // явный переход после успеха
+    redirect('/inboxtasks');
   } catch (err) {
     console.error('[createTaskAction] failed', err);
   }
@@ -179,8 +198,8 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
     if (!taskId) throw new Error('taskId is required');
 
     const title = asNonEmptyString(fd.get('title'), 'Название');
-    const description = asOptionalString(fd.get('description')) ?? undefined; // undefined = не трогать поле
-    const dueRaw = fd.get('dueDate'); // если форма шлёт dueDate, разбираем его
+    const description = asOptionalString(fd.get('description')) ?? undefined;
+    const dueRaw = fd.get('dueDate');
     const dueDate = dueRaw ? parseISODate(dueRaw) : undefined;
     const priority = asPriority(fd.get('priority'));
 
@@ -205,26 +224,58 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
 }
 
 export async function deleteTaskAction(fd: FormData): Promise<void> {
-  try {
-    const session = await auth();
-    const meId = session?.user?.id ?? null;
-    const role = normalizeRole(session?.user?.role);
-    if (!meId || !canCreateTasks(role)) return;
+  const session = await auth();
+  const meId = session?.user?.id ?? null;
+  const role = normalizeRole(session?.user?.role);
+  const returnTo = String(fd.get('returnTo') ?? '') || undefined;
 
-    const taskId = String(fd.get('taskId') ?? '').trim();
-    if (!taskId) throw new Error('taskId is required');
-
-    const task = await prisma.task.findUnique({ where: { id: taskId }, select: { id: true, createdById: true } });
-    if (!task) return;
-    if (task.createdById !== meId && !canCreateTasks(role)) return;
-
-    // мягкое "удаление"
-    await prisma.task.update({ where: { id: taskId }, data: { hidden: true } });
-
-    revalidatePath('/inboxtasks');
-  } catch (err) {
-    console.error('[deleteTaskAction] failed', err);
+  if (!meId || !canCreateTasks(role)) {
+    await redirectBackWith({ error: 'Недостаточно прав' }, returnTo);
+    return;
   }
+
+  const taskId = String(fd.get('taskId') ?? '').trim();
+  if (!taskId) {
+    await redirectBackWith({ error: 'taskId is required' }, returnTo);
+    return;
+  }
+
+  const task = await prisma.task.findUnique({ where: { id: taskId }, select: { id: true, createdById: true } });
+  if (!task) {
+    await redirectBackWith({ notice: 'Задача уже удалена' }, returnTo);
+    return;
+  }
+  if (task.createdById !== meId && !canCreateTasks(role)) {
+    await redirectBackWith({ error: 'Недостаточно прав' }, returnTo);
+    return;
+  }
+
+  await prisma.task.delete({ where: { id: taskId } }); // каскад
+  revalidatePath('/inboxtasks');
+  revalidatePath('/dashboard');
+
+  await redirectBackWith({ notice: 'Задача удалена' }, returnTo);
+}
+
+export async function purgeHiddenTasksAction(fd?: FormData): Promise<void> {
+  const session = await auth();
+  const meId = session?.user?.id ?? null;
+  const role = normalizeRole(session?.user?.role);
+  const returnTo = fd ? (String(fd.get('returnTo') ?? '') || undefined) : undefined;
+
+  if (!meId || role !== 'deputy_plus') {
+    await redirectBackWith({ error: 'Недостаточно прав' }, returnTo);
+    return;
+  }
+
+  const { count } = await prisma.task.deleteMany({
+    where: { createdById: meId, hidden: true },
+  });
+
+  revalidatePath('/inboxtasks');
+  revalidatePath('/dashboard');
+
+  await redirectBackWith({ purged: count, modal: 'search-by-me', hidden: 'only' }, returnTo);
 }
 
 export async function markAssigneeDoneAction(fd: FormData): Promise<void> {

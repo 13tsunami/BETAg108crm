@@ -14,6 +14,7 @@ import type { Prisma } from '@prisma/client';
 import './inboxtasks.css';
 import ReviewSubmitForm from './ReviewSubmitForm';
 import { cookies } from 'next/headers';
+import Badge from './Badge';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -250,27 +251,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     : s === 'rejected'   ? 'возвращено'
     : s;
 
-  function Badge({ kind, children }: { kind: 'urgent' | 'redo' | 'muted'; children: React.ReactNode }) {
-    const base: React.CSSProperties = {
-      display: 'inline-block',
-      fontSize: 11,
-      lineHeight: '18px',
-      padding: '0 8px',
-      borderRadius: 999,
-      fontWeight: 800,
-      border: '1px solid #e5e7eb',
-      background: '#fff',
-      color: '#111827',
-      whiteSpace: 'nowrap',
-    };
-    const map: Record<typeof kind, React.CSSProperties> = {
-      urgent: { background: '#8d2828', borderColor: '#8d2828', color: '#fff' },
-      redo:   { background: '#ef4444', borderColor: '#ef4444', color: '#fff' },
-      muted:  { background: '#fff', borderColor: '#e5e7eb', color: '#6b7280' },
-    };
-    return <span style={{ ...base, ...map[kind] }}>{children}</span>;
-  }
-
   return (
     <main style={{ padding: 16 }}>
       <h1 style={{ marginTop: 0 }}>Задачи</h1>
@@ -302,7 +282,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             <nav className="tabs">
               <a href="/inboxtasks?tab=mine" className={activeTab === 'mine' ? 'tabActive' : 'tab'}>Назначенные мне</a>
               <a href="/inboxtasks?tab=submitted" className={activeTab === 'submitted' ? 'tabActive' : 'tab'}>На проверке</a>
-              {mayCreate && <a href="/inboxtasks?tab=byme" className={activeTab === 'byme' ? 'tabActive' : 'tab'}>Назначенные мной</a>}
+              {mayCreate && <a href="/inboxtasks/byme/search" className={activeTab === 'byme' ? 'tabActive' : 'tab'}>Назначенные мной</a>}
             </nav>
           </header>
 
