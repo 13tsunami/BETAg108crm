@@ -16,29 +16,28 @@ type Priority = 'normal' | 'high';
 
 async function redirectBackWith(
   params: Record<string, string | number | undefined>,
-  fallback: string = '/inboxtasks?modal=search-by-me'
+  fallback: string = '/inboxtasks/byme/search?modal=search-by-me'
 ) {
   const h = await headers();
   const ref = h.get('referer') || fallback;
   let base = fallback;
 
   try {
-    const u = new URL(ref, 'http://local'); // base для парсинга даже без протокола
+    const u = new URL(ref, 'http://local');
     const q = new URLSearchParams(u.search);
 
-    // Не трогаем чужие фильтры — только перезаписываем служебные
     for (const k of ['error', 'notice', 'purged']) q.delete(k);
     for (const [k, v] of Object.entries(params)) {
       if (v === undefined) continue;
       q.set(k, String(v));
     }
 
-    // Всегда удерживаем модалку открытой
+    // Удерживаем модалку открытой, если не передан другой modal
     if (!q.has('modal')) q.set('modal', 'search-by-me');
 
     base = u.pathname + (q.toString() ? `?${q.toString()}` : '');
   } catch {
-    // fallback уже содержит modal=search-by-me
+    // оставляем fallback как есть
   }
 
   redirect(base);
@@ -133,7 +132,7 @@ export async function createTaskAction(fd: FormData): Promise<void> {
     if (!meId || !canCreateTasks(role)) return;
 
     const title = asNonEmptyString(fd.get('title'), 'Название');
-    const description = asOptionalString(fd.get('description')) ?? ''; // description: String (не null)
+    const description = asOptionalString(fd.get('description')) ?? '';
     const dueDate = parseISODate(fd.get('due'));
     const priority = asPriority(fd.get('priority'));
     const reviewRequired = String(fd.get('reviewRequired') ?? '') === '1';
@@ -250,7 +249,7 @@ export async function deleteTaskAction(fd: FormData): Promise<void> {
     return;
   }
 
-  await prisma.task.delete({ where: { id: taskId } }); // каскад
+  await prisma.task.delete({ where: { id: taskId } });
   revalidatePath('/inboxtasks');
   revalidatePath('/dashboard');
 

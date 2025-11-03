@@ -1,5 +1,6 @@
 ﻿﻿// app/(app)/inboxtasks/page.tsx
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
@@ -282,7 +283,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             <nav className="tabs">
               <a href="/inboxtasks?tab=mine" className={activeTab === 'mine' ? 'tabActive' : 'tab'}>Назначенные мне</a>
               <a href="/inboxtasks?tab=submitted" className={activeTab === 'submitted' ? 'tabActive' : 'tab'}>На проверке</a>
-              {mayCreate && <a href="/inboxtasks/byme/search" className={activeTab === 'byme' ? 'tabActive' : 'tab'}>Назначенные мной</a>}
+              {mayCreate && (
+                <Link href="/inboxtasks/byme/search" className={activeTab === 'byme' ? 'tabActive' : 'tab'}>
+                  Назначенные мной
+                </Link>
+              )}
             </nav>
           </header>
 
@@ -297,7 +302,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                     const requiresReview = t.reviewRequired === true;
                     const lastComment = myAssn?.submissions?.[0]?.reviewerComment;
                     const showUrgent = t.priority === 'high';
-                    // доработка: вернули после ревью (status снова in_progress, но reviewedAt уже есть)
                     const showRedo = (myAssn?.status === 'in_progress' && !!myAssn?.reviewedAt) || myAssn?.status === 'rejected';
 
                     return (
@@ -306,7 +310,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                           <div className="taskTitle">
                             <b>№{t.number} — {t.title}</b>
                             <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:4 }}>
-                              {/* «срочно» рисуется CSS-псевдоэлементом */}
                               {showRedo && <Badge kind="redo">доработка</Badge>}
                               <span className="taskMeta">
                                 до {fmtRuDateTimeYekb(t.dueDate)}
@@ -317,7 +320,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                         </summary>
 
                         <div className="taskBody">
-                          {/* Комментарий проверяющего — сверху */}
                           {requiresReview && lastComment && (
                             <div className="taskSection" style={{ borderColor: '#8d2828' }}>
                               <h4 style={{ color: '#fc0202ff', marginTop: 0 }}>Комментарий проверяющего</h4>
@@ -332,7 +334,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                             </div>
                           )}
 
-                          {/* Вложения: выделенный бокс с иконками */}
                           <TaskAttachments items={t.attachments} />
 
                           <div className="taskSection" style={{ borderColor: '#8d2828' }}>
@@ -378,7 +379,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                           <div className="taskTitle">
                             <b>№{t.number} — {t.title}</b>
                             <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:4 }}>
-                              {/* «срочно» — только CSS */}
                               {showRedo && <Badge kind="redo">доработка</Badge>}
                               <span className="taskMeta">
                                 до {fmtRuDateTimeYekb(t.dueDate)}
@@ -404,7 +404,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                             </div>
                           )}
 
-                          {/* Вложения: выделенный бокс с иконками */}
                           <TaskAttachments items={t.attachments} />
                         </div>
                       </details>
@@ -435,7 +434,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                           <div className="taskTitle">
                             <b>№{t.number} — {t.title}</b>
                             <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:4 }}>
-                              {/* «срочно» — только CSS */}
                               {anyRedo && <Badge kind="redo">доработка</Badge>}
                               <span className="taskMeta">
                                 до {fmtRuDateTimeYekb(t.dueDate)}
@@ -460,7 +458,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                             </div>
                           )}
 
-                          {/* Вложения: выделенный бокс с иконками */}
                           <TaskAttachments items={t.attachments} />
 
                           <div className="taskSection" style={{ borderColor: '#8d2828' }}>
