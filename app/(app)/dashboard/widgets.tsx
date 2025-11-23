@@ -82,7 +82,7 @@ function Inner({ analytics, weekly, roleCanScopeAll, activeTab, scope, days }: P
           {/* Нагрузка по дням недели */}
           <Card id="weekday" title="Нагрузка по дням недели" open={open.weekday} setOpen={setOpen}>
             <WeekdayBars data={weekdayLoad} />
-            <Hint>За 8 недель: когда обычно больше дедлайнов. Столбики «вырастают» — это ок.</Hint>
+            <Hint>выборка за неделю</Hint>
           </Card>
 
           {/* Заявки и проверки */}
@@ -177,7 +177,7 @@ function Tabs({ roleCanScopeAll }: { roleCanScopeAll: boolean }) {
         onClick={() => go('live')}
         className={`${s.chip} ${ curTab === 'live' ? s.chipActive : '' }`}
         aria-pressed={curTab==='live'}
-      >Живая аналитика</button>
+      >Динамика</button>
 
       <button
         onClick={() => go('weekly')}

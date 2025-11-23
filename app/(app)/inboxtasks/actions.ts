@@ -1,4 +1,5 @@
-﻿'use server';
+﻿// app/(app)/inboxtasks/actions.ts
+'use server';
 
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -12,6 +13,13 @@ import crypto from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 
 type Priority = 'normal' | 'high';
+
+export type CreateTaskState = {
+  ok: boolean;
+  error?: string;
+  createdNumber?: number;
+  createdTitle?: string;
+};
 
 /*
   Универсальный redirect назад, без автодобавления модалок.
@@ -134,12 +142,23 @@ async function saveOneFile(tx: Prisma.TransactionClient, taskId: string, file: F
   }
 }
 
-export async function createTaskAction(fd: FormData): Promise<void> {
+/*
+  Новый формат экшена для useFormState:
+  – никаких redirect;
+  – возвращаем { ok, createdNumber, createdTitle } для модалки.
+*/
+export async function createTaskAction(
+  _prev: CreateTaskState,
+  fd: FormData
+): Promise<CreateTaskState> {
   try {
     const session = await auth();
     const meId = session?.user?.id ?? null;
     const role = normalizeRole(session?.user?.role);
-    if (!meId || !canCreateTasks(role)) return;
+
+    if (!meId || !canCreateTasks(role)) {
+      return { ok: false, error: 'Недостаточно прав для создания задач' };
+    }
 
     const title = asNonEmptyString(fd.get('title'), 'Название');
     const description = asOptionalString(fd.get('description')) ?? '';
@@ -148,7 +167,9 @@ export async function createTaskAction(fd: FormData): Promise<void> {
     const reviewRequired = String(fd.get('reviewRequired') ?? '') === '1';
     const userIds = parseAssigneeIds(fd.get('assigneeUserIdsJson'));
 
-    if (userIds.length === 0) throw new Error('Нужно выбрать хотя бы одного исполнителя');
+    if (userIds.length === 0) {
+      return { ok: false, error: 'Нужно выбрать хотя бы одного исполнителя' };
+    }
 
     let uploadsReady = true;
     try {
@@ -157,8 +178,11 @@ export async function createTaskAction(fd: FormData): Promise<void> {
       uploadsReady = false;
     }
 
+    let createdNumber: number | null = null;
+
     await prisma.$transaction(async (tx) => {
       const number = await nextTaskNumber();
+      createdNumber = number;
 
       const task = await tx.task.create({
         data: {
@@ -184,14 +208,25 @@ export async function createTaskAction(fd: FormData): Promise<void> {
 
       if (uploadsReady) {
         const files = fd.getAll('taskFiles') as unknown as File[];
-        for (const f of files) await saveOneFile(tx, task.id, f);
+        for (const f of files) {
+          await saveOneFile(tx, task.id, f);
+        }
       }
     });
 
     revalidatePath('/inboxtasks');
-    redirect('/inboxtasks?tab=byme');
+    revalidatePath('/dashboard');
+
+    return {
+      ok: true,
+      createdNumber: createdNumber ?? undefined,
+      createdTitle: title,
+    };
   } catch (err) {
     console.error('[createTaskAction] failed', err);
+    const msg =
+      err instanceof Error ? err.message : 'Ошибка при создании задачи. Попробуйте ещё раз.';
+    return { ok: false, error: msg };
   }
 }
 

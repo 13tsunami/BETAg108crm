@@ -1,11 +1,11 @@
-﻿﻿import { Suspense } from 'react';
+﻿﻿// app/(app)/inboxtasks/page.tsx
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import { normalizeRole, canCreateTasks } from '@/lib/roles';
 import TaskForm from './TaskForm';
 import {
-  createTaskAction,
   updateTaskAction,
   deleteTaskAction,
   markAssigneeDoneAction,
@@ -106,7 +106,15 @@ function TeacherGuide() {
 function TaskAttachments({
   items,
 }: {
-  items: { attachment: { id: string; name: string; originalName: string | null; size: number; mime: string } }[];
+  items: {
+    attachment: {
+      id: string;
+      name: string;
+      originalName: string | null;
+      size: number;
+      mime: string;
+    };
+  }[];
 }) {
   if (!items?.length) return <span>Нет вложений</span>;
   return (
@@ -144,8 +152,36 @@ function TaskAttachments({
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
-  const tabParam = typeof sp.tab === 'string' ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
-  const modalParam = typeof sp.modal === 'string' ? sp.modal : Array.isArray(sp.modal) ? sp.modal[0] : undefined;
+
+  const tabParam =
+    typeof sp.tab === 'string' ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
+  const modalParam =
+    typeof sp.modal === 'string' ? sp.modal : Array.isArray(sp.modal) ? sp.modal[0] : undefined;
+
+  const createdNumberRaw =
+    typeof sp.createdTaskNumber === 'string'
+      ? sp.createdTaskNumber
+      : Array.isArray(sp.createdTaskNumber)
+      ? sp.createdTaskNumber[0]
+      : undefined;
+
+  const createdTitleEncoded =
+    typeof sp.createdTaskTitle === 'string'
+      ? sp.createdTaskTitle
+      : Array.isArray(sp.createdTaskTitle)
+      ? sp.createdTaskTitle[0]
+      : undefined;
+
+  let createdTitle: string | undefined;
+  if (createdTitleEncoded) {
+    try {
+      createdTitle = decodeURIComponent(createdTitleEncoded);
+    } catch {
+      createdTitle = createdTitleEncoded;
+    }
+  }
+
+  const showCreateModal = !!createdNumberRaw;
 
   const session = await auth();
   const meId = session?.user?.id ?? null;
@@ -170,11 +206,16 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     prisma.subject.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
   ]);
 
-  const groupMembers = await prisma.groupMember.findMany({ select: { groupId: true, userId: true } });
+  const groupMembers = await prisma.groupMember.findMany({
+    select: { groupId: true, userId: true },
+  });
   const rawSubjectMembers = await prisma.subjectMember.findMany({
     select: { userId: true, subject: { select: { name: true } } },
   });
-  const subjectMembers = rawSubjectMembers.map((m) => ({ userId: m.userId, subjectName: m.subject.name }));
+  const subjectMembers = rawSubjectMembers.map((m) => ({
+    userId: m.userId,
+    subjectName: m.subject.name,
+  }));
 
   const [mineInProgress, mineSubmitted, assignedByMe] = await Promise.all([
     prisma.task.findMany({
@@ -206,7 +247,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         },
         attachments: {
           select: {
-            attachment: { select: { id: true, name: true, originalName: true, size: true, mime: true } },
+            attachment: {
+              select: { id: true, name: true, originalName: true, size: true, mime: true },
+            },
           },
         },
       },
@@ -242,7 +285,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         },
         attachments: {
           select: {
-            attachment: { select: { id: true, name: true, originalName: true, size: true, mime: true } },
+            attachment: {
+              select: { id: true, name: true, originalName: true, size: true, mime: true },
+            },
           },
         },
       },
@@ -274,7 +319,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         },
         attachments: {
           select: {
-            attachment: { select: { id: true, name: true, originalName: true, size: true, mime: true } },
+            attachment: {
+              select: { id: true, name: true, originalName: true, size: true, mime: true },
+            },
           },
         },
       },
@@ -283,7 +330,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     }),
   ]);
 
-  const activeTab = tabParam === 'byme' ? 'byme' : tabParam === 'submitted' ? 'submitted' : 'mine';
+  const activeTab =
+    tabParam === 'byme' ? 'byme' : tabParam === 'submitted' ? 'submitted' : 'mine';
 
   const cookieStore = await cookies();
   const formCollapsed = cookieStore.get('inboxtasks_taskform_collapsed')?.value === '1';
@@ -317,7 +365,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                     subjects={subjects.map((s) => ({ name: s.name }))}
                     groupMembers={groupMembers}
                     subjectMembers={subjectMembers}
-                    createAction={createTaskAction}
                     allowReviewControls={mayCreate}
                     initialCollapsed={formCollapsed}
                   />
@@ -575,11 +622,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   ) : (
                     assignedByMe.map((t) => {
                       const doneCnt = t.assignees.filter((a) => a.status === 'done').length;
-                      const onReviewCnt = t.assignees.filter((a) => a.status === 'submitted').length;
+                      const onReviewCnt = t.assignees.filter(
+                        (a) => a.status === 'submitted'
+                      ).length;
                       const anyRedo = t.assignees.some(
                         (a) =>
                           (a.status === 'in_progress' && !!a.reviewedAt) ||
-                          a.status === 'rejected',
+                          a.status === 'rejected'
                       );
                       const totalCnt = t.assignees.length;
                       const updateFormId = `update-${t.id}`;
@@ -829,6 +878,54 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       </main>
 
       {showSearchModal && <SearchByMeModal searchParams={searchParams} />}
+
+      {showCreateModal && (
+        <div
+          style={{
+            position: 'fixed',
+            right: 24,
+            bottom: 24,
+            zIndex: 1400,
+            maxWidth: 420,
+            borderRadius: 16,
+            padding: 14,
+            border: '1px solid rgba(148, 163, 184, 0.6)',
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96))',
+            boxShadow: '0 18px 40px rgba(15,23,42,0.2)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            fontSize: 13,
+          }}
+        >
+          <div style={{ fontWeight: 800 }}>
+            Задача №{createdNumberRaw}{' '}
+            {createdTitle ? `«${createdTitle}»` : ''}
+          </div>
+          <div>
+            сохранена. Посмотреть процесс выполнения можно во вкладке «Назначенные мной».
+          </div>
+          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end' }}>
+            <Link
+              href="/inboxtasks?tab=byme"
+              style={{
+                borderRadius: 999,
+                padding: '6px 12px',
+                border: '1px solid #8d2828',
+                background:
+                  'linear-gradient(180deg, #ffffff, rgba(248,250,252,0.95))',
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#8d2828',
+                textDecoration: 'none',
+              }}
+            >
+              Понятно
+            </Link>
+          </div>
+        </div>
+      )}
     </>
   );
 }
