@@ -8,6 +8,8 @@ import { getAnalytics } from './analytics';
 import { getWeeklyReport } from './weekly';
 import type { Analytics, Scope, TabKey, WeeklyReport } from './types';
 
+import FortuneCookieClient from './FortuneCookieClient';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -16,7 +18,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 function canScopeAll(role: string | undefined | null): boolean {
   const r = normalizeRole(role);
   if (!r) return false;
-  return roleOrder.indexOf(r) >= roleOrder.indexOf('deputy'); // deputy и выше (+ ярлыки через normalizeRole)
+  return roleOrder.indexOf(r) >= roleOrder.indexOf('deputy');
 }
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
@@ -24,7 +26,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   const tab: TabKey = params.tab === 'weekly' ? 'weekly' : 'live';
   const rawDays = Number(params.days ?? 14);
-  const days: 1|7|14|30 = ([1,7,14,30] as const).includes(rawDays as any) ? (rawDays as any) : 14;
+  const days: 1 | 7 | 14 | 30 =
+    ([1, 7, 14, 30] as const).includes(rawDays as any) ? (rawDays as any) : 14;
 
   const session = await auth();
   const meId = (session?.user as any)?.id ?? null;
@@ -35,17 +38,28 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const scope: Scope = scopeAllowedAll ? reqScope : 'me';
 
   const analytics: Analytics = await getAnalytics({
-    meId, rangeDays: days, tz: 'Asia/Yekaterinburg', scope,
+    meId,
+    rangeDays: days,
+    tz: 'Asia/Yekaterinburg',
+    scope,
   });
 
   const weekly: WeeklyReport = await getWeeklyReport({
-    meId, tz: 'Asia/Yekaterinburg', scope,
+    meId,
+    tz: 'Asia/Yekaterinburg',
+    scope,
   });
 
   return (
     <div className={s.dashboardRoot}>
       <header className={s.header}>
-        <div className={s.title}>АНАЛИТИКА</div>
+        <div className={s.headerTop}>
+          <div className={s.title}>АНАЛИТИКА</div>
+          <div className={s.cookieSlot}>
+            <FortuneCookieClient userId={meId} />
+          </div>
+        </div>
+
         <div className={s.subtitle}>
           Динамическая аналитика и отчёт недели.
         </div>

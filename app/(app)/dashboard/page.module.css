@@ -258,3 +258,13 @@
   color: var(--muted);
   margin-right: 4px;
 }
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cookieSlot {
+  display: flex;
+  align-items: center;
+}
