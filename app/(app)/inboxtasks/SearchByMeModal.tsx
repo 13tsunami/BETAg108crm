@@ -215,7 +215,7 @@ export default async function SearchByMeModal({ searchParams }: { searchParams: 
   const lastShown = Math.min(skip + tasks.length, total);
   const totalPages = Math.max(1, Math.ceil(total / take));
 
-  const basePath = '/inboxtasks';
+const basePath = '/inboxtasks/byme/search';
   const currentUrl = buildCurrentUrl(basePath, { q, status, review, date, hiddenMode, take, page });
 
   return (
