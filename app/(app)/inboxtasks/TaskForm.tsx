@@ -2,13 +2,13 @@
 'use client';
 
 import React, {
+  useActionState,
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  useActionState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useFormStatus } from 'react-dom';
@@ -29,8 +29,6 @@ type Candidate = { type: 'user' | 'group' | 'role' | 'subject'; id: string; name
 
 type GroupMember = { groupId: string; userId: string };
 type SubjectMember = { subjectName: string; userId: string };
-
-type FlashCreatedTask = { id: string; title: string } | null;
 
 /* ===== helpers ===== */
 const norm = (s?: string | null) =>
@@ -119,7 +117,6 @@ export default function TaskForm({
   const [priority, setPriority] = useState<'normal' | 'high'>('normal');
   const [reviewRequired, setReviewRequired] = useState(false);
 
-  // сворачивание/разворачивание всей формы
   const [collapsedAll, setCollapsedAll] = useState<boolean>(initialCollapsed);
   useEffect(() => {
     try {
@@ -136,7 +133,6 @@ export default function TaskForm({
     } catch {}
   }, [collapsedAll]);
 
-  // роли из users
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
   useEffect(() => {
     const setR = new Set<string>();
@@ -151,7 +147,6 @@ export default function TaskForm({
     );
   }, [users]);
 
-  // кандидаты и поиск
   const allCandidates = useMemo<Candidate[]>(() => {
     const us: Candidate[] = (users || []).map((u) => ({
       type: 'user',
@@ -209,7 +204,6 @@ export default function TaskForm({
     setAssignees((prev) => prev.filter((x) => !(x.type === a.type && x.id === a.id)));
   }
 
-  // разворачиваем назначенных в userIds
   const expandAssigneesToUserIds = useCallback(async (): Promise<string[]> => {
     const userIds = new Set<string>();
 
@@ -253,7 +247,6 @@ export default function TaskForm({
     return Array.from(userIds);
   }, [assignees, users, groupMembers, subjectMembers]);
 
-  // предпросмотр количества адресатов
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewTotal, setPreviewTotal] = useState<number>(0);
 
@@ -271,7 +264,6 @@ export default function TaskForm({
     void recomputePreview();
   }, [assignees, recomputePreview]);
 
-  // ISO для due (+05:00). Если времени нет — 23:59.
   const dueIso = useMemo(() => {
     if (!due) return '';
     const timePart = dueTime && /^\d{2}:\d{2}$/.test(dueTime) ? dueTime : '23:59';
@@ -281,11 +273,10 @@ export default function TaskForm({
 
   const isHigh = priority === 'high';
 
-  // файлы
   const [taskFiles, setTaskFiles] = useState<File[]>([]);
   const taskFileInputRef = useRef<HTMLInputElement | null>(null);
   const MAX_TASK_FILES = 12;
-  const MAX_BYTES = 50 * 1024 * 1024; // 50 МБ
+  const MAX_BYTES = 50 * 1024 * 1024;
 
   const totalBytes = useMemo(
     () => taskFiles.reduce((sum, f) => sum + (f?.size || 0), 0),
@@ -310,22 +301,18 @@ export default function TaskForm({
     }
   }, []);
 
-  // form state от server action (React 19: useActionState)
   const [serverState, formAction] = useActionState<CreateTaskState, FormData>(
     createTaskAction,
     initialFormState
   );
 
-  // локальная модалка подтверждения
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // при успешном создании — открываем модалку и сбрасываем поля
   useEffect(() => {
     if (!serverState.ok || !serverState.createdNumber) return;
 
     setConfirmOpen(true);
 
-    // сброс полей
     setDue(todayStr);
     setDueTime('');
     setPriority('normal');
@@ -678,8 +665,8 @@ function ConfirmModal({
           Задача сохранена
         </div>
         <div style={{ fontSize: 13, marginBottom: 10 }}>
-          Задача №{number} «{title || 'без названия'}» сохранена. Посмотреть процесс
-          выполнения можно во вкладке «Назначенные мной».
+          Задача №{number} «{title || 'без названия'}» сохранена. Посмотреть процесс выполнения
+          можно во вкладке «Назначенные мной».
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button
