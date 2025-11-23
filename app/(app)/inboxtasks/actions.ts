@@ -1,5 +1,4 @@
-﻿// app/(app)/inboxtasks/actions.ts
-'use server';
+﻿'use server';
 
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -14,13 +13,18 @@ import type { Prisma } from '@prisma/client';
 
 type Priority = 'normal' | 'high';
 
+/*
+  Универсальный redirect назад, без автодобавления модалок.
+  Никаких modal=search-by-me больше не подставляем.
+*/
 async function redirectBackWith(
   params: Record<string, string | number | undefined>,
-  fallback: string = '/inboxtasks/byme/search?modal=search-by-me'
+  fallback: string = '/inboxtasks?tab=byme'
 ) {
   const h = await headers();
   const ref = h.get('referer') || fallback;
-  let base = fallback;
+
+  let url = fallback;
 
   try {
     const u = new URL(ref, 'http://local');
@@ -32,15 +36,12 @@ async function redirectBackWith(
       q.set(k, String(v));
     }
 
-    // Удерживаем модалку открытой, если не передан другой modal
-    if (!q.has('modal')) q.set('modal', 'search-by-me');
-
-    base = u.pathname + (q.toString() ? `?${q.toString()}` : '');
+    url = u.pathname + (q.toString() ? `?${q}` : '');
   } catch {
-    // оставляем fallback как есть
+    // оставляем fallback
   }
 
-  redirect(base);
+  redirect(url);
 }
 
 function asNonEmptyString(v: unknown, field: string, max = 256): string {
@@ -49,17 +50,20 @@ function asNonEmptyString(v: unknown, field: string, max = 256): string {
   if (s.length > max) throw new Error(`Поле "${field}" слишком длинное`);
   return s;
 }
-function asOptionalString(v: unknown, max = 10_000): string | null {
+
+function asOptionalString(v: unknown, max = 10000): string | null {
   if (v == null) return null;
   const s = String(v ?? '').trim();
   if (!s) return null;
   if (s.length > max) throw new Error('Текст слишком длинный');
   return s;
 }
+
 function asPriority(v: unknown): Priority {
   const s = String(v ?? '').trim();
   return s === 'high' ? 'high' : 'normal';
 }
+
 function parseISODate(v: unknown): Date {
   const s = String(v ?? '').trim();
   if (!s) throw new Error('Не задан срок задачи');
@@ -67,11 +71,12 @@ function parseISODate(v: unknown): Date {
   if (Number.isNaN(d.getTime())) throw new Error('Некорректный формат даты');
   return d;
 }
+
 function parseAssigneeIds(json: unknown): string[] {
   try {
     const arr = JSON.parse(String(json ?? '[]'));
     if (!Array.isArray(arr)) return [];
-    return arr.map(x => String(x)).filter(Boolean);
+    return arr.map((x) => String(x)).filter(Boolean);
   } catch {
     return [];
   }
@@ -97,19 +102,24 @@ async function saveOneFile(tx: Prisma.TransactionClient, taskId: string, file: F
   try {
     if (!file) return;
     if (typeof file.size === 'number' && file.size > MAX_BYTES) {
-      console.warn('[upload] file too large, skipped', { name: file.name, size: file.size, max: MAX_BYTES });
+      console.warn('[upload] file too large, skipped', {
+        name: file.name,
+        size: file.size,
+        max: MAX_BYTES,
+      });
       return;
     }
+
     const buf = Buffer.from(await file.arrayBuffer());
     const ext = path.extname(file.name || '') || '';
-    const name = `${crypto.randomUUID()}${ext}`;
-    const full = path.join(FILES_DIR, name);
+    const newName = `${crypto.randomUUID()}${ext}`;
+    const full = path.join(FILES_DIR, newName);
 
     await writeFile(full, buf);
 
     const att = await tx.attachment.create({
       data: {
-        name,
+        name: newName,
         originalName: file.name || null,
         size: buf.length,
         mime: file.type || 'application/octet-stream',
@@ -120,7 +130,7 @@ async function saveOneFile(tx: Prisma.TransactionClient, taskId: string, file: F
       data: { taskId, attachmentId: att.id },
     });
   } catch (err) {
-    console.error('[upload] failed to save file', { err });
+    console.error('[upload] failed', err);
   }
 }
 
@@ -136,16 +146,15 @@ export async function createTaskAction(fd: FormData): Promise<void> {
     const dueDate = parseISODate(fd.get('due'));
     const priority = asPriority(fd.get('priority'));
     const reviewRequired = String(fd.get('reviewRequired') ?? '') === '1';
-
     const userIds = parseAssigneeIds(fd.get('assigneeUserIdsJson'));
+
     if (userIds.length === 0) throw new Error('Нужно выбрать хотя бы одного исполнителя');
 
     let uploadsReady = true;
     try {
       await ensureFilesDir();
-    } catch (e) {
+    } catch {
       uploadsReady = false;
-      console.error('[files] ensure dir failed, continue without saving files', e);
     }
 
     await prisma.$transaction(async (tx) => {
@@ -163,7 +172,7 @@ export async function createTaskAction(fd: FormData): Promise<void> {
           createdById: meId,
           createdByName: session?.user?.name ?? null,
           assignees: {
-            create: userIds.map(uid => ({
+            create: userIds.map((uid) => ({
               userId: uid,
               status: 'in_progress',
               assignedAt: new Date(),
@@ -180,7 +189,7 @@ export async function createTaskAction(fd: FormData): Promise<void> {
     });
 
     revalidatePath('/inboxtasks');
-    redirect('/inboxtasks');
+    redirect('/inboxtasks?tab=byme');
   } catch (err) {
     console.error('[createTaskAction] failed', err);
   }
@@ -202,7 +211,10 @@ export async function updateTaskAction(fd: FormData): Promise<void> {
     const dueDate = dueRaw ? parseISODate(dueRaw) : undefined;
     const priority = asPriority(fd.get('priority'));
 
-    const task = await prisma.task.findUnique({ where: { id: taskId }, select: { id: true, createdById: true } });
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: { id: true, createdById: true },
+    });
     if (!task) throw new Error('Задача не найдена');
     if (task.createdById !== meId && !canCreateTasks(role)) return;
 
@@ -226,6 +238,7 @@ export async function deleteTaskAction(fd: FormData): Promise<void> {
   const session = await auth();
   const meId = session?.user?.id ?? null;
   const role = normalizeRole(session?.user?.role);
+
   const returnTo = String(fd.get('returnTo') ?? '') || undefined;
 
   if (!meId || !canCreateTasks(role)) {
@@ -239,7 +252,10 @@ export async function deleteTaskAction(fd: FormData): Promise<void> {
     return;
   }
 
-  const task = await prisma.task.findUnique({ where: { id: taskId }, select: { id: true, createdById: true } });
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: { id: true, createdById: true },
+  });
   if (!task) {
     await redirectBackWith({ notice: 'Задача уже удалена' }, returnTo);
     return;
@@ -250,6 +266,7 @@ export async function deleteTaskAction(fd: FormData): Promise<void> {
   }
 
   await prisma.task.delete({ where: { id: taskId } });
+
   revalidatePath('/inboxtasks');
   revalidatePath('/dashboard');
 
@@ -260,6 +277,7 @@ export async function purgeHiddenTasksAction(fd?: FormData): Promise<void> {
   const session = await auth();
   const meId = session?.user?.id ?? null;
   const role = normalizeRole(session?.user?.role);
+
   const returnTo = fd ? (String(fd.get('returnTo') ?? '') || undefined) : undefined;
 
   if (!meId || role !== 'deputy_plus') {
@@ -274,7 +292,7 @@ export async function purgeHiddenTasksAction(fd?: FormData): Promise<void> {
   revalidatePath('/inboxtasks');
   revalidatePath('/dashboard');
 
-  await redirectBackWith({ purged: count, modal: 'search-by-me', hidden: 'only' }, returnTo);
+  await redirectBackWith({ purged: count }, returnTo);
 }
 
 export async function markAssigneeDoneAction(fd: FormData): Promise<void> {
