@@ -1,5 +1,5 @@
 /* app/(app)/inboxtasks/inboxtasks.css */
-/* Liquid Glass · iOS-26 (light-only) */
+/* Business Burgundy · строгий деловой стиль на текущем бренде */
 
 /* Глобальные токены материала и света — только светлая тема */
 :root {
@@ -19,93 +19,116 @@
   --border: color-mix(in oklab, #0f172a 8%, #ffffff);
   --stroke-strong: color-mix(in oklab, #0f172a 12%, #ffffff);
 
-  /* Жидкое стекло */
-  --lg-blur: 18px;
-  --lg-sat: 1.6;
-  --lg-ctr: 1.06;
-  --lg-bright: 1.02;
+  /* Основной фон и стекло – приглушённый */
+  --lg-blur: 10px;
+  --lg-sat: 1.2;
+  --lg-ctr: 1.02;
+  --lg-bright: 1.0;
 
-  --glass-tint: color-mix(in oklab, #ffffff 75%, var(--brand-10));
-  --glass-tint-strong: color-mix(in oklab, #ffffff 62%, var(--brand-18));
-  --glass-tint-soft: color-mix(in oklab, #ffffff 82%, var(--brand-10));
+  --glass-tint: color-mix(in oklab, #ffffff 90%, var(--brand-10));
+  --glass-tint-strong: color-mix(in oklab, #ffffff 84%, var(--brand-18));
+  --glass-tint-soft: color-mix(in oklab, #f9fafb 96%, var(--brand-10));
 
   --glass-bg: color-mix(in oklab, var(--glass-tint) 100%, transparent);
   --glass-soft: color-mix(in oklab, var(--glass-tint-soft) 100%, transparent);
 
-  --glass-stroke: color-mix(in oklab, var(--brand-stroke) 56%, #ffffff 44%);
-  --glass-stroke-strong: color-mix(in oklab, var(--brand-stroke) 72%, #ffffff 28%);
+  --glass-stroke: color-mix(in oklab, #e5e7eb 72%, var(--brand-stroke) 28%);
+  --glass-stroke-strong: color-mix(in oklab, #d1d5db 60%, var(--brand-stroke) 40%);
 
-  --glass-shadow: 0 18px 48px rgba(15, 23, 42, .16);
-  --glass-shadow-soft: 0 10px 28px rgba(15, 23, 42, .12);
-  --glass-inset: inset 0 1px 0 rgba(255,255,255,.66), inset 0 -1px 0 rgba(0,0,0,.04);
+  --glass-shadow: 0 16px 32px rgba(15, 23, 42, .18);
+  --glass-shadow-soft: 0 10px 24px rgba(15, 23, 42, .12);
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,.70);
 
   /* Параметры формы */
   --tabs-offset: 12px;
-  --tabs-height: 44px;
+  --tabs-height: 40px;
 
-  /* Радиусы iOS-26 */
-  --r-card: 18px;
+  /* Радиусы */
+  --r-card: 16px;
   --r-chip: 12px;
-  --r-btn: 14px;
+  --r-btn: 12px;
 
   /* Высоты контролов */
   --h-ctrl: 40px;
-  --h-btn: 36px;
+  --h-btn: 34px;
 }
 
 /* Колонки */
-.leftCol { display: flex; flex-direction: column; gap: 12px; }
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-/* Правая колонка — жидкое стекло */
+/* Правая колонка – деловая «панель» */
 .rightCol {
   min-width: 0;
   border: 1px solid var(--glass-stroke);
   border-radius: var(--r-card);
   padding: 12px;
   background:
-    linear-gradient(180deg, color-mix(in oklab, var(--glass-bg) 86%, transparent), color-mix(in oklab, var(--glass-bg) 64%, transparent)),
-    radial-gradient(1200px 800px at 80% -10%, color-mix(in oklab, var(--brand) 10%, transparent), transparent 60%),
-    radial-gradient(800px 480px at 10% 110%, color-mix(in oklab, var(--brand) 8%, transparent), transparent 60%);
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) contrast(var(--lg-ctr)) brightness(var(--lg-bright));
-  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) contrast(var(--lg-ctr)) brightness(var(--lg-bright));
-  box-shadow: var(--glass-shadow), var(--glass-inset);
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, #f9fafb 4%),
+      color-mix(in oklab, #f3f4f6 92%, #e5e7eb 8%));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  box-shadow: var(--glass-shadow);
 
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* Первый блок-форма — запас вниз на старых разметках */
-.rightCol > .card:first-child { margin-bottom: 12px; }
+/* Первый блок-форма – запас вниз на старых разметках */
+.rightCol > .card:first-child {
+  margin-bottom: 12px;
+}
 
 /* Карточки */
 .card {
   border: 1px solid var(--glass-stroke);
   border-radius: var(--r-card);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--glass-soft) 92%, transparent), color-mix(in oklab, var(--glass-soft) 84%, transparent));
-  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * .66)) saturate(1.3);
-  backdrop-filter: blur(calc(var(--lg-blur) * .66)) saturate(1.3);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, transparent),
+      color-mix(in oklab, #f9fafb 92%, transparent));
+  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * .6)) saturate(1.1);
+  backdrop-filter: blur(calc(var(--lg-blur) * .6)) saturate(1.1);
   padding: 12px;
   box-shadow: var(--glass-shadow-soft), var(--glass-inset);
 }
 
-/* Табы — жидкая плашка */
+/* Табы */
 .tabsWrap {
   position: sticky;
   top: var(--tabs-offset);
   z-index: 3;
   margin-bottom: 8px;
   border-radius: calc(var(--r-card) - 4px);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--glass-bg) 88%, transparent), color-mix(in oklab, var(--glass-bg) 70%, transparent));
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, #f9fafb 4%),
+      color-mix(in oklab, #f3f4f6 92%, #e5e7eb 8%));
   border: 1px solid var(--glass-stroke);
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
-  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(1.1);
+  backdrop-filter: blur(var(--lg-blur)) saturate(1.1);
   box-shadow: var(--glass-shadow-soft), var(--glass-inset);
 }
-.tabs { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 6px; }
-.tabs::-webkit-scrollbar { display: none; }
 
-.tab, .tabActive {
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab,
+.tabActive {
   display: inline-flex;
   align-items: center;
   height: var(--tabs-height);
@@ -115,38 +138,70 @@
   text-decoration: none;
   border: 1px solid var(--glass-stroke);
   color: var(--text);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 92%, transparent), color-mix(in oklab, #ffffff 82%, transparent));
-  -webkit-backdrop-filter: blur(12px) saturate(1.35);
-  backdrop-filter: blur(12px) saturate(1.35);
-  transition: transform .06s ease, box-shadow .16s ease, border-color .12s ease, background .16s ease, color .12s ease;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  backdrop-filter: blur(10px) saturate(1.1);
+  transition:
+    transform .06s ease,
+    box-shadow .14s ease,
+    border-color .12s ease,
+    background .12s ease,
+    color .12s ease;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
 }
-.tab:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12); }
+
+.tab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
 .tabActive {
   border-color: var(--brand-stroke);
   color: var(--brand);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--brand-ink) 0%, transparent), color-mix(in oklab, #ffffff 76%, transparent));
-  box-shadow: 0 6px 14px rgba(141, 40, 40, 0.22);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 90%, var(--brand-10)),
+      color-mix(in oklab, #fef2f2 90%, var(--brand-18)));
+  box-shadow: 0 8px 18px rgba(141, 40, 40, 0.20);
 }
-.tab:focus-visible, .tabActive:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--brand-focus); }
+
+.tab:focus-visible,
+.tabActive:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px var(--brand-stroke),
+    0 0 0 4px var(--brand-focus);
+}
 
 /* Списки задач */
-.lists { display: flex; flex-direction: column; gap: 0; }
+.lists {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
 /* Карточка задачи */
 .taskCard {
   border: 1px solid var(--glass-stroke);
   border-radius: var(--r-card);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--glass-soft) 96%, transparent), color-mix(in oklab, var(--glass-soft) 86%, transparent));
-  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * .55)) saturate(1.25);
-  backdrop-filter: blur(calc(var(--lg-blur) * .55)) saturate(1.25);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, transparent),
+      color-mix(in oklab, #f9fafb 92%, transparent));
+  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * .5)) saturate(1.05);
+  backdrop-filter: blur(calc(var(--lg-blur) * .5)) saturate(1.05);
   box-shadow: var(--glass-shadow-soft), var(--glass-inset);
   margin: 0 0 12px;
 }
-.lists .taskCard:last-child { margin-bottom: 0; }
 
-/* В правой колонке — акцентная рамка */
-.rightCol .taskCard { border-color: var(--glass-stroke-strong); }
+.lists .taskCard:last-child {
+  margin-bottom: 0;
+}
+
+/* В правой колонке – акцентная рамка */
+.rightCol .taskCard {
+  border-color: var(--glass-stroke-strong);
+}
 
 /* Заголовок и тело задачи */
 .taskHeader {
@@ -159,21 +214,49 @@
   gap: 12px;
   border-top-left-radius: var(--r-card);
   border-top-right-radius: var(--r-card);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 92%, transparent), color-mix(in oklab, #ffffff 84%, transparent));
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, transparent),
+      color-mix(in oklab, #f3f4f6 92%, transparent));
 }
-.taskTitle { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; min-width: 0; }
-.taskTitle b { font-weight: 650; word-break: break-word; }
-.taskMeta { font-size: 12px; color: var(--muted); }
-.taskActions { display: flex; gap: 8px; }
-.taskBody { padding: 0 12px 12px 12px; }
+
+.taskTitle {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.taskTitle b {
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.taskMeta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.taskActions {
+  display: flex;
+  gap: 8px;
+}
+
+.taskBody {
+  padding: 0 12px 12px 12px;
+}
 
 /* Пустые состояния */
 .empty {
   border: 1px dashed var(--glass-stroke);
   color: var(--muted);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--glass-soft) 88%, transparent), color-mix(in oklab, var(--glass-soft) 80%, transparent));
-  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * .45)) saturate(1.15);
-  backdrop-filter: blur(calc(var(--lg-blur) * .45)) saturate(1.15);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 95%, transparent),
+      color-mix(in oklab, #f9fafb 90%, transparent));
+  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * .4)) saturate(1.02);
+  backdrop-filter: blur(calc(var(--lg-blur) * .4)) saturate(1.02);
   border-radius: var(--r-card);
   padding: 16px;
   text-align: center;
@@ -181,86 +264,173 @@
 }
 
 /* Поля форм */
-input[type="text"], input[type="datetime-local"], select, textarea {
+input[type="text"],
+input[type="datetime-local"],
+select,
+textarea {
   display: block;
   width: 100%;
   height: var(--h-ctrl);
   padding: 8px 12px;
   border: 1px solid var(--glass-stroke);
   border-radius: var(--r-btn);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 90%, transparent), color-mix(in oklab, #ffffff 82%, transparent));
+  background: #ffffff;
   color: var(--text);
   font-size: 14px;
   outline: none;
-  transition: box-shadow .16s ease, border-color .14s ease, background .14s ease, transform .06s ease;
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  backdrop-filter: blur(10px) saturate(1.2);
-  box-shadow: 0 1px 0 rgba(255,255,255,.60) inset, 0 10px 18px rgba(15,23,42,.06);
+  transition:
+    box-shadow .14s ease,
+    border-color .14s ease,
+    background .12s ease,
+    transform .06s ease;
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
+  backdrop-filter: blur(8px) saturate(1.05);
+  box-shadow: 0 1px 2px rgba(15,23,42,.06);
 }
-textarea { height: auto; min-height: 96px; }
-input:focus, select:focus, textarea:focus {
+
+textarea {
+  height: auto;
+  min-height: 96px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
   border-color: var(--brand-stroke);
-  box-shadow: 0 0 0 4px var(--brand-focus), 0 1px 0 rgba(255,255,255,.60) inset;
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 96%, transparent), color-mix(in oklab, #ffffff 86%, transparent));
+  box-shadow:
+    0 0 0 1px var(--brand-stroke),
+    0 0 0 4px var(--brand-focus);
+  background: #ffffff;
 }
 
 /* Кнопки */
-.btnPrimaryGreen, .btnDanger, .btnGhost {
+.btnPrimaryGreen,
+.btnDanger,
+.btnGhost {
   height: var(--h-btn);
   padding: 0 16px;
   border-radius: var(--r-btn);
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  transition: transform .06s ease, box-shadow .16s ease, opacity .18s ease, filter .14s ease, background .16s ease, border-color .14s ease;
-  display: inline-flex; align-items: center; justify-content: center;
-  -webkit-backdrop-filter: blur(10px) saturate(1.25);
-  backdrop-filter: blur(10px) saturate(1.25);
+  transition:
+    transform .06s ease,
+    box-shadow .14s ease,
+    opacity .16s ease,
+    filter .12s ease,
+    background .14s ease,
+    border-color .14s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  backdrop-filter: blur(8px) saturate(1.1);
 }
 
-/* Основная зелёная */
+/* Основная зелёная – менее глянцевая */
 .btnPrimaryGreen {
-  border: 1px solid color-mix(in oklab, #059669 52%, #ffffff);
-  background: linear-gradient(180deg, color-mix(in oklab, #34d399 84%, #ffffff 16%), color-mix(in oklab, #10b981 86%, #0b3d2f 14%));
-  color: #051b14;
-  text-shadow: 0 1px 0 rgba(255,255,255,.45);
-  box-shadow: 0 10px 22px rgba(5,150,105,.25), inset 0 1px 0 rgba(255,255,255,.60);
+  border: 1px solid color-mix(in oklab, #059669 52%, #e5e7eb);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #22c55e 80%, #ffffff 20%),
+      color-mix(in oklab, #16a34a 85%, #064e3b 15%));
+  color: #022c22;
+  box-shadow:
+    0 10px 22px rgba(5,150,105,.24),
+    inset 0 1px 0 rgba(255,255,255,.72);
 }
-.btnPrimaryGreen:hover { transform: translateY(-1px); box-shadow: 0 14px 26px rgba(5,150,105,.30), inset 0 1px 0 rgba(255,255,255,.66); }
-.btnPrimaryGreen:active { transform: translateY(0); box-shadow: 0 8px 18px rgba(5,150,105,.22), inset 0 1px 0 rgba(255,255,255,.60); }
+
+.btnPrimaryGreen:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 26px rgba(5,150,105,.30),
+    inset 0 1px 0 rgba(255,255,255,.78);
+}
+
+.btnPrimaryGreen:active {
+  transform: translateY(0);
+  box-shadow:
+    0 8px 18px rgba(5,150,105,.22),
+    inset 0 1px 0 rgba(255,255,255,.70);
+}
 
 /* Опасная */
 .btnDanger {
-  border: 1px solid color-mix(in oklab, #ef4444 58%, #ffffff);
-  background: linear-gradient(180deg, color-mix(in oklab, #f87171 82%, #ffffff 18%), color-mix(in oklab, #ef4444 86%, #3d0b0b 14%));
-  color: #2a0b0b;
-  text-shadow: 0 1px 0 rgba(255,255,255,.44);
-  box-shadow: 0 10px 22px rgba(239,68,68,.26), inset 0 1px 0 rgba(255,255,255,.60);
+  border: 1px solid color-mix(in oklab, #ef4444 58%, #e5e7eb);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #f97373 82%, #ffffff 18%),
+      color-mix(in oklab, #ef4444 86%, #7f1d1d 14%));
+  color: #381010;
+  box-shadow:
+    0 10px 22px rgba(239,68,68,.26),
+    inset 0 1px 0 rgba(255,255,255,.72);
 }
-.btnDanger:hover { transform: translateY(-1px); box-shadow: 0 14px 26px rgba(239,68,68,.32), inset 0 1px 0 rgba(255,255,255,.66); }
-.btnDanger:active { transform: translateY(0); box-shadow: 0 8px 18px rgba(239,68,68,.24), inset 0 1px 0 rgba(255,255,255,.60); }
+
+.btnDanger:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 26px rgba(239,68,68,.32),
+    inset 0 1px 0 rgba(255,255,255,.78);
+}
+
+.btnDanger:active {
+  transform: translateY(0);
+  box-shadow:
+    0 8px 18px rgba(239,68,68,.24),
+    inset 0 1px 0 rgba(255,255,255,.70);
+}
 
 /* Призрачная */
 .btnGhost {
   border: 1px solid var(--glass-stroke);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 92%, transparent), color-mix(in oklab, #ffffff 82%, transparent));
+  background: #ffffff;
   color: var(--text);
-  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,.60);
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255,255,255,.76);
   text-decoration: none;
 }
-.btnGhost:hover { transform: translateY(-1px); box-shadow: 0 14px 24px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255,255,255,.66); }
-.btnGhost:active { transform: translateY(0); box-shadow: 0 10px 18px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,.60); }
+
+.btnGhost:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 22px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255,255,255,.80);
+}
+
+.btnGhost:active {
+  transform: translateY(0);
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255,255,255,.76);
+}
 
 /* Устойчивое «срочно» и пульсация рамки */
 @keyframes pulseBorder {
-  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand) 48%, transparent); }
-  70%  { box-shadow: 0 0 0 10px color-mix(in oklab, var(--brand) 0%, transparent); }
-  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand) 0%, transparent); }
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand) 40%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 10px color-mix(in oklab, var(--brand) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand) 0%, transparent);
+  }
 }
-.rightCol .taskCard[data-urgent="true"] { animation: pulseBorder 1.8s ease-out infinite; border-color: var(--brand-stroke); }
+
+.rightCol .taskCard[data-urgent="true"] {
+  animation: pulseBorder 1.8s ease-out infinite;
+  border-color: var(--brand-stroke);
+}
+
 .rightCol .taskCard[data-urgent="true"][open] .taskHeader {
-  background: linear-gradient(180deg, color-mix(in oklab, var(--brand) 8%, #ffffff 92%), color-mix(in oklab, var(--brand) 6%, #ffffff 88%));
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--brand) 8%, #ffffff 92%),
+      color-mix(in oklab, var(--brand) 6%, #ffffff 88%));
 }
+
 .rightCol .taskCard[data-urgent="true"] .taskTitle::after {
   content: 'срочно';
   display: inline-block;
@@ -269,26 +439,43 @@ input:focus, select:focus, textarea:focus {
   font-size: 10px;
   letter-spacing: .03em;
   color: var(--brand-ink);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--brand) 90%, #ffffff 10%), color-mix(in oklab, var(--brand) 88%, #000000 12%));
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--brand) 90%, #ffffff 10%),
+      color-mix(in oklab, var(--brand) 88%, #000000 12%));
   padding: 2px 8px;
   border-radius: 999px;
   vertical-align: middle;
   pointer-events: none;
-  box-shadow: 0 6px 14px rgba(141, 40, 40, .28);
+  box-shadow: 0 6px 14px rgba(141, 40, 40, .26);
 }
 
-/* На раскрытой карточке — компакт и липкая шапка */
+/* На раскрытой карточке – компакт и липкая шапка */
 .rightCol .taskCard[open] .taskHeader {
   padding: 10px 12px;
   position: sticky;
   top: calc(var(--tabs-offset) + var(--tabs-height));
   z-index: 2;
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 96%, transparent), color-mix(in oklab, #ffffff 86%, transparent));
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, transparent),
+      color-mix(in oklab, #f3f4f6 92%, transparent));
   border-bottom: 1px solid var(--glass-stroke);
 }
-.rightCol .taskCard[open] .taskTitle b { font-size: 17px; }
-.rightCol .taskCard[open] .taskMeta { font-size: 13px; color: color-mix(in oklab, var(--muted) 88%, #000 12%); display: block; }
-.rightCol .taskCard[open] .taskBody { padding: 8px 12px 12px; }
+
+.rightCol .taskCard[open] .taskTitle b {
+  font-size: 17px;
+}
+
+.rightCol .taskCard[open] .taskMeta {
+  font-size: 13px;
+  color: color-mix(in oklab, var(--muted) 88%, #000 12%);
+  display: block;
+}
+
+.rightCol .taskCard[open] .taskBody {
+  padding: 8px 12px 12px;
+}
 
 /* Секции внутри раскрытой карточки */
 .taskSection {
@@ -296,23 +483,47 @@ input:focus, select:focus, textarea:focus {
   border-radius: calc(var(--r-card) - 4px);
   padding: 10px 12px;
   margin: 0 0 10px;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--glass-soft) 94%, transparent), color-mix(in oklab, var(--glass-soft) 86%, transparent));
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--glass-soft) 94%, transparent),
+      color-mix(in oklab, var(--glass-soft) 86%, transparent));
   box-shadow: var(--glass-inset);
 }
-.taskSection h3, .taskSection h4 {
+
+.taskSection h3,
+.taskSection h4 {
   margin: 0 0 6px 0;
   font-size: 14px;
   font-weight: 640;
   color: var(--text);
 }
 
-/* Чипсы, крестики — унификация поведения */
-.tf-chip { pointer-events: none; position: relative; }
-.tf-chip__label { pointer-events: none; position: relative; z-index: 1; }
-.tf-chip__meter { pointer-events: none; position: relative; z-index: 1; }
-.tf-chip__x, .chip__x { pointer-events: auto; position: relative; z-index: 2; }
+/* Чипсы, крестики – унификация поведения */
+.tf-chip {
+  pointer-events: none;
+  position: relative;
+}
 
-/* Крестик — компактная кнопка */
+.tf-chip__label {
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+}
+
+.tf-chip__meter {
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+}
+
+.tf-chip__x,
+.chip__x {
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* Крестик – компактная кнопка */
 .tf-chip__x,
 .chip__x {
   display: inline-grid;
@@ -323,36 +534,69 @@ input:focus, select:focus, textarea:focus {
   margin-left: 4px;
   border-radius: 6px;
   border: 1px solid var(--glass-stroke);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 92%, transparent), color-mix(in oklab, #ffffff 82%, transparent));
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, transparent),
+      color-mix(in oklab, #f9fafb 90%, transparent));
   color: var(--muted);
   font-weight: 900;
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
-  transition: border-color .12s ease, color .12s ease, background .16s ease, box-shadow .16s ease, transform .06s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.60);
+  transition:
+    border-color .12s ease,
+    color .12s ease,
+    background .14s ease,
+    box-shadow .14s ease,
+    transform .06s ease;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.06),
+    inset 0 1px 0 rgba(255,255,255,.72);
 }
-.tf-chip__x:hover, .chip__x:hover {
+
+.tf-chip__x:hover,
+.chip__x:hover {
   border-color: var(--brand-stroke);
   color: var(--brand);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 96%, transparent), color-mix(in oklab, #ffffff 88%, transparent));
-  box-shadow: 0 2px 6px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.66);
+  background: #ffffff;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.08),
+    inset 0 1px 0 rgba(255,255,255,.80);
 }
-.tf-chip__x:active, .chip__x:active { transform: translateY(1px); }
-.tf-chip__x:focus-visible, .chip__x:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 2px; }
+
+.tf-chip__x:active,
+.chip__x:active {
+  transform: translateY(1px);
+}
+
+.tf-chip__x:focus-visible,
+.chip__x:focus-visible {
+  outline: 3px solid var(--brand-focus);
+  outline-offset: 2px;
+}
 
 /* Блок «Вложения» */
 .attachBox {
   border: 1px solid var(--glass-stroke);
   border-radius: calc(var(--r-card) - 6px);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--glass-soft) 92%, transparent), color-mix(in oklab, var(--glass-soft) 84%, transparent));
-  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * .5)) saturate(1.2);
-  backdrop-filter: blur(calc(var(--lg-blur) * .5)) saturate(1.2);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--glass-soft) 94%, transparent),
+      color-mix(in oklab, var(--glass-soft) 86%, transparent));
+  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * .5)) saturate(1.05);
+  backdrop-filter: blur(calc(var(--lg-blur) * .5)) saturate(1.05);
   padding: 10px;
   margin-bottom: 12px;
   box-shadow: var(--glass-inset);
 }
-.attachHeader { margin: 0 0 6px; font-size: 14px; font-weight: 640; color: var(--text); }
+
+.attachHeader {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 640;
+  color: var(--text);
+}
+
 .attachList {
   list-style: none;
   margin: 8px 0 0;
@@ -361,21 +605,47 @@ input:focus, select:focus, textarea:focus {
   flex-direction: column;
   gap: 6px;
 }
+
 .attachItem {
   display: flex;
   align-items: center;
   gap: 10px;
   border: 1px solid var(--glass-stroke);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 96%, transparent), color-mix(in oklab, #ffffff 88%, transparent));
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, transparent),
+      color-mix(in oklab, #f9fafb 90%, transparent));
   border-radius: 12px;
   padding: 8px 10px;
   min-height: 44px;
-  box-shadow: 0 2px 8px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.60);
+  box-shadow:
+    0 2px 8px rgba(15,23,42,.08),
+    inset 0 1px 0 rgba(255,255,255,.70);
 }
-.attachLink { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--text); text-decoration: none; }
-.attachName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.attachLink:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 2px; }
-.attachItem:hover { border-color: var(--stroke-strong); }
+
+.attachLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.attachName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachLink:focus-visible {
+  outline: 3px solid var(--brand-focus);
+  outline-offset: 2px;
+}
+
+.attachItem:hover {
+  border-color: var(--stroke-strong);
+}
 
 /* Иконка файла: CSS mask с бренд-цветом */
 .attachIcon {
@@ -384,8 +654,12 @@ input:focus, select:focus, textarea:focus {
   height: 18px;
   display: inline-block;
   background: var(--brand);
-  mask-size: contain; mask-repeat: no-repeat; mask-position: center;
-  -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
 }
 
 /* Базовый файл */
@@ -439,38 +713,88 @@ input:focus, select:focus, textarea:focus {
   -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='3' y='3' width='18' height='18' rx='2'/><path d='M12 3v18M10 5h4M10 9h4M10 13h4M10 17h4'/></svg>");
 }
 
-/* Кнопка удаления рядом с вложением — кликается только крестик */
-.attachRemove { margin-left: auto; }
-@media (pointer: coarse) { .attachRemove .chip__x, .attachRemove .tf-chip__x { width: 24px; height: 24px; } }
+/* Кнопка удаления рядом с вложением – кликается только крестик */
+.attachRemove {
+  margin-left: auto;
+}
+
+@media (pointer: coarse) {
+  .attachRemove .chip__x,
+  .attachRemove .tf-chip__x {
+    width: 24px;
+    height: 24px;
+  }
+}
 
 /* Типографика и доступность */
-html { font-size: 16px; }
-body { line-height: 1.55; color: var(--text); -webkit-font-smoothing: antialiased; }
-:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 2px; }
+html {
+  font-size: 16px;
+}
+
+body {
+  line-height: 1.55;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand-focus);
+  outline-offset: 2px;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .rightCol .taskCard { animation: none !important; }
+  .rightCol .taskCard {
+    animation: none !important;
+  }
 }
 
 /* Мобильная раскладка страницы задач */
 @media (max-width: 1200px) {
-  .layout { display: grid; grid-template-columns: 1fr; gap: 12px; }
-  .leftCol { order: 2; }
-  .rightCol { order: 1; }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .leftCol {
+    order: 2;
+  }
+
+  .rightCol {
+    order: 1;
+  }
 }
+
 @media (max-width: 960px) {
   .taskActions .btnPrimaryGreen,
   .taskActions .btnDanger,
   .taskActions .btnGhost {
-    height: 42px; padding: 0 16px; font-size: 15px; border-radius: var(--r-btn);
+    height: 42px;
+    padding: 0 16px;
+    font-size: 15px;
+    border-radius: var(--r-btn);
   }
-  input[type="text"], input[type="datetime-local"], select, textarea {
-    height: 42px; font-size: 16px; padding: 10px 12px;
+
+  input[type="text"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    height: 42px;
+    font-size: 16px;
+    padding: 10px 12px;
   }
 }
+
 @media (max-width: 600px) {
-  .card, .taskCard, .rightCol { border-radius: 16px; }
-  .taskBody { padding: 0 10px 10px 10px; }
+  .card,
+  .taskCard,
+  .rightCol {
+    border-radius: 16px;
+  }
+
+  .taskBody {
+    padding: 0 10px 10px 10px;
+  }
 }
 
 /* Секции без заголовка */
@@ -481,7 +805,7 @@ body { line-height: 1.55; color: var(--text); -webkit-font-smoothing: antialiase
   margin: 0 0 10px;
 }
 
-/* Если секция содержит основную зелёную кнопку — без рамки */
+/* Если секция содержит основную зелёную кнопку – без рамки */
 .taskSection:has(.btnPrimaryGreen) {
   border: none;
   background: transparent;

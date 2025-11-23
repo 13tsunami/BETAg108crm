@@ -17,29 +17,44 @@ export default function UrlSearchBox(props: UrlSearchBoxProps) {
   const initial = sp.get(paramKey) ?? '';
   const [value, setValue] = React.useState(initial);
 
+  // Запоминаем, какое значение уже применено к URL,
+  // чтобы лишний раз не дергать router.replace
+  const appliedRef = React.useRef(initial);
+
   // Синхронизация когда меняется URL извне
   React.useEffect(() => {
     const cur = sp.get(paramKey) ?? '';
     setValue(cur);
+    appliedRef.current = cur;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sp, paramKey]);
 
   const buildUrl = React.useCallback(
     (next: string) => {
       const p = new URLSearchParams(sp.toString());
-      if (next && next.trim() !== '') p.set(paramKey, next);
+      const trimmed = next.trim();
+      if (trimmed !== '') p.set(paramKey, trimmed);
       else p.delete(paramKey);
-      return `${pathname}?${p.toString()}`;
+      const qs = p.toString();
+      return qs ? `${pathname}?${qs}` : pathname;
     },
     [sp, pathname, paramKey],
   );
 
   // Дебаунс обновления URL во время ввода
   const tRef = React.useRef<number | null>(null);
+
+  function actuallyReplace(next: string) {
+    const trimmed = next.trim();
+    if (appliedRef.current.trim() === trimmed) return; // ничего не поменялось
+    router.replace(buildUrl(next), { scroll: false });
+    appliedRef.current = next;
+  }
+
   function scheduleDebounced(next: string) {
     if (tRef.current) window.clearTimeout(tRef.current);
     tRef.current = window.setTimeout(() => {
-      router.replace(buildUrl(next), { scroll: false });
+      actuallyReplace(next);
     }, 350);
   }
 
@@ -48,7 +63,7 @@ export default function UrlSearchBox(props: UrlSearchBoxProps) {
       window.clearTimeout(tRef.current);
       tRef.current = null;
     }
-    router.replace(buildUrl(next), { scroll: false });
+    actuallyReplace(next);
   }
 
   return (
@@ -67,6 +82,9 @@ export default function UrlSearchBox(props: UrlSearchBoxProps) {
             applyImmediate('');
           }
         }}
+        // onBlur оставляем, но теперь он НЕ трогает URL,
+        // если значение и так уже применено, так что
+        // просто клик по педагогу не вызовет навигацию.
         onBlur={() => applyImmediate(value)}
         placeholder={placeholder}
         style={{

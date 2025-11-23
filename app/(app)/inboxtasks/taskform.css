@@ -1,5 +1,5 @@
-/* app/(app)/inboxtasks/TaskFormGlass.module.css */
-/* Liquid Glass · iOS-26 (light-only) */
+/* app/(app)/inboxtasks/taskform.css */
+/* Business · Burgundy · строгий деловой стиль, без лишнего глянца */
 
 :root {
   /* Бренд */
@@ -10,266 +10,563 @@
   --brand-stroke: color-mix(in oklab, var(--brand) 52%, #ffffff);
   --ring: color-mix(in oklab, var(--brand) 26%, transparent);
 
-  /* Текст/штрихи */
+  /* Текст и штрихи */
   --text: #0f172a;
   --muted: #475569;
   --muted-2: #334155;
   --stroke: color-mix(in oklab, #0f172a 8%, #ffffff);
 
-  /* Жидкое стекло */
-  --lg-blur: 18px;
-  --glass-tint: color-mix(in oklab, #ffffff 75%, var(--brand-10));
-  --glass-tint-soft: color-mix(in oklab, #ffffff 84%, var(--brand-10));
+  /* Фон и границы формы */
+  --lg-blur: 10px;
+  --glass-tint: color-mix(in oklab, #ffffff 90%, var(--brand-10));
+  --glass-tint-soft: color-mix(in oklab, #f9fafb 94%, var(--brand-10));
   --glass-bg: color-mix(in oklab, var(--glass-tint) 100%, transparent);
   --glass-soft: color-mix(in oklab, var(--glass-tint-soft) 100%, transparent);
-  --glass-stroke: color-mix(in oklab, var(--brand-stroke) 56%, #ffffff 44%);
+  --glass-stroke: color-mix(in oklab, #e5e7eb 70%, var(--brand-stroke) 30%);
 
-  --shadow-lg: 0 18px 48px rgba(15, 23, 42, .16);
-  --shadow-md: 0 10px 28px rgba(15, 23, 42, .12);
-  --inset: inset 0 1px 0 rgba(255,255,255,.66), inset 0 -1px 0 rgba(0,0,0,.04);
+  --shadow-lg: 0 16px 32px rgba(15, 23, 42, .18);
+  --shadow-md: 0 10px 22px rgba(15, 23, 42, .12);
+  --inset: inset 0 1px 0 rgba(255,255,255,.70);
 }
 
-/* Карточка как в sign-in, но шире */
+/* Карточка формы: строгий «документ» на светлом фоне */
 .tf-card {
-  border-radius: 18px;
+  border-radius: 14px;
   border: 1px solid var(--glass-stroke);
   padding: 20px 18px 18px;
+  box-sizing: border-box;
 
   background:
-    linear-gradient(180deg, color-mix(in oklab, var(--glass-bg) 92%, transparent), color-mix(in oklab, var(--glass-bg) 78%, transparent)),
-    radial-gradient(1200px 700px at 90% -10%, color-mix(in oklab, var(--brand) 8%, transparent), transparent 60%);
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(1.35);
-  backdrop-filter: blur(var(--lg-blur)) saturate(1.35);
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 96%, #f9fafb 4%),
+      color-mix(in oklab, #f3f4f6 92%, #e5e7eb 8%));
 
-  box-shadow: var(--shadow-lg), var(--inset);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Заголовок блока */
-.tf-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 8px; }
-.tf-title { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: .2px; color: var(--text); }
-.tf-subtitle { margin: 2px 0 0; color: var(--muted); font-size:14px; }
-.tf-head-main { display:grid; gap:4px; }
+.tf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.tf-head-main {
+  display: grid;
+  gap: 4px;
+}
+
+.tf-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .1px;
+  color: var(--text);
+}
+
+.tf-subtitle {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
 
 /* Основа формы */
-.tf-root { width: 100%; box-sizing: border-box; display:grid; gap: 12px; }
-
-/* Лейблы и поля - единый стеклянный стиль */
-.tf-label { display: grid; gap: 6px; margin-bottom: 10px; }
-.tf-label__text { font-weight: 700; font-size: 13px; color: var(--text); }
-
-.tf-input, .tf-textarea, .tf-select {
+.tf-root {
   width: 100%;
-  padding: 10px 12px;
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+}
+
+/* Лейблы и поля */
+.tf-label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tf-label__text {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Поля ввода: белые, без глянца, с аккуратной рамкой */
+.tf-input,
+.tf-textarea,
+.tf-select {
+  width: 100%;
+  padding: 9px 11px;
   border: 1px solid var(--glass-stroke);
-  border-radius: 14px;
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 92%, transparent), color-mix(in oklab, #ffffff 84%, transparent));
+  border-radius: 10px;
+  background: #ffffff;
   color: var(--text);
   font-size: 14px;
   outline: none;
   box-sizing: border-box;
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  backdrop-filter: blur(10px) saturate(1.2);
-  box-shadow: 0 1px 0 rgba(255,255,255,.60) inset, 0 10px 18px rgba(15,23,42,.06);
-  transition: box-shadow .16s ease, border-color .14s ease, background .14s ease, transform .06s ease;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04);
+  transition:
+    box-shadow .14s ease,
+    border-color .14s ease,
+    background .12s ease,
+    transform .06s ease;
 }
-.tf-textarea { min-height: 120px; resize: vertical; }
-.tf-input:focus, .tf-textarea:focus, .tf-select:focus {
+
+.tf-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.tf-input:focus,
+.tf-textarea:focus,
+.tf-select:focus {
   border-color: var(--brand-stroke);
-  box-shadow: 0 0 0 4px var(--ring), 0 1px 0 rgba(255,255,255,.60) inset;
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 96%, transparent), color-mix(in oklab, #ffffff 88%, transparent));
+  box-shadow:
+    0 0 0 1px var(--brand-stroke),
+    0 0 0 4px var(--ring);
+  background: #ffffff;
 }
 
 /* 3 столбца → один на мобиле */
-.tf-3cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-@media (max-width: 920px) { .tf-3cols { grid-template-columns: 1fr; } }
+.tf-3cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
 
-/* Тумблеры + подпись сбоку */
-.tf-switchRow { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+@media (max-width: 920px) {
+  .tf-3cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Тумблеры */
+.tf-switchRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
 .tf-switch {
   position: relative;
-  display: inline-flex; align-items: center; justify-content: flex-start;
-  width: 56px; height: 32px; border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 52px;
+  height: 28px;
+  border-radius: 999px;
   border: 1px solid var(--glass-stroke);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--glass-soft) 92%, transparent), color-mix(in oklab, var(--glass-soft) 84%, transparent));
-  padding: 3px;
-  transition: background .14s ease, border-color .14s ease, box-shadow .14s ease, transform .06s ease;
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  backdrop-filter: blur(10px) saturate(1.2);
-  box-shadow: var(--inset), 0 8px 16px rgba(15, 23, 42, .08) inset;
+  background: color-mix(in oklab, #f9fafb 94%, #e5e7eb 6%);
+  padding: 2px;
+  transition:
+    background .14s ease,
+    border-color .14s ease,
+    box-shadow .14s ease,
+    transform .06s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.80);
 }
+
 .tf-switch.is-on,
 .tf-switch[aria-checked="true"] {
   border-color: var(--brand-stroke);
   background:
-    linear-gradient(180deg, color-mix(in oklab, var(--brand) 12%, #ffffff) 0%, color-mix(in oklab, var(--brand) 8%, #ffffff) 100%);
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 10%, var(--brand) 12%),
+      color-mix(in oklab, #000000 6%, var(--brand) 100%));
   justify-content: flex-end;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.70),
+    0 0 0 2px color-mix(in oklab, var(--brand-18) 40%, transparent);
 }
+
 .tf-switch__thumb {
-  width: 24px; height: 24px; border-radius: 50%;
-  background: linear-gradient(180deg, #fff, color-mix(in oklab, #ffffff 80%, #e5e7eb));
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff, #e5e7eb);
   border: 1px solid var(--stroke);
-  box-shadow: 0 1px 2px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.70);
-  transition: background .14s ease, border-color .14s ease, transform .14s ease;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,.12),
+    inset 0 1px 0 rgba(255,255,255,.85);
+  transition:
+    background .14s ease,
+    border-color .14s ease,
+    transform .14s ease;
 }
+
 .tf-switch.is-on .tf-switch__thumb,
 .tf-switch[aria-checked="true"] .tf-switch__thumb {
   background:
-    linear-gradient(180deg, color-mix(in oklab, #ffffff 12%, var(--brand)) 0%, color-mix(in oklab, #000000 10%, var(--brand)) 100%);
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 18%, var(--brand)),
+      color-mix(in oklab, #000000 10%, var(--brand)));
   border-color: var(--brand-stroke);
 }
-.tf-switchText { font-weight: 700; font-size: 13px; color: var(--text); }
 
-.tf-preview { margin-top: 8px; font-size: 13px; color: var(--muted-2); }
+.tf-switchText {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.tf-preview {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted-2);
+}
 
 /* Складывание всей формы */
-.tf-collapsibleAll { overflow: hidden; transition: max-height .24s ease, opacity .18s ease; }
-.tf-collapsibleAll.is-open { max-height: 4000px; opacity: 1; }
-.tf-collapsibleAll.is-collapsed { max-height: 0; opacity: .0; }
+.tf-collapsibleAll {
+  overflow: hidden;
+  transition:
+    max-height .20s ease,
+    opacity .16s ease;
+}
+
+.tf-collapsibleAll.is-open {
+  max-height: 4000px;
+  opacity: 1;
+}
+
+.tf-collapsibleAll.is-collapsed {
+  max-height: 0;
+  opacity: 0;
+}
 
 /* Низ формы: сетка */
-.tf-bottomGrid { display:grid; gap:12px; grid-template-columns: 1fr 1fr; align-items:start; }
-@media (max-width: 920px) { .tf-bottomGrid { grid-template-columns: 1fr; } }
+.tf-bottomGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  align-items: flex-start;
+}
+
+@media (max-width: 920px) {
+  .tf-bottomGrid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Файлы */
-.tf-files { display: grid; gap: 8px; }
-.tf-filechips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tf-files {
+  display: grid;
+  gap: 8px;
+}
 
-/* Chip с прогрессом */
+.tf-filechips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Chip с прогрессом: строгий бейдж */
 .tf-chip {
-  position:relative; display: inline-flex; align-items: center; gap: 6px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--glass-stroke);
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 12px;
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 96%, transparent), color-mix(in oklab, #ffffff 90%, transparent));
-  overflow:hidden; line-height: 1;
-  -webkit-backdrop-filter: blur(8px) saturate(1.15);
-  backdrop-filter: blur(8px) saturate(1.15);
-  box-shadow: 0 1px 0 rgba(255,255,255,.60) inset, 0 8px 14px rgba(15,23,42,.06);
+  background: #ffffff;
+  overflow: hidden;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(15,23,42,.06);
 }
-.tf-chip__label { position:relative; z-index:1; color: var(--text); }
+
+.tf-chip__label {
+  position: relative;
+  z-index: 1;
+  color: var(--text);
+}
+
 .tf-chip__meter {
-  position:absolute; left:0; top:0; bottom:0; width:0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
   background: color-mix(in oklab, var(--brand) 14%, transparent);
-  z-index:0; transition: width .15s ease;
+  z-index: 0;
+  transition: width .15s ease;
 }
 
-/* Крестики - 18×18, единый стеклянный стиль */
+/* Крестики */
 .tf-chip__x {
-  display:inline-grid; place-items:center;
-  width:18px; height:18px; padding:0;
-  border-radius:999px;
-  border:1px solid var(--glass-stroke);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 92%, transparent), color-mix(in oklab, #ffffff 84%, transparent));
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--glass-stroke);
+  background: #f9fafb;
   color: var(--muted);
-  font-weight:900; font-size:12px; line-height:1;
-  cursor:pointer;
-  transition: border-color .12s ease, color .12s ease, background .16s ease, box-shadow .16s ease, transform .06s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.60);
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color .12s ease,
+    color .12s ease,
+    background .14s ease,
+    box-shadow .14s ease,
+    transform .06s ease;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,.08),
+    inset 0 1px 0 rgba(255,255,255,.80);
 }
-.tf-chip__x:hover { border-color: var(--brand-stroke); color: var(--brand); background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.66); }
-.tf-chip__x:active { transform: translateY(1px); }
 
-.tf-file-hidden { display: none; }
+.tf-chip__x:hover {
+  border-color: var(--brand-stroke);
+  color: var(--brand);
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(15,23,42,.14);
+}
 
-.tf-filesRow { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.tf-help { font-size: 12px; color: var(--muted); }
-.tf-overflow { font-size:12px; font-weight:700; color:#dc2626; }
+.tf-chip__x:active {
+  transform: translateY(1px);
+}
+
+.tf-file-hidden {
+  display: none;
+}
+
+.tf-filesRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tf-help {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tf-overflow {
+  font-size: 12px;
+  font-weight: 700;
+  color: #dc2626;
+}
 
 /* Суммарная шкала 0..50 МБ */
 .tf-gauge {
-  position:relative; flex:1 1 220px; height:10px; border-radius:999px;
-  background: linear-gradient(180deg, #f7f8fb, #eef1f6);
-  border:1px solid var(--glass-stroke);
-  overflow:hidden;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.70);
+  position: relative;
+  flex: 1 1 220px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f9fafb, #e5e7eb);
+  border: 1px solid var(--glass-stroke);
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.80);
 }
-.tf-gauge__fill { position:absolute; left:0; top:0; bottom:0; width:0; background: var(--brand); transition: width .15s ease; }
-.tf-gauge.is-warn .tf-gauge__fill { background: #eab308; }
-.tf-gauge.is-over .tf-gauge__fill { background: #dc2626; }
-.tf-gaugeLabel { min-width:86px; font-size:12px; font-weight:700; color: var(--muted-2); }
-.tf-gaugeLabel.is-over { color:#dc2626; }
 
-/* Кнопка бренда (совпадает по языку с другими стеклянными кнопками) */
-.tf-btnBrand{
-  display:inline-flex; align-items:center; justify-content:center;
-  height: 42px;
+.tf-gauge__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: var(--brand);
+  transition: width .15s ease;
+}
+
+.tf-gauge.is-warn .tf-gauge__fill {
+  background: #eab308;
+}
+
+.tf-gauge.is-over .tf-gauge__fill {
+  background: #dc2626;
+}
+
+.tf-gaugeLabel {
+  min-width: 86px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-2);
+}
+
+.tf-gaugeLabel.is-over {
+  color: #dc2626;
+}
+
+/* Кнопка бренда: строгая action-кнопка */
+.tf-btnBrand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
   padding: 0 16px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--brand-stroke);
   background:
     linear-gradient(180deg,
-      color-mix(in oklab, #ffffff 10%, var(--brand)) 0%,
-      color-mix(in oklab, #000000 12%, var(--brand)) 100%);
+      color-mix(in oklab, #ffffff 12%, var(--brand)),
+      color-mix(in oklab, #000000 10%, var(--brand)));
   color: var(--brand-ink);
   font-weight: 700;
   letter-spacing: .2px;
   cursor: pointer;
-  transition: transform .06s ease, box-shadow .16s ease, opacity .18s ease, filter .14s ease, background .16s ease, border-color .14s ease;
-  box-shadow: 0 12px 24px rgba(141,40,40,.28), inset 0 1px 0 rgba(255,255,255,.60);
-  -webkit-backdrop-filter: blur(12px) saturate(1.25);
-  backdrop-filter: blur(12px) saturate(1.25);
+  transition:
+    transform .06s ease,
+    box-shadow .14s ease,
+    opacity .16s ease,
+    filter .12s ease,
+    background .14s ease,
+    border-color .14s ease;
+  box-shadow:
+    0 10px 22px rgba(141,40,40,.26),
+    inset 0 1px 0 rgba(255,255,255,.70);
 }
-.tf-btnBrand:hover { transform: translateY(-1px); box-shadow: 0 16px 28px rgba(141,40,40,.34), inset 0 1px 0 rgba(255,255,255,.66); filter:brightness(1.02); }
-.tf-btnBrand:active { transform: translateY(0); box-shadow: 0 10px 20px rgba(141,40,40,.24), inset 0 1px 0 rgba(255,255,255,.60); }
-.tf-btnBrand[disabled] { opacity: .65; transform: none; box-shadow: none; cursor: default; }
+
+.tf-btnBrand:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 26px rgba(141,40,40,.30),
+    inset 0 1px 0 rgba(255,255,255,.76);
+  filter: brightness(1.02);
+}
+
+.tf-btnBrand:active {
+  transform: translateY(0);
+  box-shadow:
+    0 8px 18px rgba(141,40,40,.22),
+    inset 0 1px 0 rgba(255,255,255,.70);
+}
+
+.tf-btnBrand[disabled] {
+  opacity: .65;
+  transform: none;
+  box-shadow: none;
+  cursor: default;
+}
 
 /* Переключатель "Свернуть/Развернуть" */
-.tf-collapseToggleWrap { display:flex; justify-content:flex-end; }
-.tf-collapseToggle {
-  height:32px; padding:0 10px; border-radius:12px;
-  border:1px solid var(--glass-stroke);
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 92%, transparent), color-mix(in oklab, #ffffff 84%, transparent));
-  display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:13px; color:var(--text);
-  transition: border-color .12s ease, box-shadow .16s ease, transform .06s ease, background .14s ease;
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  backdrop-filter: blur(10px) saturate(1.2);
-  box-shadow: 0 8px 18px rgba(15,23,42,.10), inset 0 1px 0 rgba(255,255,255,.60);
+.tf-collapseToggleWrap {
+  display: flex;
+  justify-content: flex-end;
 }
-.tf-collapseToggle:hover { border-color: var(--brand-stroke); box-shadow: 0 12px 22px rgba(15,23,42,.14), inset 0 1px 0 rgba(255,255,255,.66); background:#fff; }
-.tf-collapseToggle:active { transform: translateY(1px); }
-.tf-arrow { width:10px; height:10px; border-right:2px solid var(--text); border-bottom:2px solid var(--text); transform: rotate(315deg); transition: transform .15s ease; }
-.tf-arrow.down { transform: rotate(315deg); }
-.tf-arrow.up { transform: rotate(135deg); }
-.tf-collapseText { line-height:1; }
+
+.tf-collapseToggle {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-stroke);
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  transition:
+    border-color .12s ease,
+    box-shadow .14s ease,
+    transform .06s ease,
+    background .12s ease;
+  box-shadow:
+    0 8px 16px rgba(15,23,42,.08),
+    inset 0 1px 0 rgba(255,255,255,.80);
+}
+
+.tf-collapseToggle:hover {
+  border-color: var(--brand-stroke);
+  box-shadow:
+    0 10px 18px rgba(15,23,42,.12),
+    inset 0 1px 0 rgba(255,255,255,.84);
+  background: #f9fafb;
+}
+
+.tf-collapseToggle:active {
+  transform: translateY(1px);
+}
+
+.tf-arrow {
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--text);
+  border-bottom: 2px solid var(--text);
+  transform: rotate(315deg);
+  transition: transform .15s ease;
+}
+
+.tf-arrow.down {
+  transform: rotate(315deg);
+}
+
+.tf-arrow.up {
+  transform: rotate(135deg);
+}
+
+.tf-collapseText {
+  line-height: 1;
+}
 
 /* Chips поле */
 .tf-chips {
-  display:flex; gap:6px; flex-wrap:wrap; align-items:center;
-  padding:6px; border:1px solid var(--glass-stroke); border-radius:12px; min-height:42px; cursor:text;
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 94%, transparent), color-mix(in oklab, #ffffff 86%, transparent));
-  -webkit-backdrop-filter: blur(8px) saturate(1.15);
-  backdrop-filter: blur(8px) saturate(1.15);
-  box-shadow: 0 1px 0 rgba(255,255,255,.60) inset, 0 8px 14px rgba(15,23,42,.06);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 10px;
+  min-height: 40px;
+  cursor: text;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15,23,42,.06);
 }
-.tf-chips__input { flex:1 0 180px; min-width:120px; border:none; outline:none; padding:6px 8px; background:transparent; color: var(--text); }
+
+.tf-chips__input {
+  flex: 1 0 180px;
+  min-width: 120px;
+  border: none;
+  outline: none;
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--text);
+}
 
 /* Дропдаун поиска */
 .tf-dd {
-  position: fixed; z-index: 1000;
-  background: linear-gradient(180deg, color-mix(in oklab, #ffffff 98%, transparent), color-mix(in oklab, #ffffff 92%, transparent));
+  position: fixed;
+  z-index: 1000;
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, #ffffff 98%, transparent),
+      color-mix(in oklab, #f9fafb 94%, transparent));
   border: 1px solid var(--glass-stroke);
-  border-radius: 12px;
-  box-shadow: 0 14px 26px rgba(15,23,42,0.14), var(--inset);
+  border-radius: 10px;
+  box-shadow: 0 16px 30px rgba(15,23,42,0.16);
   max-height: 300px;
   overflow-y: auto;
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  backdrop-filter: blur(12px) saturate(1.2);
 }
+
 .tf-dd__item {
   padding: 8px 12px;
   cursor: pointer;
   font-size: 13px;
   color: var(--text);
-  transition: background .12s ease;
+  transition: background .10s ease;
 }
-.tf-dd__item:hover { background: color-mix(in oklab, var(--brand) 6%, #ffffff); }
+
+.tf-dd__item:hover {
+  background: color-mix(in oklab, var(--brand) 4%, #ffffff);
+}
 
 /* Прочее */
-.tf-reviewBlock { align-self:start; }
+.tf-reviewBlock {
+  align-self: flex-start;
+}
 
-/* Toast - зеленая жидкая плашка подтверждения */
-
+/* Toast подтверждения: более спокойный, без «жидкого» эффекта */
 .tf-toast {
   position: fixed;
   right: 20px;
@@ -278,33 +575,33 @@
   min-width: 260px;
   max-width: 420px;
   padding: 10px 14px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid color-mix(in oklab, #16a34a 60%, #ffffff);
   background:
     linear-gradient(180deg,
-      color-mix(in oklab, #22c55e 24%, #ffffff) 0%,
-      color-mix(in oklab, #16a34a 12%, #ffffff) 100%);
+      color-mix(in oklab, #f0fdf4 90%, #bbf7d0 10%),
+      color-mix(in oklab, #bbf7d0 80%, #22c55e 20%));
   color: #022c22;
   font-size: 13px;
   font-weight: 600;
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  box-shadow: 0 18px 40px rgba(22, 163, 74, .35), var(--inset);
-  -webkit-backdrop-filter: blur(14px) saturate(1.25);
-  backdrop-filter: blur(14px) saturate(1.25);
+  box-shadow: 0 16px 34px rgba(22, 163, 74, .32), var(--inset);
   opacity: 1;
   transform: translateY(0);
-  transition: opacity .25s ease, transform .25s ease;
+  transition:
+    opacity .22s ease,
+    transform .22s ease;
 }
 
 .tf-toastHidden {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(10px);
   pointer-events: none;
 }
 
-.tf-toast__bar {
+	tf-toast__bar {
   width: 4px;
   align-self: stretch;
   border-radius: 999px;
@@ -344,19 +641,27 @@
   background: linear-gradient(180deg, #f0fdf4, #bbf7d0);
   color: #14532d;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, .28), inset 0 1px 0 rgba(255,255,255,.80);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  backdrop-filter: blur(10px) saturate(1.2);
-  transition: transform .06s ease, box-shadow .16s ease, background .14s ease, border-color .14s ease;
+  box-shadow:
+    0 2px 6px rgba(22, 163, 74, .28),
+    inset 0 1px 0 rgba(255,255,255,.80);
+  transition:
+    transform .06s ease,
+    box-shadow .14s ease,
+    background .12s ease,
+    border-color .12s ease;
 }
 
 .tf-toast__close:hover {
   background: #dcfce7;
   border-color: #16a34a;
-  box-shadow: 0 4px 10px rgba(22, 163, 74, .34), inset 0 1px 0 rgba(255,255,255,.85);
+  box-shadow:
+    0 4px 10px rgba(22, 163, 74, .34),
+    inset 0 1px 0 rgba(255,255,255,.85);
 }
 
 .tf-toast__close:active {
   transform: translateY(1px);
-  box-shadow: 0 1px 4px rgba(22, 163, 74, .24), inset 0 1px 0 rgba(255,255,255,.78);
+  box-shadow:
+    0 1px 4px rgba(22, 163, 74, .24),
+    inset 0 1px 0 rgba(255,255,255,.78);
 }
